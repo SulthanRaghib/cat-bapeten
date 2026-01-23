@@ -16,14 +16,17 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Nama Lengkap')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('nip')
+                    ->label('NIP')
                     ->searchable()
                     ->copyable(),
 
                 TextColumn::make('role')
+                    ->label('Role')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'admin' => 'danger',
@@ -32,6 +35,7 @@ class UsersTable
                     }),
 
                 TextColumn::make('email')
+                    ->label('Email Address')
                     ->searchable(),
 
                 TextColumn::make('created_at')
