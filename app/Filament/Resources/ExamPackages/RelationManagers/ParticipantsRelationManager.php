@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ExamPackages\RelationManagers;
 
-use App\Models\ExamPackage;
-use App\Models\ExamParticipant;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
@@ -13,21 +11,23 @@ use Filament\Actions\DetachBulkAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\FontWeight;
+use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ParticipantsRelationManager extends RelationManager
 {
     protected static string $relationship = 'participants';
 
+    // Translasi Judul Tab
+    protected static ?string $title = 'Peserta Ujian';
+    protected static ?string $modelLabel = 'Peserta';
+
     public function form(Schema $form): Schema
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('token')
                     ->required()
                     ->maxLength(255),
             ]);
@@ -39,73 +39,46 @@ class ParticipantsRelationManager extends RelationManager
             ->recordTitleAttribute('name')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Name')
+                    ->label('Nama Peserta')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('nip')
-                    ->label('NIP / ID')
+                    ->label('NIP')
                     ->searchable()
-                    ->sortable(),
+                    ->copyable(),
 
-                Tables\Columns\TextColumn::make('pivot.token')
-                    ->label('Access Token')
+                Tables\Columns\TextColumn::make('token')
+                    ->label('Token Akses')
+                    ->weight('bold')
+                    ->color(Color::Amber)
                     ->copyable()
-                    ->weight(FontWeight::Bold)
-                    ->color('primary'),
+                    ->copyMessage('Token disalin!')
+                    ->description('Bagikan token ini ke peserta'),
 
                 Tables\Columns\ToggleColumn::make('is_active')
-                    ->label('Active')
-                    ->state(fn(Model $record) => $record->pivot->is_active)
-                    ->updateStateUsing(function (Model $record, $state): Model {
-                        $record->pivot->update(['is_active' => $state]);
-                        return $record;
-                    }),
+                    ->label('Status Aktif'),
+            ])
+            ->headerActions([
+                AttachAction::make()
+                    ->label('Tambah Peserta')
+                    ->modalHeading('Pilih Peserta Ujian')
+                    ->modalSubmitActionLabel('Tambahkan')
+                    ->preloadRecordSelect()
+                    ->multiple() // Bisa pilih banyak sekaligus
+                    ->recordSelectSearchColumns(['name', 'nip']),
             ])
             ->filters([
                 //
             ])
-            ->headerActions([
-                AttachAction::make()
-                    ->multiple()
-                    ->preloadRecordSelect()
-                    ->form(fn(AttachAction $action) => [
-                        $action->getRecordSelect()
-                            ->searchable()
-                            ->placeholder('Pilih peserta'),
-                    ])
-                    ->using(function (BelongsToMany $relationship, array $data): void {
-                        $owner = $relationship->getParent();
-
-                        if (! $owner instanceof ExamPackage) {
-                            return;
-                        }
-
-                        $userIds = $data['recordId'] ?? [];
-
-                        if (! is_array($userIds)) {
-                            $userIds = [$userIds];
-                        }
-
-                        foreach ($userIds as $userId) {
-                            ExamParticipant::firstOrCreate(
-                                [
-                                    'exam_package_id' => $owner->getKey(),
-                                    'user_id' => $userId,
-                                ],
-                                [
-                                    'is_active' => true,
-                                ],
-                            );
-                        }
-                    })
-            ])
             ->recordActions([
-                DetachAction::make(),
+                DetachAction::make()
+                    ->label('Hapus Peserta'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DetachBulkAction::make(),
+                    DetachBulkAction::make()
+                        ->label('Hapus Peserta Terpilih'),
                 ]),
             ]);
     }
