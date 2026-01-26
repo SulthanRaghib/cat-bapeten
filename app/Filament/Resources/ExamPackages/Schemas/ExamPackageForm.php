@@ -16,35 +16,41 @@ class ExamPackageForm
         return $schema
             ->components([
                 Section::make('Detail Ujian')
+                    ->description('Atur informasi dasar mengenai paket ujian ini.')
                     ->schema([
                         TextInput::make('title')
                             ->label('Judul Paket Ujian')
                             ->required()
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->placeholder('Contoh: Ujian Kompetensi Teknis Batch 1'),
 
-                        Select::make('type')
-                            ->label('Tipe Paket Ujian')
-                            ->options([
-                                'technical' => 'Technical',
-                                'structural' => 'Structural',
-                            ])
-                            ->required()
-                            ->helperText('Pilih tipe paket ujian sesuai dengan kebutuhan.'),
+                        Grid::make(2)
+                            ->schema([
+                                Select::make('type')
+                                    ->label('Tipe Ujian')
+                                    ->options([
+                                        'technical' => 'Teknis (Benar/Salah)',
+                                        'structural' => 'Struktural (Bobot Nilai)',
+                                    ])
+                                    ->required()
+                                    ->native(false),
 
-                        TextInput::make('passing_grade')
-                            ->label('Nilai Kelulusan')
-                            ->numeric()
-                            ->helperText('Masukkan nilai minimal untuk lulus ujian.')
-                            ->required(),
+                                TextInput::make('passing_grade')
+                                    ->label('Nilai Ambang Batas (Passing Grade)')
+                                    ->numeric()
+                                    ->required()
+                                    ->helperText('Contoh: Jika 100 soal x 5 poin = 500 Max. Passing grade bisa 300.'),
+                            ]),
 
                         TextInput::make('duration_minutes')
-                            ->label('Durasi')
+                            ->label('Durasi Pengerjaan')
                             ->suffix('Menit')
                             ->numeric()
                             ->required(),
 
                         Toggle::make('is_active')
-                            ->label('Status Aktif')
+                            ->label('Buka Pendaftaran')
+                            ->helperText('Jika dimatikan, peserta tidak bisa mengakses ujian ini.')
                             ->default(true),
                     ]),
             ]);

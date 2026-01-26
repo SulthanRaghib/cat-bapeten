@@ -23,4 +23,16 @@ class EditExamPackage extends EditRecord
     {
         return $this->getResource()::getUrl('index');
     }
+
+    // UX Improvement: Menggabungkan Form dan Relation Manager dalam Tab Sejajar
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
+
+    // Mengubah label Tab Form utama (defaultnya "Edit")
+    public function getContentTabLabel(): ?string
+    {
+        return 'Detail Ujian';
+    }
 }

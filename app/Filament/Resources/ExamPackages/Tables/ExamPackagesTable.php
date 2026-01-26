@@ -16,19 +16,22 @@ class ExamPackagesTable
         return $table
             ->columns([
                 TextColumn::make('title')
-                    ->label('Judul Paket Ujian')
+                    ->label('Judul Ujian')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('medium'),
 
                 TextColumn::make('type')
-                    ->label('Tipe Paket Ujian')
+                    ->label('Tipe')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'technical' => 'info',
-                        'structural' => 'warning',
-                        default => 'gray',
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'technical' => 'Teknis',
+                        'structural' => 'Struktural',
                     })
-                    ->sortable(),
+                    ->colors([
+                        'info' => 'technical',
+                        'warning' => 'structural',
+                    ]),
 
                 TextColumn::make('passing_grade')
                     ->label('Nilai Kelulusan')
@@ -41,6 +44,11 @@ class ExamPackagesTable
 
                 ToggleColumn::make('is_active')
                     ->label('Status Aktif'),
+
+                TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
+                    ->dateTime('d M Y')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

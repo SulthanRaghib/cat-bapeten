@@ -24,9 +24,9 @@ class ExamPackageResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $navigationLabel = 'Paket Ujian';
-    protected static ?string $pluralModelLabel = 'Paket Ujian';
     protected static ?string $modelLabel = 'Paket Ujian';
+    protected static ?string $pluralModelLabel = 'Paket Ujian';
+    protected static ?string $navigationLabel = 'Paket Ujian';
 
     protected static string|UnitEnum|null $navigationGroup = 'Manajemen Ujian';
 
