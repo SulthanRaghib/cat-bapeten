@@ -13,4 +13,12 @@ class ExamPackage extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function participants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'exam_participants')
+            ->using(ExamParticipant::class)
+            ->withPivot(['token', 'is_active'])
+            ->withTimestamps();
+    }
 }

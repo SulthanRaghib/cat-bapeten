@@ -25,6 +25,14 @@ class User extends Authenticatable
         'password',
     ];
 
+    public function examPackages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ExamPackage::class, 'exam_participants')
+            ->using(ExamParticipant::class)
+            ->withPivot(['token', 'is_active'])
+            ->withTimestamps();
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
