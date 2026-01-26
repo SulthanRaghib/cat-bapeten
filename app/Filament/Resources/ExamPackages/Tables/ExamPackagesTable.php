@@ -25,8 +25,8 @@ class ExamPackagesTable
                     ->label('Tipe')
                     ->badge()
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'technical' => 'Teknis',
-                        'structural' => 'Struktural',
+                        'technical' => 'Teknis (Benar/Salah)',
+                        'structural' => 'Struktural (Bobot Nilai)',
                     })
                     ->colors([
                         'info' => 'technical',
