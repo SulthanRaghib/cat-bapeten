@@ -21,4 +21,9 @@ class ExamPackage extends Model
             ->withPivot(['token', 'is_active'])
             ->withTimestamps();
     }
+
+    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Question::class);
+    }
 }
