@@ -30,8 +30,12 @@ class CreateExamPackage extends CreateRecord
         ];
     }
 
+    // UX Improvement: Redirect langsung ke halaman Edit agar bisa langsung tambah peserta
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('index');
+        return $this->getResource()::getUrl('edit', [
+            'record' => $this->record,
+            'relation' => 0, // <--- Filament otomatis menjadikannya ?relation=0
+        ]);
     }
 }
