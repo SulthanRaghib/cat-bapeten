@@ -62,6 +62,7 @@ class ParticipantsRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->label('Tambah Peserta')
+                    ->color(Color::Amber)
                     ->modalHeading('Pilih Peserta Ujian')
                     ->modalSubmitActionLabel('Tambahkan')
                     ->preloadRecordSelect()
