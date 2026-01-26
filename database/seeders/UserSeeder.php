@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use Faker\Factory as FakerFactory;
 
 class UserSeeder extends Seeder
 {
@@ -26,5 +26,17 @@ class UserSeeder extends Seeder
         );
 
         $this->command->info("Super Admin seeded successfully: {$superAdmin->email}");
+
+        $faker = FakerFactory::create();
+        $roles = ['user'];
+
+        for ($i = 0; $i < 10; $i++) {
+            User::factory()->create([
+                'nip' => $faker->unique()->numerify(str_repeat('#', 18)),
+                'role' => $faker->randomElement($roles),
+            ]);
+        }
+
+        $this->command->info('Random users seeded successfully.');
     }
 }
