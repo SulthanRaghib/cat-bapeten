@@ -1,4 +1,145 @@
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import "../../../../vendor/filament/filament/resources/css/theme.css";
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+
+/* Custom RichEditor enhancements */
+.fi-fo-rich-editor {
+    /* Make editor container more spacious */
+    .tiptap-wrapper {
+        min-height: 200px;
+    }
+
+    /* Better image styling in editor */
+    .ProseMirror img {
+        max-width: 100%;
+        height: auto;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+
+    .ProseMirror img:hover {
+        border-color: #f59e0b;
+    }
+
+    .ProseMirror img.ProseMirror-selectednode {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Code blocks for LaTeX */
+    .ProseMirror pre {
+        background: #fef3c7;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 13px;
+        border: 1px solid #fcd34d;
+    }
+}
+
+/* Math Formula Picker enhancements */
+.math-formula-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.math-formula-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+}
+
+.math-picker-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 20px;
+}
+
+.math-picker-content {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+.math-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.math-picker-item {
+    padding: 16px 12px;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.math-picker-item:hover {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.math-picker-item .formula {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #1f2937;
+}
+
+.math-picker-item .label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Dark mode support for math picker */
+.dark .math-picker-content {
+    background: #1f2937;
+}
+
+.dark .math-picker-item {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+
+.dark .math-picker-item:hover {
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+}
+
+.dark .math-picker-item .formula {
+    color: #f9fafb;
+}
+
+.dark .math-picker-item .label {
+    color: #9ca3af;
+}
