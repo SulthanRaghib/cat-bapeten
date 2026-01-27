@@ -31,6 +31,7 @@ class QuestionsRelationManager extends RelationManager
             ->schema([
                 Section::make('Detail Soal')
                     ->description('Kelola isi pertanyaan serta opsi jawaban secara fleksibel.')
+                    ->columns(12)
                     ->schema([
                         RichEditor::make('question_text')
                             ->label('Pertanyaan')
@@ -46,12 +47,14 @@ class QuestionsRelationManager extends RelationManager
                             ->maxItems(10)
                             ->reorderable()
                             ->columns(12)
+                            ->live()
                             ->schema([
                                 TextInput::make('teks')
                                     ->label('Teks Pilihan')
                                     ->placeholder('Masukkan teks pilihan')
                                     ->required()
-                                    ->columnSpan(9),
+                                    ->columnSpan(9)
+                                    ->live(),
 
                                 TextInput::make('bobot')
                                     ->label('Bobot Nilai')
@@ -59,7 +62,8 @@ class QuestionsRelationManager extends RelationManager
                                     ->numeric()
                                     ->visible(fn(): bool => $this->isStructural())
                                     ->required(fn(): bool => $this->isStructural())
-                                    ->columnSpan(3),
+                                    ->columnSpan(3)
+                                    ->live(),
                             ])
                             ->default(fn(): array => $this->getDefaultOptionsData())
                             ->columnSpanFull(),
@@ -72,8 +76,7 @@ class QuestionsRelationManager extends RelationManager
                             ->visible(fn(): bool => $this->isTechnical())
                             ->searchable()
                             ->columnSpanFull(),
-                    ])
-                    ->columns(12),
+                    ]),
             ]);
     }
 
@@ -179,7 +182,7 @@ class QuestionsRelationManager extends RelationManager
     private function hydrateOptionsData(array $data): array
     {
         $tipe = $this->getExamType();
-        $options = $data['options'] ?? [];
+        $options = $data['options'] ?? null;
         $scoring = $data['scoring_config'] ?? [];
 
         if (! is_array($options) || empty($options)) {
@@ -194,7 +197,7 @@ class QuestionsRelationManager extends RelationManager
             return $data;
         }
 
-        $data['options_data'] = collect($options)
+        $optionsData = collect($options)
             ->map(function ($teks, $kode) use ($tipe, $scoring): array {
                 $row = [
                     'teks' => $teks,
@@ -208,6 +211,8 @@ class QuestionsRelationManager extends RelationManager
             })
             ->values()
             ->all();
+
+        $data['options_data'] = array_values($optionsData);
 
         if ($tipe === 'technical') {
             $data['scoring_config'] = [
