@@ -407,12 +407,6 @@ class QuestionsRelationManager extends RelationManager
                     ->mutateFormDataUsing(fn(array $data): array => $this->normalisasiScoringConfig($data)),
                 DeleteAction::make()
                     ->label('Hapus'),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DetachBulkAction::make()
-                        ->label('Hapus Pilihan Terpilih'),
-                ]),
             ]);
     }
 
