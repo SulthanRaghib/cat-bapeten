@@ -92,6 +92,7 @@ class CustomLogin extends BaseLogin
 
                 if ($participant) {
                     Filament::auth()->login($user, $remember);
+                    session(['auth_mode' => 'participant']); // Flag session for redirection
                     $isAuthenticated = true;
                 }
             }
