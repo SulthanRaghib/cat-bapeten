@@ -27,6 +27,7 @@ class ExamPackagesTable
                     ->formatStateUsing(fn(string $state): string => match ($state) {
                         'technical' => 'Teknis (Benar/Salah)',
                         'structural' => 'Struktural (Bobot Nilai)',
+                        default => $state,
                     })
                     ->colors([
                         'info' => 'technical',
