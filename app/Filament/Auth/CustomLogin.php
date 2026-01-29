@@ -51,7 +51,7 @@ class CustomLogin extends BaseLogin
     protected function getRememberFormComponent(): Component
     {
         return Checkbox::make('remember')
-            ->label(__('filament-panels::pages/auth/login.form.remember.label'));
+            ->label(__('Ingat Saya'));
     }
 
     public function authenticate(): ?LoginResponse
