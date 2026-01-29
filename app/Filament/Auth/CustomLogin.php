@@ -118,7 +118,7 @@ class CustomLogin extends BaseLogin
     protected function throwFailureValidationException(): never
     {
         throw ValidationException::withMessages([
-            'data.login_id' => __('filament-panels::pages/auth/login.messages.failed'),
+            'data.login_id' => __('Mohon periksa kembali kredensial Anda dan coba lagi.'),
         ]);
     }
 }
