@@ -8,17 +8,20 @@ use App\Models\ExamParticipant;
 use App\Models\ExamSession;
 use App\Models\Question;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('layouts.exam')]
 class ExamPage extends Component
 {
     public $examSessionId;
     public $currentQuestionIndex = 0;
     public $questionIds = [];
     public $currentAnswer = '';
+    public $currentDoubtful = false;
     public $totalQuestions = 0;
+
+    public $examTitle = 'Ujian CAT BAPETEN';
+    public $candidateName;
+    public $candidateIdentifier;
 
     // Timer properties
     public $durationMinutes = 0;
@@ -78,11 +81,18 @@ class ExamPage extends Component
         // Get duration from ExamPackage
         $package = ExamPackage::find($participant->exam_package_id);
         $this->durationMinutes = $package->duration_minutes ?? 60;
+        $this->examTitle = $package->title ?? $this->examTitle;
+
+        $this->candidateName = $user->name;
+        $this->candidateIdentifier = $user->nip;
 
         // Calculate end time (started_at + duration)
         $this->endTime = $session->started_at->copy()->addMinutes($this->durationMinutes)->toIso8601String();
 
-        // Load existing answer for first question
+        // Restore question index from session (persist across refresh)
+        $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
+
+        // Load existing answer for current question
         $this->loadCurrentAnswer();
     }
 
@@ -105,6 +115,7 @@ class ExamPage extends Component
             ->first();
 
         $this->currentAnswer = $answer ? $answer->answer : '';
+        $this->currentDoubtful = $answer ? (bool) $answer->is_doubtful : false;
     }
 
     public function updatedCurrentAnswer($value)
@@ -116,6 +127,8 @@ class ExamPage extends Component
     {
         if (!$this->currentQuestion) return;
 
+        $this->currentAnswer = $option;
+
         $answer = ExamAnswer::updateOrCreate(
             [
                 'exam_session_id' => $this->examSessionId,
@@ -123,23 +136,57 @@ class ExamPage extends Component
             ],
             [
                 'answer' => $option,
-                'score' => 0, // Should calculate score immediately or later?
-                // Context: "Update or Create ExamAnswer".
-                // Calculating score logic is in ExamAnswer model but needs to be called.
+                'score' => 0,
             ]
         );
 
         // Calculate score immediately
         $answer->calculateScore();
         $answer->save();
+
+        $this->currentDoubtful = (bool) $answer->is_doubtful;
+
+        // Dispatch event to re-render MathJax (answer saved, UI might update)
+        $this->dispatch('answer-saved');
+    }
+
+    public function toggleDoubtful()
+    {
+        if (!$this->currentQuestion) {
+            return;
+        }
+
+        $answer = ExamAnswer::firstOrNew([
+            'exam_session_id' => $this->examSessionId,
+            'question_id' => $this->currentQuestion->id,
+        ]);
+
+        if (!$answer->exists) {
+            $answer->answer = $this->currentAnswer ?: null;
+            $answer->score = 0;
+        }
+
+        $answer->is_doubtful = !($answer->is_doubtful ?? false);
+
+        if ($answer->answer) {
+            $answer->calculateScore();
+        }
+
+        $answer->save();
+
+        $this->currentDoubtful = (bool) $answer->is_doubtful;
+
+        $this->dispatch('question-flagged', $this->currentDoubtful);
     }
 
     public function nextQuestion()
     {
         if ($this->currentQuestionIndex < $this->totalQuestions - 1) {
             $this->currentQuestionIndex++;
+            // Save to session for persistence
+            session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
             $this->loadCurrentAnswer();
-            $this->dispatch('question-changed'); // Trigger MathJax re-render
+            $this->dispatch('question-changed');
         }
     }
 
@@ -147,13 +194,70 @@ class ExamPage extends Component
     {
         if ($this->currentQuestionIndex > 0) {
             $this->currentQuestionIndex--;
+            // Save to session for persistence
+            session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
             $this->loadCurrentAnswer();
-            $this->dispatch('question-changed'); // Trigger MathJax re-render
+            $this->dispatch('question-changed');
+        }
+    }
+
+    public function goToQuestion($index)
+    {
+        if ($index >= 0 && $index < $this->totalQuestions) {
+            $this->currentQuestionIndex = $index;
+            session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
+            $this->loadCurrentAnswer();
+            $this->dispatch('question-changed');
         }
     }
 
     public function render()
     {
-        return view('livewire.exam.exam-page');
+        $answersMap = collect();
+
+        if ($this->examSessionId) {
+            $answersMap = ExamAnswer::where('exam_session_id', $this->examSessionId)
+                ->get()
+                ->keyBy('question_id');
+        }
+
+        $questionStatuses = collect($this->questionIds)->values()->map(function ($questionId, $index) use ($answersMap) {
+            $answer = $answersMap[$questionId] ?? null;
+            return [
+                'index' => $index,
+                'question_id' => $questionId,
+                'number' => $index + 1,
+                'answered' => $answer && $answer->answer !== null && $answer->answer !== '',
+                'current' => $index === $this->currentQuestionIndex,
+                'answer' => $answer ? $answer->answer : null,
+                'doubtful' => $answer ? (bool) $answer->is_doubtful : false,
+            ];
+        })->all();
+
+        $answeredCount = $answersMap
+            ->filter(function ($answer) {
+                return $answer && $answer->answer !== null && $answer->answer !== '';
+            })
+            ->count();
+        $doubtfulCount = $answersMap
+            ->filter(function ($answer) {
+                return $answer && (bool) $answer->is_doubtful;
+            })
+            ->count();
+        $unansweredCount = max($this->totalQuestions - $answeredCount, 0);
+
+        return view('livewire.exam.exam-page', [
+            'questionStatuses' => $questionStatuses,
+            'answeredCount' => $answeredCount,
+            'unansweredCount' => $unansweredCount,
+            'doubtfulCount' => $doubtfulCount,
+        ])->layout('layouts.exam', [
+            'examTitle' => $this->examTitle,
+            'candidateName' => $this->candidateName,
+            'candidateIdentifier' => $this->candidateIdentifier,
+            'endTime' => $this->endTime,
+            'answeredCount' => $answeredCount,
+            'totalQuestions' => $this->totalQuestions,
+        ]);
     }
 }
