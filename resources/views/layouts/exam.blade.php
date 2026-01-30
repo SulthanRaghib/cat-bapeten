@@ -11,11 +11,15 @@
     <!-- Tailwind CSS (via CDN for simplicity if Vite not available for front, but using Vite normally) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Note: Alpine.js is bundled with Livewire 3, no need to load separately -->
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     @livewireStyles
+
+    @stack('styles')
 
     <!-- MathJax Config -->
     <script>
@@ -42,9 +46,13 @@
                 ready: () => {
                     MathJax.startup.defaultReady();
                     window.renderMathJax = function() {
-                        const elements = document.querySelectorAll(
+                        const nodeList = document.querySelectorAll(
                             '.question-content, .option-text, .math-content');
-                        if (elements.length && window.MathJax) {
+                        if (nodeList.length && window.MathJax) {
+                            const elements = Array.from(nodeList);
+                            if (typeof MathJax.typesetClear === 'function') {
+                                MathJax.typesetClear(elements);
+                            }
                             MathJax.typesetPromise(elements).catch((err) => console.log('MathJax:', err));
                         }
                     };
@@ -84,29 +92,57 @@
 </head>
 
 <body class="font-sans antialiased bg-gray-100 min-h-screen">
-    <header class="bg-white shadow">
-        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800 tracking-tight">
-                CAT BAPETEN
-            </h1>
-            <div class="flex items-center gap-4">
-                <div class="text-right">
-                    <p class="text-sm font-semibold text-gray-900">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-gray-500">{{ Auth::user()->nip }}</p>
-                </div>
+    <header class="fixed inset-x-0 top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
 
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit"
-                        class="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors">
-                        Logout
-                    </button>
-                </form>
+        @isset($examTitle)
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 p-2 lg:p-4">
+                <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center gap-5">
+                        <div
+                            class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center shadow-xl">
+                            <svg class="w-9 h-9" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2 3 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5zm0 18.5c-3.84-1.07-6.5-4.42-6.5-8.5V8.3l6.5-3.11 6.5 3.11V12c0 4.08-2.66 7.43-6.5 8.5z">
+                                </path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm uppercase tracking-widest text-blue-500 font-bold">Ujian Online</p>
+                            <h2 class="text-2xl font-bold text-slate-900">{{ $examTitle }}</h2>
+                            <p class="text-sm text-slate-500 font-medium">Badan Pengawas Tenaga Nuklir</p>
+                        </div>
+                    </div>
+                    <div class="timer-shell" data-timer-container>
+                        <span class="text-xs font-semibold tracking-wide text-slate-600 uppercase">Sisa
+                            Waktu</span>
+                        <span id="exam-timer" class="timer-value" data-state="normal" data-end-time="{{ $endTime ?? '' }}"
+                            wire:ignore>--:--</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-slate-900">{{ $candidateName ?? '' }}</p>
+                        @if (!empty($candidateIdentifier))
+                            <p class="text-xs font-medium text-slate-500">ID Peserta: {{ $candidateIdentifier }}</p>
+                        @endif
+                        @if (isset($answeredCount, $totalQuestions))
+                            <p class="text-xs text-slate-400 mt-1">Soal terjawab: {{ $answeredCount }} /
+                                {{ $totalQuestions }}</p>
+                        @endif
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                class="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
+        @endisset
         </div>
     </header>
 
-    <main class="py-6">
+    <main class="pt-[180px] pb-32">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             {{ $slot }}
         </div>
@@ -146,6 +182,8 @@
             });
         }
     </script>
+
+    @stack('scripts')
 </body>
 
 </html>
