@@ -89,6 +89,23 @@
             padding: 8px;
         }
     </style>
+    @livewireScripts
+    <script>
+        document.addEventListener('livewire:init', () => {
+            // Setiap kali Livewire selesai update DOM (pindah soal, simpan jawaban)
+            Livewire.hook('morph.updated', ({
+                el,
+                component
+            }) => {
+                if (window.MathJax) {
+                    // Minta MathJax render ulang, tapi gunakan Promise agar tidak bikin lag
+                    window.MathJax.typesetPromise().then(() => {
+                        console.log('MathJax re-rendered');
+                    }).catch((err) => console.log('MathJax error: ' + err.message));
+                }
+            });
+        });
+    </script>
 </head>
 
 <body class="font-sans antialiased bg-gray-100 min-h-screen">
