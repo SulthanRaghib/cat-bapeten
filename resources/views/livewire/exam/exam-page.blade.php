@@ -503,14 +503,16 @@
 
             <footer class="exam-footer">
                 <div class="exam-footer-inner">
-                    <button type="button" wire:click="prevQuestion" wire:loading.attr="disabled"
-                        @disabled($currentQuestionIndex === 0)
+                    <button wire:click="prevQuestion" wire:loading.attr="disabled" @disabled($currentQuestionIndex === 0)
                         class="exam-action-secondary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wide">
                         ← Sebelumnya
                     </button>
 
-                    <button type="button" wire:click="nextQuestion" wire:loading.attr="disabled"
-                        @disabled($currentQuestionIndex === $totalQuestions - 1)
+                    <div wire:loading class="text-blue-500 font-semibold text-sm animate-pulse">
+                        Menyimpan...
+                    </div>
+
+                    <button wire:click="nextQuestion" wire:loading.attr="disabled" @disabled($currentQuestionIndex === $totalQuestions - 1)
                         class="exam-action-primary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wide">
                         @if ($currentQuestionIndex === $totalQuestions - 1)
                             Selesai →
@@ -518,7 +520,6 @@
                             Selanjutnya →
                         @endif
                     </button>
-                </div>
             </footer>
         @else
             <div class="exam-card p-10 text-center">
