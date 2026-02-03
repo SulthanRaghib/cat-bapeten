@@ -5,15 +5,21 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Question extends Model
 {
     protected $fillable = [
-        'exam_package_id',
+        'type',
         'question_text',
         'options',
         'scoring_config',
+        'explanation',
+        'unit',
+        'sub_unit',
+        'category',
+        'competence_area',
+        'competence_sub_area',
     ];
 
     protected $casts = [
@@ -26,8 +32,13 @@ class Question extends Model
         'scoring_config' => '[]',
     ];
 
-    public function examPackage(): BelongsTo
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function examPackages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsTo(ExamPackage::class);
+        return $this->belongsToMany(ExamPackage::class, 'exam_package_question')
+            ->withPivot('sort_order')
+            ->withTimestamps();
     }
 }

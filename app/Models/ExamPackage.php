@@ -22,8 +22,13 @@ class ExamPackage extends Model
             ->withTimestamps();
     }
 
-    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function questions(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->hasMany(Question::class);
+        return $this->belongsToMany(Question::class, 'exam_package_question')
+            ->withPivot('sort_order')
+            ->withTimestamps();
     }
 }
