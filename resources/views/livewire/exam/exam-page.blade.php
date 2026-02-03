@@ -420,27 +420,35 @@
                             @endphp
 
                             @if (is_array($options) && count($options) > 0)
-                                @foreach ($options as $code => $text)
+                                @foreach ($options as $index => $optionData)
                                     @php
-                                        if (is_array($text)) {
-                                            $optionCode = $text['kode'] ?? $code;
-                                            $optionText = $text['teks'] ?? '';
+                                        // Determine option label (A, B, C...) based on index
+                                        $optionLabel = chr(65 + $index);
+
+                                        // We use the original array key/index as the unique ID/value to save
+                                        // Unless there is a specific 'code' or 'id' in data, but index is safest to match backend logic
+                                        $optionValue = (string) $index;
+
+                                        if (is_array($optionData)) {
+                                            // Handle various field names: 'answer_text' (new), 'teks' (legacy)
+                                            $optionText = $optionData['answer_text'] ?? ($optionData['teks'] ?? '');
+
+                                            // Ensure RichText content is handled if needed, usually it's HTML string
                                         } else {
-                                            $optionCode = $code;
-                                            $optionText = $text;
+                                            $optionText = $optionData;
                                         }
                                     @endphp
-                                    <div wire:key="option-{{ $this->currentQuestion->id }}-{{ $optionCode }}"
-                                        @click="selectAnswer('{{ $optionCode }}')"
+                                    <div wire:key="option-{{ $this->currentQuestion->id }}-{{ $index }}"
+                                        @click="selectAnswer('{{ $optionValue }}')"
                                         class="question-option cursor-pointer"
-                                        :class="localAnswer === '{{ $optionCode }}' ? 'selected' : ''">
+                                        :class="localAnswer === '{{ $optionValue }}' ? 'selected' : ''">
                                         <div class="option-letter"
-                                            :class="localAnswer === '{{ $optionCode }}' ?
+                                            :class="localAnswer === '{{ $optionValue }}' ?
                                                 'bg-white/20 border-white/45 text-white' : ''">
-                                            {{ $optionCode }}
+                                            {{ $optionLabel }}
                                         </div>
                                         <div class="flex-1 option-text">{!! $optionText !!}</div>
-                                        <template x-if="saving && localAnswer === '{{ $optionCode }}'">
+                                        <template x-if="saving && localAnswer === '{{ $optionValue }}'">
                                             <svg class="w-5 h-5 animate-spin text-white" fill="none"
                                                 viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10"
