@@ -236,15 +236,14 @@ class AdminPanelProvider extends PanelProvider
                                     var btn = event.target.closest('.latex-chip-btn');
                                     if (!btn) return;
 
-                                    // IMPORTANT: Prevent default behavior
-                                    event.preventDefault();
-                                    event.stopPropagation();
-
                                     var formula = btn.getAttribute('data-formula');
                                     if (!formula) {
-                                        console.log('No formula found');
                                         return;
                                     }
+
+                                    // IMPORTANT: Prevent default behavior only when we handle copy here
+                                    event.preventDefault();
+                                    event.stopPropagation();
 
                                     // Debug log
                                     console.log('Copying formula:', formula);
