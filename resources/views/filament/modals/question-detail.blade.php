@@ -76,13 +76,43 @@
         </div>
         <div class="p-6">
             <div class="space-y-4">
-                @forelse ($record->options as $kode => $optionText)
+                @forelse ($record->options as $kode => $optionData)
                     @php
-                        $isCorrect = $tipe === 'technical' && $kunciJawaban === $kode;
-                        $bobot = $tipe === 'structural' ? $record->scoring_config[$kode] ?? 0 : null;
-                        // Handle both array format (old) and string format (new)
-                        $rawText = is_array($optionText) ? $optionText['teks'] ?? '' : (string) $optionText;
+                        // Determine label A, B, C...
+                        $label = chr(65 + $loop->index);
+
+                        // Normalize option text
+                        $rawText = '';
+                        if (is_array($optionData)) {
+                            // Support multiple field names
+                            $rawText = $optionData['answer_text'] ?? ($optionData['teks'] ?? '');
+                        } else {
+                            $rawText = (string) $optionData;
+                        }
+
                         $optionHtml = fixImageUrlsForDisplay($rawText);
+
+                        // Determine correctness & score
+                        $isCorrect = false;
+                        $bobot = null;
+
+                        if ($tipe === 'technical') {
+                            // Priority: Check 'is_correct' field in option data
+                            if (is_array($optionData) && isset($optionData['is_correct'])) {
+                                $isCorrect = filter_var($optionData['is_correct'], FILTER_VALIDATE_BOOLEAN);
+                            } else {
+                                // Fallback: Check global answer key
+                                $isCorrect = (string) $kunciJawaban === (string) $kode;
+                            }
+                        } elseif ($tipe === 'structural') {
+                            // Trying to get score from option data first
+                            if (is_array($optionData) && isset($optionData['score'])) {
+                                $bobot = $optionData['score'];
+                            } else {
+                                // Fallback to scoring_config map
+                                $bobot = $record->scoring_config[$kode] ?? 0;
+                            }
+                        }
                     @endphp
 
                     <div
@@ -90,7 +120,7 @@
                         <div class="flex-shrink-0">
                             <div
                                 class="flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg {{ $isCorrect ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600' }}">
-                                {{ $kode }}
+                                {{ $label }}
                             </div>
                         </div>
 
