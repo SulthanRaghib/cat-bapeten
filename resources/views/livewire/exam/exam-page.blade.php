@@ -355,15 +355,31 @@
                                 <h2 class="text-xl font-bold text-slate-900 mt-1">Pertanyaan</h2>
                             </div>
                             <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-end">
-                                <button type="button" wire:click="toggleDoubtful" wire:loading.attr="disabled"
-                                    wire:target="toggleDoubtful" class="{{ $flagClasses }}"
-                                    aria-pressed="{{ $currentDoubtful ? 'true' : 'false' }}">
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path
-                                            d="M5.5 3a1.5 1.5 0 00-1.5 1.5v15a1 1 0 102 0v-4.146l1.276-.638a3 3 0 012.536.026l1.715.8a5 5 0 004.018.063l4.091-1.636a1.5 1.5 0 00.936-1.384V4.5A1.5 1.5 0 0018.5 3h-13z" />
-                                    </svg>
-                                    <span>{{ $currentDoubtful ? 'Ditandai' : 'Ragu-ragu' }}</span>
-                                </button>
+                                {{-- WRAPPER ALPINE.JS UNTUK OPTIMISTIC UI --}}
+                                <div x-data="{
+                                    localDoubtful: @entangle('currentDoubtful').live,
+                                    toggle() {
+                                        // 1. Ubah state lokal INSTAN (tanpa nunggu server)
+                                        this.localDoubtful = !this.localDoubtful;
+                                
+                                        // 2. Kirim request ke server di background
+                                        $wire.toggleDoubtful();
+                                    }
+                                }" wire:ignore.self>
+
+                                    <button type="button" @click="toggle()" class="flag-toggle"
+                                        :class="localDoubtful ? 'active' : ''"
+                                        :aria-pressed="localDoubtful ? 'true' : 'false'">
+
+                                        <svg viewBox="0 0 24 24" fill="currentColor">
+                                            <path
+                                                d="M5.5 3a1.5 1.5 0 00-1.5 1.5v15a1 1 0 102 0v-4.146l1.276-.638a3 3 0 012.536.026l1.715.8a5 5 0 004.018.063l4.091-1.636a1.5 1.5 0 00.936-1.384V4.5A1.5 1.5 0 0018.5 3h-13z" />
+                                        </svg>
+
+                                        <span x-text="localDoubtful ? 'Ditandai' : 'Ragu-ragu'"></span>
+                                    </button>
+
+                                </div>
                                 <div id="save-indicator" class="save-indicator">
                                     <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd"
@@ -379,7 +395,20 @@
                             {!! $this->currentQuestion->question_text !!}
                         </div>
 
-                        <div class="mt-8 space-y-4">
+                        {{-- Optimistic UI with Alpine.js for instant feedback --}}
+                        <div class="mt-8 space-y-4" x-data="{
+                            localAnswer: @entangle('currentAnswer'),
+                            saving: false,
+                            selectAnswer(code) {
+                                this.localAnswer = code;
+                                this.saving = true;
+                                $wire.saveAnswer(code).then(() => {
+                                    this.saving = false;
+                                }).catch(() => {
+                                    this.saving = false;
+                                });
+                            }
+                        }" wire:ignore.self>
                             @php
                                 $options = $this->currentQuestion->options;
                                 if (is_string($options)) {
@@ -400,21 +429,28 @@
                                             $optionCode = $code;
                                             $optionText = $text;
                                         }
-                                        $isSelected = $currentAnswer === $optionCode;
-                                        $optionClasses = 'question-option';
-                                        if ($isSelected) {
-                                            $optionClasses .= ' selected';
-                                        }
                                     @endphp
-                                    <label wire:key="option-{{ $this->currentQuestion->id }}-{{ $optionCode }}"
-                                        wire:click="saveAnswer('{{ $optionCode }}')" class="{{ $optionClasses }}">
-                                        <div class="option-letter">
+                                    <div wire:key="option-{{ $this->currentQuestion->id }}-{{ $optionCode }}"
+                                        @click="selectAnswer('{{ $optionCode }}')"
+                                        class="question-option cursor-pointer"
+                                        :class="localAnswer === '{{ $optionCode }}' ? 'selected' : ''">
+                                        <div class="option-letter"
+                                            :class="localAnswer === '{{ $optionCode }}' ?
+                                                'bg-white/20 border-white/45 text-white' : ''">
                                             {{ $optionCode }}
                                         </div>
                                         <div class="flex-1 option-text">{!! $optionText !!}</div>
-                                        <input type="radio" name="answer" value="{{ $optionCode }}" class="hidden"
-                                            @checked($isSelected) onclick="event.stopPropagation()">
-                                    </label>
+                                        <template x-if="saving && localAnswer === '{{ $optionCode }}'">
+                                            <svg class="w-5 h-5 animate-spin text-white" fill="none"
+                                                viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                    stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                </path>
+                                            </svg>
+                                        </template>
+                                    </div>
                                 @endforeach
                             @else
                                 <p class="text-slate-500 italic">Pilihan jawaban belum tersedia.</p>
@@ -503,23 +539,55 @@
 
             <footer class="exam-footer">
                 <div class="exam-footer-inner">
-                    <button wire:click="prevQuestion" wire:loading.attr="disabled" @disabled($currentQuestionIndex === 0)
-                        class="exam-action-secondary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wide">
-                        ← Sebelumnya
+                    <button wire:click="prevQuestion" @disabled($currentQuestionIndex === 0)
+                        class="exam-action-secondary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wide
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                        wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
+                        <span wire:loading.remove wire:target="prevQuestion">← Sebelumnya</span>
+                        <span wire:loading wire:target="prevQuestion" class="flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            Memuat...
+                        </span>
                     </button>
 
-                    <div wire:loading class="text-blue-500 font-semibold text-sm animate-pulse">
+                    <div wire:loading wire:target="saveAnswer"
+                        class="text-green-600 font-medium text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
                         Menyimpan...
                     </div>
 
-                    <button wire:click="nextQuestion" wire:loading.attr="disabled" @disabled($currentQuestionIndex === $totalQuestions - 1)
-                        class="exam-action-primary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wide">
-                        @if ($currentQuestionIndex === $totalQuestions - 1)
-                            Selesai →
-                        @else
-                            Selanjutnya →
-                        @endif
+                    <button wire:click="nextQuestion" @disabled($currentQuestionIndex === $totalQuestions - 1)
+                        class="exam-action-primary px-6 py-3 rounded-xl text-sm font-semibold uppercase tracking-wide
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                        wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
+                        <span wire:loading.remove wire:target="nextQuestion">
+                            @if ($currentQuestionIndex === $totalQuestions - 1)
+                                Selesai →
+                            @else
+                                Selanjutnya →
+                            @endif
+                        </span>
+                        <span wire:loading wire:target="nextQuestion" class="flex items-center gap-2">
+                            Memuat...
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </span>
                     </button>
+                </div>
             </footer>
         @else
             <div class="exam-card p-10 text-center">
@@ -530,6 +598,7 @@
     </div>
 </div>
 
+
 @push('scripts')
     <script>
         (function() {
@@ -538,8 +607,8 @@
             }
 
             window.__examPageInitialised = true;
-            var componentName = 'exam.exam-page';
             var timerInterval = null;
+            var mathRenderDebounce = null;
 
             function initTimer() {
                 var timerEl = document.getElementById('exam-timer');
@@ -648,31 +717,47 @@
                 renderMath();
             }
 
+            // Debounced MathJax render to prevent multiple rapid calls
+            function debouncedRenderMath() {
+                if (mathRenderDebounce) {
+                    clearTimeout(mathRenderDebounce);
+                }
+                mathRenderDebounce = setTimeout(function() {
+                    renderMath();
+                }, 50);
+            }
+
+            // Initial setup
             if (document.readyState !== 'loading') {
                 initialiseEnhancements();
             } else {
                 document.addEventListener('DOMContentLoaded', initialiseEnhancements);
             }
 
-            document.addEventListener('livewire:load', function() {
+            // Livewire 3 compatible hooks
+            document.addEventListener('livewire:init', function() {
+                // Hook into Livewire's morph cycle for MathJax re-rendering
+                Livewire.hook('morph.updated', function({
+                    el,
+                    component
+                }) {
+                    // Only re-render MathJax, don't reinit timer (it's wire:ignore)
+                    debouncedRenderMath();
+                });
+
+                // Listen for custom events from the component
+                Livewire.on('answer-saved', function() {
+                    showSaveIndicator();
+                });
+
+                Livewire.on('question-changed', function() {
+                    requestAnimationFrame(initialiseEnhancements);
+                });
+            });
+
+            // Fallback for initial page load
+            document.addEventListener('livewire:navigated', function() {
                 initialiseEnhancements();
-
-                if (typeof Livewire !== 'undefined') {
-                    Livewire.hook('message.processed', function(message, component) {
-                        if (component && component.fingerprint && component.fingerprint.name ===
-                            componentName) {
-                            requestAnimationFrame(initialiseEnhancements);
-                        }
-                    });
-
-                    Livewire.on('answer-saved', function() {
-                        showSaveIndicator();
-                        requestAnimationFrame(renderMath);
-                    });
-                    Livewire.on('question-changed', function() {
-                        requestAnimationFrame(initialiseEnhancements);
-                    });
-                }
             });
         })();
     </script>
