@@ -48,11 +48,16 @@ class QuestionsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->label('Edit Soal'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->label('Hapus Soal Terpilih')
+                        ->modalHeading('Hapus Soal Terpilih')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus soal-soal yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
                 ]),
             ]);
     }
