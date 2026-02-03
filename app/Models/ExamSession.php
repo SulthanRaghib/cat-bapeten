@@ -54,10 +54,15 @@ class ExamSession extends Model
             return [];
         }
 
-        // Fetch all question IDs belonging to the related ExamPackage
-        $questionIds = Question::where('exam_package_id', $examParticipant->exam_package_id)
-            ->pluck('id')
-            ->toArray();
+        // Retrieve the ExamPackage
+        $examPackage = ExamPackage::find($examParticipant->exam_package_id);
+
+        if (!$examPackage) {
+            return [];
+        }
+
+        // Fetch all question IDs belonging to the related ExamPackage via many-to-many relationship
+        $questionIds = $examPackage->questions()->pluck('questions.id')->toArray();
 
         // Shuffle the array randomly
         shuffle($questionIds);
