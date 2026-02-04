@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Questions\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -49,14 +50,18 @@ class QuestionsTable
                 //
             ])
             ->recordActions([
-                ViewAction::make()
+                Action::make('view')
+                    ->icon('heroicon-m-eye')
+                    ->color('gray')
                     ->label('Lihat Detail')
                     ->modalHeading('Detail Pertanyaan')
                     ->modalContent(fn($record) => view('filament.modals.question-detail', [
                         'record' => $record,
                         // Lightweight manager substitute providing formatScoringConfig()
                         'manager' => new \App\Helpers\ScoringConfigFormatter(),
-                    ])),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
                 EditAction::make()
                     ->label('Edit Soal'),
             ])

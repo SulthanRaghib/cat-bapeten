@@ -181,14 +181,17 @@ class QuestionsRelationManager extends RelationManager
                     }),
             ])
             ->recordActions([
-                ViewAction::make()
+                Action::make('view')
+                    ->icon('heroicon-m-eye')
+                    ->color('gray')
                     ->label('Lihat Detail')
                     ->modalHeading('Detail Pertanyaan')
                     ->modalContent(fn($record) => view('filament.modals.question-detail', [
                         'record' => $record,
-                        // Pass a simplified mock or remove logic if formatting complex scoring requires manager
                         'manager' => $this,
-                    ])),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
                 DetachAction::make()
                     ->label('Hapus Soal')
                     ->modalHeading('Hapus Soal dari Paket')
