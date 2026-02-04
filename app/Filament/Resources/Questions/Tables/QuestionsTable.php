@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Questions\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -48,6 +49,14 @@ class QuestionsTable
                 //
             ])
             ->recordActions([
+                ViewAction::make()
+                    ->label('Lihat Detail')
+                    ->modalHeading('Detail Pertanyaan')
+                    ->modalContent(fn($record) => view('filament.modals.question-detail', [
+                        'record' => $record,
+                        // Lightweight manager substitute providing formatScoringConfig()
+                        'manager' => new \App\Helpers\ScoringConfigFormatter(),
+                    ])),
                 EditAction::make()
                     ->label('Edit Soal'),
             ])

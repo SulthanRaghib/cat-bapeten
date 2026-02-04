@@ -210,23 +210,7 @@ class QuestionsRelationManager extends RelationManager
      */
     public function formatScoringConfig(Question $question): string
     {
-        // Try to handle legacy structure or specific structure logic
-        if ($question->type === 'structural') {
-            // Often hidden in options array for structural questions or scoring_config
-            $score = 0;
-            $options = $question->options;
-            if (is_array($options)) {
-                foreach ($options as $opt) {
-                    if (isset($opt['score'])) {
-                        $score = $opt['score'];
-                        break;
-                    }
-                }
-            }
-            return '<strong>Bobot Nilai:</strong> ' . $score . ' Poin';
-        }
-
-        // Technical usually implies one correct answer worth 5 points (default system) or similar
-        return '<strong>Tipe Teknis:</strong> Benar/Salah';
+        // Delegate to shared helper to keep formatting consistent across places
+        return \App\Helpers\ScoringConfigFormatter::format($question);
     }
 }
