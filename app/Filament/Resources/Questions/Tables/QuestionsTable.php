@@ -9,6 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Str;
 
 class QuestionsTable
@@ -16,12 +17,13 @@ class QuestionsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('type')
                     ->label('Tipe')
                     ->badge()
                     ->colors([
-                        'primary' => 'technical',
+                        'info' => 'technical',
                         'warning' => 'structural',
                     ]),
 
@@ -47,7 +49,19 @@ class QuestionsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('type')
+                    ->label('Tipe Soal')
+                    ->options([
+                        'technical' => 'Technical (Benar/Salah)',
+                        'structural' => 'Structural (Bobot)',
+                    ]),
+                SelectFilter::make('category')
+                    ->label('Kategori')
+                    ->options([
+                        'easy' => 'Mudah',
+                        'medium' => 'Sedang',
+                        'hard' => 'Sulit',
+                    ]),
             ])
             ->recordActions([
                 Action::make('view')
