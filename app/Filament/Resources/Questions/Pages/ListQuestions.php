@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Questions\Pages;
 
 use App\Filament\Resources\Questions\QuestionResource;
+use App\Filament\Resources\Questions\Widgets\QuestionStatsOverview;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
@@ -17,6 +18,13 @@ class ListQuestions extends ListRecords
         return [
             CreateAction::make()
                 ->label('Tambah Soal'),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            QuestionStatsOverview::class,
         ];
     }
 
