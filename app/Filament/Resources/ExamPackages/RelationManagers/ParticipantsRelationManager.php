@@ -74,13 +74,20 @@ class ParticipantsRelationManager extends RelationManager
             ])
             ->recordActions([
                 DetachAction::make()
-                    ->label('Hapus Peserta'),
+                    ->label('Hapus Peserta')
+                    ->modalHeading('Hapus Peserta dari Ujian')
+                    ->modalDescription('Apakah Anda yakin ingin menghapus peserta ini dari paket ujian?')
+                    ->modalSubmitActionLabel('Ya, Hapus'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DetachBulkAction::make()
-                        ->label('Hapus Peserta Terpilih'),
-                ]),
+                        ->label('Hapus Peserta Terpilih')
+                        ->modalHeading('Hapus Peserta dari Ujian')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus peserta terpilih dari paket ujian?')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
+                ])
+                    ->label('Tindakan pada Peserta Terpilih'),
             ]);
     }
 }
