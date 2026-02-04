@@ -23,6 +23,10 @@ class QuestionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'questions';
 
+    // Translasi Judul Tab
+    protected static ?string $title = 'Soal Ujian';
+    protected static ?string $modelLabel = 'Soal';
+
     public function form(Schema $form): Schema
     {
         // Reuse the form from QuestionResource for consistency

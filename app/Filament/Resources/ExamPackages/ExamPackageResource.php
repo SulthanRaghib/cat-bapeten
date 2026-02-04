@@ -43,8 +43,8 @@ class ExamPackageResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\ParticipantsRelationManager::class,
             RelationManagers\QuestionsRelationManager::class,
+            RelationManagers\ParticipantsRelationManager::class,
         ];
     }
 
