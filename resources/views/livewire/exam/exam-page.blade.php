@@ -20,7 +20,7 @@
             background: white;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
 
         .question-number {
@@ -175,7 +175,7 @@
             position: sticky;
             top: 120px;
             align-self: start;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             max-height: calc(100vh - 140px);
             overflow-y: auto;
             overflow-x: hidden;
@@ -234,9 +234,17 @@
             white-space: nowrap;
         }
 
-        .status-belum { background: #bdbdbd; }
-        .status-ragu  { background: #f9a825; }
-        .status-jawab { background: #2e7d32; }
+        .status-belum {
+            background: #bdbdbd;
+        }
+
+        .status-ragu {
+            background: #f9a825;
+        }
+
+        .status-jawab {
+            background: #2e7d32;
+        }
 
         /* ================= DAFTAR SOAL ================= */
         .question-list {
@@ -262,7 +270,7 @@
         .question-list button:hover,
         .nav-indicator:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .question-list button.answered,
@@ -309,7 +317,7 @@
             border-top: 1px solid #e0e0e0;
         }
 
-        .answer-stats > div {
+        .answer-stats>div {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -384,7 +392,9 @@
 
         /* ================= LOADING ANIMATION ================= */
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .animate-spin {
@@ -394,8 +404,196 @@
 @endpush
 
 <div>
+    {{-- OVERLAY RESULT MODAL --}}
+    @if ($showResults)
+        <div class="result-overlay">
+            <div class="result-card">
+                <div class="result-header">
+                    <div class="result-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" style="width: 48px; height: 48px;">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2>Ujian Selesai</h2>
+                    <p>Waktu ujian telah berakhir atau Anda telah menyelesaikan ujian.</p>
+                </div>
+
+                <div class="score-display">
+                    <span class="score-label">Total Skor</span>
+                    <span class="score-value">{{ $resultStats['total_score'] ?? 0 }}</span>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Soal</span>
+                        <span class="stat-value">{{ $resultStats['total_questions'] ?? 0 }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Dijawab</span>
+                        <span class="stat-value">{{ $resultStats['answered'] ?? 0 }}</span>
+                    </div>
+                    <div class="stat-item correct">
+                        <span class="stat-label">Benar</span>
+                        <span class="stat-value">{{ $resultStats['correct'] ?? 0 }}</span>
+                    </div>
+                    <div class="stat-item wrong">
+                        <span class="stat-label">Salah</span>
+                        <span class="stat-value">{{ $resultStats['wrong'] ?? 0 }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Kosong</span>
+                        <span class="stat-value">{{ $resultStats['unanswered'] ?? 0 }}</span>
+                    </div>
+                </div>
+
+                <div class="result-actions">
+                    <button wire:click="finishAndLogout" class="finish-btn">
+                        Selesai & Keluar
+                    </button>
+                    <!-- Small helper text -->
+                    <div style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
+                        Klik tombol di atas untuk mengakhiri sesi dan keluar dari aplikasi.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .result-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(243, 244, 246, 0.95);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                backdrop-filter: blur(5px);
+            }
+
+            .result-card {
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                width: 100%;
+                max-width: 500px;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                text-align: center;
+                border: 1px solid #e5e7eb;
+            }
+
+            .result-icon {
+                color: #059669;
+                margin-bottom: 20px;
+                display: inline-flex;
+                background: #ecfdf5;
+                padding: 15px;
+                border-radius: 50%;
+            }
+
+            .result-header h2 {
+                color: #111827;
+                font-size: 24px;
+                font-weight: 700;
+                margin-bottom: 10px;
+            }
+
+            .result-header p {
+                color: #6b7280;
+                margin-bottom: 30px;
+                font-size: 14px;
+            }
+
+            .score-display {
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 30px;
+                border: 1px solid #f3f4f6;
+            }
+
+            .score-label {
+                display: block;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #6b7280;
+                margin-bottom: 5px;
+            }
+
+            .score-value {
+                font-size: 48px;
+                font-weight: 800;
+                color: #059669;
+                /* Green score */
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+                margin-bottom: 30px;
+            }
+
+            .stat-item {
+                background: white;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+            }
+
+            .stat-item.correct {
+                border-top: 3px solid #059669;
+                background: #f0fdf4;
+            }
+
+            .stat-item.wrong {
+                border-top: 3px solid #ef4444;
+                background: #fef2f2;
+            }
+
+            .stat-label {
+                display: block;
+                font-size: 11px;
+                color: #6b7280;
+                margin-bottom: 4px;
+                font-weight: 600;
+            }
+
+            .stat-value {
+                font-size: 18px;
+                display: block;
+                font-weight: 700;
+                color: #1f2937;
+            }
+
+            .finish-btn {
+                background: #1f2937;
+                color: white;
+                width: 100%;
+                padding: 14px;
+                border-radius: 8px;
+                font-weight: 600;
+                border: none;
+                cursor: pointer;
+                transition: background 0.2s;
+                font-size: 16px;
+            }
+
+            .finish-btn:hover {
+                background: #111827;
+            }
+        </style>
+    @endif
+
     @if ($totalQuestions > 0 && $this->currentQuestion)
-        <div class="container">
+        <div class="container"
+            @if ($showResults) style="filter: blur(5px); pointer-events: none;" @endif>
             <!-- AREA SOAL -->
             <section class="question-section">
                 <div class="question-number">Soal {{ $currentQuestionIndex + 1 }}</div>
@@ -442,8 +640,7 @@
                                 }
                             @endphp
                             <label wire:key="option-{{ $this->currentQuestion->id }}-{{ $index }}"
-                                @click="selectAnswer('{{ $optionValue }}')"
-                                class="option cursor-pointer"
+                                @click="selectAnswer('{{ $optionValue }}')" class="option cursor-pointer"
                                 :class="localAnswer === '{{ $optionValue }}' ? 'selected' : ''">
                                 <input type="radio" name="answer" value="{{ $optionValue }}"
                                     :checked="localAnswer === '{{ $optionValue }}'">
@@ -465,7 +662,8 @@
                 }" wire:ignore.self>
                     <button type="button" @click="toggle()" class="flag-toggle" :class="localDoubtful ? 'active' : ''">
                         <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M5.5 3a1.5 1.5 0 00-1.5 1.5v15a1 1 0 102 0v-4.146l1.276-.638a3 3 0 012.536.026l1.715.8a5 5 0 004.018.063l4.091-1.636a1.5 1.5 0 00.936-1.384V4.5A1.5 1.5 0 0018.5 3h-13z" />
+                            <path
+                                d="M5.5 3a1.5 1.5 0 00-1.5 1.5v15a1 1 0 102 0v-4.146l1.276-.638a3 3 0 012.536.026l1.715.8a5 5 0 004.018.063l4.091-1.636a1.5 1.5 0 00.936-1.384V4.5A1.5 1.5 0 0018.5 3h-13z" />
                         </svg>
                         <span x-text="localDoubtful ? 'Ditandai ragu-ragu' : 'Tandai ragu-ragu'"></span>
                     </button>
@@ -474,23 +672,21 @@
                 <!-- SAVE INDICATOR -->
                 <div id="save-indicator" class="save-indicator" style="margin-top: 12px;">
                     <svg viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd" />
                     </svg>
                     <span>Jawaban tersimpan</span>
                 </div>
 
                 <!-- NAVIGASI -->
                 <div class="navigation">
-                    <button type="button" wire:click="prevQuestion" 
-                        @disabled($currentQuestionIndex === 0)
-                        class="secondary"
+                    <button type="button" wire:click="prevQuestion" @disabled($currentQuestionIndex === 0) class="secondary"
                         wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
                         <span wire:loading.remove wire:target="prevQuestion">Sebelumnya</span>
                         <span wire:loading wire:target="prevQuestion">Memuat...</span>
                     </button>
-                    <button type="button" wire:click="nextQuestion" 
-                        @disabled($currentQuestionIndex === $totalQuestions - 1)
-                        class="primary"
+                    <button type="button" wire:click="nextQuestion" @disabled($currentQuestionIndex === $totalQuestions - 1) class="primary"
                         wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
                         <span wire:loading.remove wire:target="nextQuestion">Selanjutnya</span>
                         <span wire:loading wire:target="nextQuestion">Memuat...</span>
@@ -532,12 +728,12 @@
                             }
                         @endphp
                         <button type="button" wire:click="goToQuestion({{ $status['index'] }})"
-                            wire:key="nav-{{ $status['question_id'] }}" 
-                            class="{{ $classes }}">
+                            wire:key="nav-{{ $status['question_id'] }}" class="{{ $classes }}">
                             {{ $status['number'] }}
                         </button>
                     @empty
-                        <p style="grid-column: span 5; text-align: center; color: #999; font-size: 14px;">Belum ada daftar soal.</p>
+                        <p style="grid-column: span 5; text-align: center; color: #999; font-size: 14px;">Belum ada
+                            daftar soal.</p>
                     @endforelse
                 </div>
 
@@ -565,7 +761,8 @@
         </div>
     @else
         <div style="background: white; border-radius: 12px; padding: 40px; text-align: center;">
-            <h2 style="font-size: 20px; font-weight: 600; color: #c62828; margin-bottom: 8px;">Belum ada soal tersedia.</h2>
+            <h2 style="font-size: 20px; font-weight: 600; color: #c62828; margin-bottom: 8px;">Belum ada soal tersedia.
+            </h2>
             <p style="color: #666;">Silakan hubungi pengawas atau refresh halaman.</p>
         </div>
     @endif
@@ -630,6 +827,20 @@
                     if (remaining <= 0) {
                         timerEl.textContent = '00:00';
                         setTimerState('danger');
+
+                        // UX: Disable interactions immediately
+                        document.querySelectorAll('input, button, a.nav-btn').forEach(function(el) {
+                            el.disabled = true;
+                            el.style.pointerEvents = 'none';
+                            el.style.opacity = '0.6';
+                        });
+
+                        // Clear interval to stop ticking
+                        if (timerInterval) clearInterval(timerInterval);
+
+                        // Call Livewire to handle expiration and show results
+                        @this.call('handleTimeExpiry');
+
                         return;
                     }
 
