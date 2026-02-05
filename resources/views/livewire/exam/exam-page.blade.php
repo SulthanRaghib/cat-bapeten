@@ -10,9 +10,11 @@
             grid-template-columns: 1fr 280px;
             gap: 20px;
             padding: 20px;
+            padding-top: 10px;
             max-width: 1400px;
             margin: 0 auto;
-            padding-bottom: 10px;
+            min-height: calc(100vh - 140px);
+            align-items: start; /* Prevents question box from stretching to match sidebar height */
         }
 
         /* ================= SECTION SOAL ================= */
@@ -172,32 +174,17 @@
             background: white;
             border-radius: 12px;
             padding: 20px;
+            
             position: sticky;
-            top: 120px;
+            top: 110px; /* Adjusted for Fixed Header 100px + 10px Gap */
             align-self: start;
+            
+            /* Full height display (no internal scroll) */
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            max-height: calc(100vh - 140px);
-            overflow-y: auto;
-            overflow-x: hidden;
+            border: 1px solid #eee;
         }
 
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+        /* Scrollbar styles removed as sidebar is full height */
 
         .sidebar h3 {
             margin-top: 0;
