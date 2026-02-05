@@ -97,8 +97,41 @@ class ExamSession extends Model
      * Get the exam participant that owns this session.
      */
     public function examParticipant(): BelongsTo
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     {
         return $this->belongsTo(ExamParticipant::class);
+    }
+
+    /**
+     * Get the user via the exam participant.
+     */
+    public function user(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
+    {
+        return $this->hasOneThrough(
+            User::class,
+            ExamParticipant::class,
+            'id', // Foreign key on exam_participants table...
+            'id', // Foreign key on users table...
+            'exam_participant_id', // Local key on exam_sessions table...
+            'user_id' // Local key on exam_participants table...
+        );
+    }
+
+    /**
+     * Get the exam package via the exam participant.
+     */
+    public function examPackage(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
+    {
+        return $this->hasOneThrough(
+            ExamPackage::class,
+            ExamParticipant::class,
+            'id', // Foreign key on exam_participants table...
+            'id', // Foreign key on exam_packages table...
+            'exam_participant_id', // Local key on exam_sessions table...
+            'exam_package_id' // Local key on exam_participants table...
+        );
     }
 
     /**
