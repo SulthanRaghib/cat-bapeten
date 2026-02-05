@@ -165,22 +165,46 @@
 
         @media (max-width: 768px) {
             .topbar {
-                flex-direction: column;
-                height: auto;
-                padding: 12px;
-                gap: 12px;
+                flex-direction: row; /* Keep row layout */
+                height: 80px; /* Reduced height */
+                padding: 0 12px;
+                gap: 8px;
+                justify-content: space-between;
             }
 
+            .logo {
+                height: 40px;
+            }
+
+            /* Hide full title text on mobile if needed, or make it very small */
             .topbar h1 {
-                font-size: 18px;
+                font-size: 14px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                flex: 1; /* Allow title to shrink/grow */
+                margin: 0 8px;
+                line-height: 1.2;
+            }
+
+            .timer-box {
+                min-width: auto; /* Allow shrink */
+                padding: 4px 8px;
+                flex-direction: row;
+                gap: 6px;
+            }
+
+            .timer-label {
+                display: none; /* Hide label "Sisa Waktu" on small screens to save space */
             }
 
             .timer-time {
-                font-size: 22px;
+                font-size: 18px;
             }
 
             body {
-                padding-top: 140px;
+                padding-top: 100px; /* Adjust padding back to standardish */
             }
         }
     </style>

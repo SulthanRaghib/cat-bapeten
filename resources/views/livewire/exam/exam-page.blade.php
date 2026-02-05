@@ -765,6 +765,7 @@
             window.__examPageInitialised = true;
             var timerInterval = null;
             var mathRenderDebounce = null;
+            var fiveMinuteWarningShown = false;
 
             function initTimer() {
                 var timerEl = document.getElementById('exam-timer');
@@ -839,6 +840,70 @@
                         timerEl.textContent = prefix(hours) + ':' + prefix(minutes) + ':' + prefix(seconds);
                     } else {
                         timerEl.textContent = prefix(minutes) + ':' + prefix(seconds);
+                    }
+
+                    // 5-minute warning notification
+                    if (remaining <= 5 * 60 * 1000 && !fiveMinuteWarningShown) {
+                        fiveMinuteWarningShown = true;
+                        
+                        var warningDiv = document.createElement('div');
+                        warningDiv.id = 'timer-warning-notif';
+                        warningDiv.innerHTML = `
+                            <div style="
+                                position: fixed; 
+                                top: 20px; 
+                                left: 50%; 
+                                transform: translateX(-50%); 
+                                background: #c62828; 
+                                color: white; 
+                                padding: 16px 24px; 
+                                border-radius: 12px; 
+                                box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+                                z-index: 9999; 
+                                display: flex; 
+                                align-items: center; 
+                                gap: 16px; 
+                                min-width: 320px;
+                                animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                            ">
+                                <span style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%;">
+                                    <svg style="width: 24px; height: 24px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </span>
+                                <div style="flex: 1;">
+                                    <strong style="display: block; font-size: 16px; margin-bottom: 4px;">Sisa Waktu 5 Menit!</strong>
+                                    <span style="font-size: 14px; opacity: 0.9;">Segera selesaikan ujian Anda.</span>
+                                </div>
+                                <button onclick="document.getElementById('timer-warning-notif').remove()" style="
+                                    background: none; 
+                                    border: none; 
+                                    color: white; 
+                                    padding: 4px;
+                                    cursor: pointer;
+                                    opacity: 0.8;
+                                    transition: opacity 0.2s;
+                                ">
+                                    <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <style>
+                                @keyframes slideDown {
+                                    from { top: -100px; opacity: 0; }
+                                    to { top: 20px; opacity: 1; }
+                                }
+                            </style>
+                        `;
+                        document.body.appendChild(warningDiv);
+                        
+                        // Auto-dismiss after 10 seconds
+                        setTimeout(function() {
+                            if (document.body.contains(warningDiv)) {
+                                warningDiv.remove();
+                            }
+                        }, 10000);
                     }
 
                     if (remaining <= 5 * 60 * 1000) {
