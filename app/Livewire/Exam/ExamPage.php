@@ -28,7 +28,11 @@ class ExamPage extends Component
     public $startedAt;
     public $endTime;
 
-    protected $listeners = ['refreshMathJax' => '$refresh'];
+    // Results State
+    public $showResults = false;
+    public $resultStats = [];
+
+    protected $listeners = ['refreshMathJax' => '$refresh', 'timeExpired' => 'handleTimeExpiry'];
 
     public function mount()
     {
@@ -52,36 +56,81 @@ class ExamPage extends Component
         }
 
         if (!$participant) {
-            abort(403, 'Akses ujian tidak ditemukan.');
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            \Filament\Notifications\Notification::make()
+                ->title('Akses Ditolak')
+                ->body('Akses ujian tidak ditemukan atau akun Anda tidak aktif.')
+                ->danger()
+                ->send();
+
+            return redirect()->route('filament.admin.auth.login');
         }
 
-        // 2. Find or Create Exam Session
+        // Get duration from ExamPackage early to validate time
+        $package = ExamPackage::find($participant->exam_package_id);
+        if (!$package) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            \Filament\Notifications\Notification::make()
+                ->title('Error Sistem')
+                ->body('Paket ujian tidak ditemukan. Hubungi administrator.')
+                ->danger()
+                ->send();
+
+            return redirect()->route('filament.admin.auth.login');
+        }
+        $this->durationMinutes = $package->duration_minutes ?? 60;
+        $this->examTitle = $package->title ?? $this->examTitle;
+
+        // 2. Find Exam Session
         $session = ExamSession::where('exam_participant_id', $participant->id)
             ->latest()
             ->first();
 
-        if (!$session || $session->status !== 'ongoing') {
-            // Only create if no ongoing session
-            // Note: If previous was completed, this logic prevents retake unless allowed.
-            // Assuming for now we create a new one if none exists or last one is done?
-            // "Check if the user has an active ExamSession. If NOT, create a new one"
-            if (!$session || $session->status === 'terminated') { // If completed, maybe check policy? Assuming simple logic here.
-                $session = ExamSession::create([
-                    'exam_participant_id' => $participant->id,
-                    'status' => 'ongoing',
-                ]);
+        // LOGIC REVISION: Check Status & Time Expiry
+
+        // Case A: User finished manually previously
+        if ($session && $session->status === 'completed') {
+            $this->examSessionId = $session->id;
+            $this->questionIds = $session->answers_meta ?? []; // Needed for stats
+            $this->loadResults();
+            $this->showResults = true;
+            return; // Skip normal initialization
+        }
+
+        // Case B: Session is ongoing, check if time expired
+        if ($session && $session->status === 'ongoing') {
+            $startedAt = $session->started_at;
+            $expirationTime = $startedAt->copy()->addMinutes($this->durationMinutes);
+            $this->endTime = $expirationTime->toIso8601String(); // Ensure property is set for check
+
+            // Check if now is past expiration time
+            if (now()->greaterThan($expirationTime)) {
+                $this->examSessionId = $session->id;
+                $this->questionIds = $session->answers_meta ?? []; // Needed for stats
+                $this->handleTimeExpiry();
+                return;
             }
+        }
+
+        // Case C: Create new session if none exists or previous was terminated (retry)
+        if (!$session || $session->status === 'terminated') {
+            $session = ExamSession::create([
+                'exam_participant_id' => $participant->id,
+                'status' => 'ongoing',
+                'started_at' => now(),
+            ]);
         }
 
         $this->examSessionId = $session->id;
         $this->questionIds = $session->answers_meta ?? [];
         $this->totalQuestions = count($this->questionIds);
         $this->startedAt = $session->started_at;
-
-        // Get duration from ExamPackage
-        $package = ExamPackage::find($participant->exam_package_id);
-        $this->durationMinutes = $package->duration_minutes ?? 60;
-        $this->examTitle = $package->title ?? $this->examTitle;
 
         $this->candidateName = $user->name;
         $this->candidateIdentifier = $user->nip;
@@ -93,7 +142,10 @@ class ExamPage extends Component
         $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
 
         // Load existing answer for current question
-        $this->loadCurrentAnswer();
+        // Ensure we handle empty question list gracefully
+        if (!empty($this->questionIds)) {
+            $this->loadCurrentAnswer();
+        }
     }
 
     public function getCurrentQuestionProperty()
@@ -125,6 +177,14 @@ class ExamPage extends Component
 
     public function saveAnswer($option)
     {
+        // Validation: Verify if time is strictly up
+        if ($this->hasTimeExpired()) {
+            // Trigger finish logic immediately
+            $this->handleTimeExpiry();
+            // Return early to prevent saving
+            return;
+        }
+
         if (!$this->currentQuestion) return;
 
         $this->currentAnswer = $option;
@@ -259,5 +319,74 @@ class ExamPage extends Component
             'answeredCount' => $answeredCount,
             'totalQuestions' => $this->totalQuestions,
         ]);
+    }
+
+    protected function hasTimeExpired(): bool
+    {
+        if (!$this->endTime) return false;
+
+        // Strict check: current time > end time
+        // We add a tiny buffer (e.g., 5 seconds) for network latency.
+        return now()->greaterThan(\Carbon\Carbon::parse($this->endTime)->addSeconds(5));
+    }
+
+    public function handleTimeExpiry()
+    {
+        // Mark session as completed
+        if ($this->examSessionId) {
+            $session = ExamSession::find($this->examSessionId);
+            if ($session && $session->status === 'ongoing') {
+                $session->update([
+                    'status' => 'completed',
+                    'finished_at' => \Carbon\Carbon::parse($this->endTime)->isPast()
+                        ? \Carbon\Carbon::parse($this->endTime)
+                        : now(),
+                ]);
+            }
+        }
+
+        $this->loadResults();
+        $this->showResults = true;
+    }
+
+    protected function loadResults()
+    {
+        if (!$this->examSessionId) return;
+
+        $answers = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
+
+        $totalQuestions = count($this->questionIds);
+        $answeredCount = $answers->count();
+        // Assuming 'score' is already calculated per answer (0 or 1/weight)
+        // If simply 1 for correct, 0 for wrong:
+        $totalScore = $answers->sum('score');
+
+        // Count correct answers (assuming score > 0 is correct)
+        $correctCount = $answers->where('score', '>', 0)->count();
+        $wrongCount = $answeredCount - $correctCount;
+
+        $this->resultStats = [
+            'total_questions' => $totalQuestions,
+            'answered' => $answeredCount,
+            'unanswered' => max($totalQuestions - $answeredCount, 0),
+            'correct' => $correctCount,
+            'wrong' => $wrongCount, // Includes wrong answered questions
+            'total_score' => $totalScore,
+        ];
+    }
+
+    public function finishAndLogout()
+    {
+        Auth::logout();
+        session()->invalidate();
+        session()->regenerateToken();
+
+        \Filament\Notifications\Notification::make()
+            ->title('Ujian Selesai')
+            ->body('Terima kasih telah mengikuti ujian.')
+            ->success()
+            ->send();
+
+        return redirect()->route('filament.admin.auth.login');
     }
 }
