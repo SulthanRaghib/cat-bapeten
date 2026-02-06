@@ -219,17 +219,22 @@
         @isset($examTitle)
             <h1>{{ $examTitle ?: 'Computer Assisted Test' }}</h1>
             
+            @if(!($hideTimer ?? false))
             <div class="timer-box" data-timer-container>
                 <span class="timer-label">Sisa Waktu</span>
                 <span id="exam-timer" class="timer-time" data-state="normal" data-end-time="{{ $endTime ?? '' }}"
                     wire:ignore>--:--</span>
             </div>
+            @endif
         @else
             <h1>Computer Assisted Test</h1>
+            
+            @if(!($hideTimer ?? false))
             <div class="timer-box">
                 <span class="timer-label">Sisa Waktu</span>
                 <span class="timer-time">--:--</span>
             </div>
+            @endif
         @endisset
     </header>
 
