@@ -18,7 +18,8 @@ class ExamPackage extends Model
     {
         return $this->belongsToMany(User::class, 'exam_participants')
             ->using(ExamParticipant::class)
-            ->withPivot(['token', 'is_active'])
+            // Sertakan kolom id agar pivot (ExamParticipant) tahu primary key-nya
+            ->withPivot(['id', 'token', 'is_active'])
             ->withTimestamps();
     }
 

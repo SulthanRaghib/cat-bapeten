@@ -37,7 +37,8 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->belongsToMany(ExamPackage::class, 'exam_participants')
             ->using(ExamParticipant::class)
-            ->withPivot(['token', 'is_active'])
+            // Sertakan kolom id agar pivot (ExamParticipant) juga punya primary key
+            ->withPivot(['id', 'token', 'is_active'])
             ->withTimestamps();
     }
 

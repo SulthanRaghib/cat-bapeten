@@ -7,16 +7,13 @@ namespace App\Filament\Resources\ExamPackages\RelationManagers;
 use App\Filament\Resources\Questions\QuestionResource;
 use App\Models\Question;
 use Filament\Actions\Action;
-use Filament\Actions\AttachAction;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
-use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class QuestionsRelationManager extends RelationManager
@@ -60,7 +57,7 @@ class QuestionsRelationManager extends RelationManager
                 Action::make('generate_random')
                     ->label('Generate Acak')
                     ->icon('heroicon-o-arrow-path-rounded-square')
-                    ->color('success')
+                    ->color('primary')
                     ->form(function () {
                         /** @var \App\Models\ExamPackage $examPackage */
                         $examPackage = $this->getOwnerRecord();
