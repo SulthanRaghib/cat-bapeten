@@ -2,9 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Alias bawaan Laravel `route('login')` -> arahkan ke login Filament
 Route::get('/', function () {
     return redirect()->route('filament.admin.auth.login');
-});
+})->name('login');
+
 
 Route::get('/ujian', \App\Livewire\Exam\ExamPage::class)
     ->middleware('auth')
