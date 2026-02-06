@@ -400,6 +400,11 @@ class ExamPage extends Component
                         ? \Carbon\Carbon::parse($this->endTime)
                         : now(),
                 ]);
+
+                // Setelah ujian selesai (otomatis karena waktu habis), nonaktifkan akses token peserta
+                if ($session->examParticipant) {
+                    $session->examParticipant->update(['is_active' => false]);
+                }
             }
         }
 
@@ -427,6 +432,11 @@ class ExamPage extends Component
                     'status' => 'completed',
                     'finished_at' => now(), // Manual finish uses current time
                 ]);
+
+                // Setelah peserta menekan tombol selesai, blokir akses ujian berikutnya
+                if ($session->examParticipant) {
+                    $session->examParticipant->update(['is_active' => false]);
+                }
             }
         }
 

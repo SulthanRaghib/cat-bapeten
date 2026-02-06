@@ -78,25 +78,32 @@ class ExamParticipant extends Pivot
 
     public function getStatusLabelAttribute(): string
     {
-        if (!$this->is_active) {
-            return 'Nonaktif';
+        $session = $this->examSessions()->latest()->first();
+
+        // Jika sudah pernah ujian, prioritaskan status sesi terbaru
+        if ($session) {
+            if ($session->status === 'completed') {
+                return 'Selesai';
+            }
+
+            if ($session->status === 'ongoing') {
+                return 'Sedang Mengerjakan';
+            }
+
+            // Fallback lain jika status berbeda
+            return ucfirst($session->status);
         }
 
-        $session = $this->examSessions()->latest()->first();
+        // Belum punya sesi sama sekali
+        if (!$this->is_active) {
+            // Nonaktif tanpa riwayat ujian
+            return 'Nonaktif';
+        }
 
         if (!$session) {
             return 'Belum Mengerjakan';
         }
-
-        if ($session->status === 'completed') {
-            return 'Selesai';
-        }
-
-        if ($session->status === 'ongoing') {
-            return 'Sedang Mengerjakan';
-        }
-
-        return ucfirst($session->status);
+        return 'Belum Mengerjakan';
     }
 
     public function getStatusColorAttribute(): string
