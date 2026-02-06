@@ -84,16 +84,31 @@ class CustomLogin extends BaseLogin
             $isAuthenticated = false;
 
             if ($user) {
-                // Check if there is an active exam participation with this token
+                // Cari participant berdasarkan NIP + token, apapun status aktifnya
                 $participant = ExamParticipant::where('user_id', $user->id)
-                    ->where('token', $password) // Token is case-sensitive usually, matches database
-                    ->where('is_active', true)
+                    ->where('token', $password) // Token ujian
                     ->first();
 
                 if ($participant) {
+                    // Jika sudah tidak aktif, berikan pesan yang lebih informatif
+                    if (! $participant->is_active) {
+                        $session = $participant->examSessions()->latest()->first();
+
+                        if ($session && $session->status === 'completed') {
+                            throw ValidationException::withMessages([
+                                'data.login_id' => 'Anda sudah menyelesaikan ujian ini. Token hanya dapat digunakan satu kali.',
+                            ]);
+                        }
+
+                        throw ValidationException::withMessages([
+                            'data.login_id' => 'Akses ujian Anda sudah dinonaktifkan. Silakan hubungi panitia ujian.',
+                        ]);
+                    }
+
+                    // Masih aktif dan token cocok -> izinkan login peserta
                     Filament::auth()->login($user, $remember);
-                    session(['auth_mode' => 'participant']); // Flag session for redirection
-                    session(['exam_participant_id' => $participant->id]); // Store which participant record to use
+                    session(['auth_mode' => 'participant']); // Flag session untuk redirect
+                    session(['exam_participant_id' => $participant->id]); // Simpan participant yang dipakai
                     $isAuthenticated = true;
                 }
             }
