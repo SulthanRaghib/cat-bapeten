@@ -107,7 +107,7 @@ class ExamPage extends Component
             $this->examSessionId = $session->id;
             $this->questionIds = $session->answers_meta ?? [];
             $this->loadResults();
-            $this->showResults = true;
+            $this->step = 'result';
             return;
         }
 
@@ -376,6 +376,7 @@ class ExamPage extends Component
             'endTime' => $this->endTime,
             'answeredCount' => $answeredCount,
             'totalQuestions' => $this->totalQuestions,
+            'hideTimer' => $this->step === 'result',
         ]);
     }
 
@@ -403,8 +404,9 @@ class ExamPage extends Component
             }
         }
 
+        $this->dispatch('exam-finished');
         $this->loadResults();
-        $this->showResults = true;
+        $this->step = 'result';
     }
 
     public function confirmFinish()
@@ -430,9 +432,10 @@ class ExamPage extends Component
             }
         }
 
+        $this->dispatch('exam-finished');
         $this->showConfirmFinish = false;
         $this->loadResults();
-        $this->showResults = true;
+        $this->step = 'result';
     }
 
     protected function loadResults()

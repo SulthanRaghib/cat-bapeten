@@ -405,6 +405,7 @@
                             navigator.mediaDevices.getUserMedia({ video: true })
                                 .then(stream => {
                                     this.$refs.video.srcObject = stream;
+                                    window.activeExamStream = stream; // Store globally
                                     this.cameraActive = true;
                                     this.error = null;
                                 })
@@ -434,7 +435,7 @@
                             type="button"
                             x-show="cameraActive" 
                             wire:click="verifyCameraSuccess"
-                            style="padding: 12px 24px; background-color: #2563eb; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
+                            style="padding: 12px 24px; background-color: #16a34a; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
                             Kamera Berfungsi - Lanjutkan
                         </button>
                         
@@ -507,196 +508,9 @@
         </div>
     @endif
     
-    {{-- OVERLAY RESULT MODAL --}}
-    @if ($showResults)
-        <div class="result-overlay">
-            <div class="result-card">
-                <div class="result-header">
-                    <div class="result-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" style="width: 48px; height: 48px;">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h2>Ujian Selesai</h2>
-                    <p>Waktu ujian telah berakhir atau Anda telah menyelesaikan ujian.</p>
-                </div>
-
-                <div class="score-display">
-                    <span class="score-label">Total Skor</span>
-                    <span class="score-value">{{ $resultStats['total_score'] ?? 0 }}</span>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">Total Soal</span>
-                        <span class="stat-value">{{ $resultStats['total_questions'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Dijawab</span>
-                        <span class="stat-value">{{ $resultStats['answered'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item correct">
-                        <span class="stat-label">Benar</span>
-                        <span class="stat-value">{{ $resultStats['correct'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item wrong">
-                        <span class="stat-label">Salah</span>
-                        <span class="stat-value">{{ $resultStats['wrong'] ?? 0 }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Kosong</span>
-                        <span class="stat-value">{{ $resultStats['unanswered'] ?? 0 }}</span>
-                    </div>
-                </div>
-
-                <div class="result-actions">
-                    <button wire:click="finishAndLogout" class="finish-btn">
-                        Selesai & Keluar
-                    </button>
-                    <!-- Small helper text -->
-                    <div style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
-                        Klik tombol di atas untuk mengakhiri sesi dan keluar dari aplikasi.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <style>
-            .result-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(243, 244, 246, 0.95);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                backdrop-filter: blur(5px);
-            }
-
-            .result-card {
-                background: white;
-                border-radius: 20px;
-                padding: 40px;
-                width: 100%;
-                max-width: 500px;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                text-align: center;
-                border: 1px solid #e5e7eb;
-            }
-
-            .result-icon {
-                color: #059669;
-                margin-bottom: 20px;
-                display: inline-flex;
-                background: #ecfdf5;
-                padding: 15px;
-                border-radius: 50%;
-            }
-
-            .result-header h2 {
-                color: #111827;
-                font-size: 24px;
-                font-weight: 700;
-                margin-bottom: 10px;
-            }
-
-            .result-header p {
-                color: #6b7280;
-                margin-bottom: 30px;
-                font-size: 14px;
-            }
-
-            .score-display {
-                background: #f9fafb;
-                padding: 20px;
-                border-radius: 12px;
-                margin-bottom: 30px;
-                border: 1px solid #f3f4f6;
-            }
-
-            .score-label {
-                display: block;
-                font-size: 14px;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #6b7280;
-                margin-bottom: 5px;
-            }
-
-            .score-value {
-                font-size: 48px;
-                font-weight: 800;
-                color: #059669;
-                /* Green score */
-            }
-
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 15px;
-                margin-bottom: 30px;
-            }
-
-            .stat-item {
-                background: white;
-                padding: 10px;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-            }
-
-            .stat-item.correct {
-                border-top: 3px solid #059669;
-                background: #f0fdf4;
-            }
-
-            .stat-item.wrong {
-                border-top: 3px solid #ef4444;
-                background: #fef2f2;
-            }
-
-            .stat-label {
-                display: block;
-                font-size: 11px;
-                color: #6b7280;
-                margin-bottom: 4px;
-                font-weight: 600;
-            }
-
-            .stat-value {
-                font-size: 18px;
-                display: block;
-                font-weight: 700;
-                color: #1f2937;
-            }
-
-            .finish-btn {
-                background: #1f2937;
-                color: white;
-                width: 100%;
-                padding: 14px;
-                border-radius: 8px;
-                font-weight: 600;
-                border: none;
-                cursor: pointer;
-                transition: background 0.2s;
-                font-size: 16px;
-            }
-
-            .finish-btn:hover {
-                background: #111827;
-            }
-        </style>
-    @endif
 
     @if ($totalQuestions > 0 && $this->currentQuestion)
-        <div class="container"
-            @if ($showResults) style="filter: blur(5px); pointer-events: none;" @endif>
+        <div class="container">
             <!-- AREA SOAL -->
             <section class="question-section">
                 <div class="question-number">Soal {{ $currentQuestionIndex + 1 }}</div>
@@ -870,6 +684,48 @@
         </div>
     @endif
 
+    @elseif($step === 'result')
+        <div style="position: fixed; inset: 0; background: #f9fafb; z-index: 99999; overflow-y: auto; font-family: 'Poppins', sans-serif;">
+            <div style="min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                <div style="width: 100%; max-width: 480px;">
+                    <div style="background: white; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative;">
+                        <!-- Brand Accent Bar -->
+                        <div style="height: 6px; background: #f9a825;"></div>
+                        
+                        <div style="padding: 40px;">
+                            <div style="text-align: center; margin-bottom: 35px;">
+                                <!-- Logo Instansi -->
+                                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" style="height: 60px; margin-bottom: 24px; object-fit: contain;">
+
+                                <h2 style="font-size: 24px; font-weight: 800; color: #1f2937; margin: 0 0 8px 0; letter-spacing: -0.5px;">Ujian Selesai</h2>
+                                <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.5;">Jawaban Anda telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
+                            </div>
+
+                            <!-- Score Card -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px 20px; text-align: center; margin-bottom: 32px; position: relative;">
+                                <div style="color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Nilai Akhir</div>
+                                <div style="font-size: 72px; font-weight: 900; color: black; line-height: 1; letter-spacing: -2px;">
+                                    {{ $resultStats['total_score'] ?? 0 }}
+                                </div>
+                            </div>
+
+                            <div style="text-align: center;">
+                                <button 
+                                    wire:click="finishAndLogout"
+                                    style="width: 100%; padding: 16px 24px; background-color: #f9a825; color: white; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
+                                    onmouseover="this.style.backgroundColor='#f9a825'; this.style.transform='translateY(-1px)'"
+                                    onmouseout="this.style.backgroundColor='#f9a825'; this.style.transform='translateY(0)'">
+                                    <span>Kembali ke Halaman Utama</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 </div>
 
@@ -1137,6 +993,41 @@
 
                 Livewire.on('question-changed', function() {
                     requestAnimationFrame(initialiseEnhancements);
+                });
+
+                Livewire.on('exam-finished', function() {
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                    }
+
+                    // Stop global stream if exists
+                    if (window.activeExamStream) {
+                        window.activeExamStream.getTracks().forEach(track => track.stop());
+                        window.activeExamStream = null;
+                    }
+
+                    // Stop all camera streams
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                            .then(function(stream) {
+                                stream.getTracks().forEach(function(track) {
+                                    track.stop();
+                                });
+                            })
+                            .catch(function(e) {
+                                // Ignore errors if no stream active
+                            });
+                    }
+                    
+                    // Also try to stop any video elements on page
+                    document.querySelectorAll('video').forEach(function(vid) {
+                         if (vid.srcObject) {
+                            vid.srcObject.getTracks().forEach(track => track.stop());
+                         }
+                         vid.pause();
+                         vid.src = "";
+                    });
                 });
             });
 
