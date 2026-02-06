@@ -100,6 +100,18 @@ class ParticipantsRelationManager extends RelationManager
                         ->label(fn($record) => $record->pivot->is_active ? 'Nonaktifkan' : 'Aktifkan')
                         ->icon(fn($record) => $record->pivot->is_active ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle')
                         ->color(fn($record) => $record->pivot->is_active ? 'danger' : 'success')
+                        // Hanya tampil jika peserta belum pernah mengerjakan (tidak punya sesi)
+                        ->visible(function ($record) {
+                            $participant = $record->pivot instanceof ExamParticipant
+                                ? $record->pivot
+                                : ExamParticipant::find($record->pivot->id);
+
+                            if (!$participant) {
+                                return false;
+                            }
+
+                            return !$participant->examSessions()->exists();
+                        })
                         ->action(function ($record) {
                             $record->pivot->update([
                                 'is_active' => !$record->pivot->is_active
@@ -113,8 +125,12 @@ class ParticipantsRelationManager extends RelationManager
                         ->label('Reset Ujian')
                         ->icon('heroicon-m-arrow-path')
                         ->color('warning')
+                        // Tampil hanya jika sudah pernah ujian (punya sesi)
                         ->visible(function ($record) {
-                            $participant = ExamParticipant::find($record->pivot->id);
+                            $participant = $record->pivot instanceof ExamParticipant
+                                ? $record->pivot
+                                : ExamParticipant::find($record->pivot->id);
+
                             return $participant && $participant->examSessions()->exists();
                         })
                         ->action(function ($record) {
