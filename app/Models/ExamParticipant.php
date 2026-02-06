@@ -52,7 +52,10 @@ class ExamParticipant extends Pivot
      */
     public function examSessions(): HasMany
     {
-        return $this->hasMany(ExamSession::class);
+        // Secara eksplisit gunakan foreign key "exam_participant_id" dan local key "id"
+        // untuk menghindari Laravel menebak foreign key yang salah (mis. exam_package_id)
+        // ketika model ini dipakai sebagai Pivot.
+        return $this->hasMany(ExamSession::class, 'exam_participant_id', 'id');
     }
 
     /**
@@ -64,5 +67,52 @@ class ExamParticipant extends Pivot
             ->where('status', 'ongoing')
             ->latest()
             ->first();
+    }
+
+    // ==================== ATTRIBUTES ====================
+
+    public function getStatusLabelAttribute(): string
+    {
+        if (!$this->is_active) {
+            return 'Nonaktif';
+        }
+
+        $session = $this->examSessions()->latest()->first();
+
+        if (!$session) {
+            return 'Belum Mengerjakan';
+        }
+
+        if ($session->status === 'completed') {
+            return 'Selesai';
+        }
+
+        if ($session->status === 'ongoing') {
+            return 'Sedang Mengerjakan';
+        }
+
+        return ucfirst($session->status);
+    }
+
+    public function getStatusColorAttribute(): string
+    {
+        return match ($this->status_label) {
+            'Nonaktif' => 'danger',
+            'Belum Mengerjakan' => 'gray',
+            'Sedang Mengerjakan' => 'warning',
+            'Selesai' => 'success',
+            default => 'info',
+        };
+    }
+
+    public function getStatusIconAttribute(): string
+    {
+        return match ($this->status_label) {
+            'Nonaktif' => 'heroicon-m-x-circle',
+            'Belum Mengerjakan' => 'heroicon-m-clock',
+            'Sedang Mengerjakan' => 'heroicon-m-play-circle',
+            'Selesai' => 'heroicon-m-check-badge',
+            default => 'heroicon-m-question-mark-circle',
+        };
     }
 }
