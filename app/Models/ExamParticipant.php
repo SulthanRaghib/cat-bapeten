@@ -16,6 +16,11 @@ class ExamParticipant extends Pivot
 
     protected $guarded = [];
 
+    // Gunakan kolom id sebagai primary key pada pivot ini
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
+
     protected $casts = [
         'is_active' => 'boolean',
     ];
