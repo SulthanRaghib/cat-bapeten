@@ -15,6 +15,7 @@ use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Size;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -155,6 +156,10 @@ class ParticipantsRelationManager extends RelationManager
                         ->modalDescription('Apakah Anda yakin ingin menghapus peserta ini dari paket ujian?')
                         ->modalSubmitActionLabel('Ya, Hapus'),
                 ])
+                    ->label('Aksi')
+                    ->button()
+                    ->size(Size::Small)
+                    ->outlined(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
