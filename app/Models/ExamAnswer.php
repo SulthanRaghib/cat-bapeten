@@ -67,25 +67,112 @@ class ExamAnswer extends Model
 
     /**
      * Calculate and set the score based on the answer.
+     *
+     * This method is robust: it supports multiple scoring_config shapes (list of {kode,skor},
+     * associative bobot mapping, or 'correct' key) and falls back to the original question
+     * options when scoring_config is missing.
      */
     public function calculateScore(): int
     {
         $question = $this->question;
 
-        if (!$question || !$this->answer) {
+        if (!$question || $this->answer === null || $this->answer === '') {
+            $this->score = 0;
             return 0;
         }
 
-        $scoringConfig = $question->scoring_config ?? [];
+        $sc = $question->scoring_config ?? [];
 
-        // Find the scoring for the selected answer
-        foreach ($scoringConfig as $config) {
-            if (isset($config['kode']) && $config['kode'] === $this->answer) {
-                $this->score = (int) ($config['skor'] ?? 0);
+        // 1) If scoring_config has a 'list' (array of {kode, skor}) use it
+        if (isset($sc['list']) && is_array($sc['list'])) {
+            foreach ($sc['list'] as $config) {
+                if (isset($config['kode']) && (string) $config['kode'] === (string) $this->answer) {
+                    $this->score = (int) ($config['skor'] ?? 0);
+                    return $this->score;
+                }
+            }
+        }
+
+        // 2) If scoring_config has a direct mapping ('bobot') like ['A' => 5, 'B' => 0]
+        if (isset($sc['bobot']) && is_array($sc['bobot'])) {
+            // Try direct key
+            if (array_key_exists($this->answer, $sc['bobot'])) {
+                $this->score = (int) ($sc['bobot'][$this->answer] ?? 0);
+                return $this->score;
+            }
+            // Try numeric index to letter mapping
+            if (is_numeric($this->answer)) {
+                $letter = chr(65 + (int) $this->answer);
+                if (array_key_exists($letter, $sc['bobot'])) {
+                    $this->score = (int) ($sc['bobot'][$letter] ?? 0);
+                    return $this->score;
+                }
+            }
+        }
+
+        // 3) If scoring_config has a 'correct' key (technical), assign default weight for correct
+        if (isset($sc['correct'])) {
+            if ((string) $sc['correct'] === (string) $this->answer) {
+                $this->score = (int) ($sc['skor'] ?? 5); // default 5 if not provided
+                return $this->score;
+            }
+            // also support if numeric answer and correct is letter
+            if (is_numeric($this->answer)) {
+                $letter = chr(65 + (int) $this->answer);
+                if ((string) $sc['correct'] === $letter) {
+                    $this->score = (int) ($sc['skor'] ?? 5);
+                    return $this->score;
+                }
+            }
+        }
+
+        // 4) Fallback: inspect question->options directly
+        $options = $question->options ?? [];
+        $selected = null;
+
+        // Try direct key first
+        if (isset($options[$this->answer])) {
+            $selected = $options[$this->answer];
+        } elseif (is_numeric($this->answer) && isset($options[(int) $this->answer])) {
+            $selected = $options[(int) $this->answer];
+        } else {
+            // As a final attempt, match by letter mapping
+            $letter = null;
+            if (is_numeric($this->answer)) {
+                $letter = chr(65 + (int) $this->answer);
+            } else {
+                $letter = strtoupper((string) $this->answer);
+            }
+            if (isset($options[$letter])) {
+                $selected = $options[$letter];
+            } else {
+                // Try scanning options for positional match
+                $i = 0;
+                foreach ($options as $opt) {
+                    if ((string) $i === (string) $this->answer) {
+                        $selected = $opt;
+                        break;
+                    }
+                    $i++;
+                }
+            }
+        }
+
+        if ($selected !== null) {
+            // Structural: use explicit 'score' if present
+            if (is_array($selected) && array_key_exists('score', $selected)) {
+                $this->score = (int) ($selected['score'] ?? 0);
+                return $this->score;
+            }
+
+            // Technical: use 'is_correct' flag if present
+            if (is_array($selected) && array_key_exists('is_correct', $selected)) {
+                $this->score = $selected['is_correct'] ? 5 : 0; // default 5 for correct
                 return $this->score;
             }
         }
 
+        // No scoring rule found -> default 0
         $this->score = 0;
         return 0;
     }
