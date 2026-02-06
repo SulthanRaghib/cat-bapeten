@@ -377,7 +377,7 @@
             }
         }
 
-        /* ================= LOADING ANIMATION ================= */
+        /* ==============whitewhite#9ca3af=== LOADING ANIMATION ================= */
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -391,6 +391,122 @@
 @endpush
 
 <div>
+    @if($step === 'verification')
+        <div style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
+            <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937;">Verifikasi Kamera</h2>
+                <p style="color: #6b7280; margin-bottom: 30px;">Sistem perlu memverifikasi kamera Anda aktif sebelum ujian dimulai.</p>
+                
+                <div x-data="{ 
+                    cameraActive: false,
+                    error: null,
+                    initCamera() {
+                        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                            navigator.mediaDevices.getUserMedia({ video: true })
+                                .then(stream => {
+                                    this.$refs.video.srcObject = stream;
+                                    this.cameraActive = true;
+                                    this.error = null;
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    if(err.name === 'NotAllowedError') {
+                                        this.error = 'Akses kamera ditolak. Harap izinkan akses kamera di browser Anda.';
+                                    } else {
+                                        this.error = 'Tidak dapat mengakses kamera: ' + err.message;
+                                    }
+                                    this.cameraActive = false;
+                                });
+                        } else {
+                            this.error = 'Browser tidak mendukung akses kamera.';
+                        }
+                    }
+                }" x-init="initCamera()">
+                    
+                    <div style="position: relative; width: 480px; height: 360px; background: #000; margin: 0 auto 20px auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                         <video x-ref="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                         <div x-show="!cameraActive && !error" style="position: absolute; color: white;">Memuat Kamera...</div>
+                         <div x-show="error" x-text="error" style="position: absolute; color: #fca5a5; padding: 20px; text-align: center;"></div>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button 
+                            type="button"
+                            x-show="cameraActive" 
+                            wire:click="verifyCameraSuccess"
+                            style="padding: 12px 24px; background-color: #2563eb; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
+                            Kamera Berfungsi - Lanjutkan
+                        </button>
+                        
+                        <button 
+                            type="button"
+                            x-show="!cameraActive" 
+                            @click="initCamera()"
+                            style="padding: 12px 24px; background-color: #4b5563; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
+                            Coba Lagi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @elseif($step === 'rules')
+        <div style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
+            <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 800px; width: 100%;">
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937; text-align: center;">Peraturan & Tata Tertib Ujian</h2>
+                
+                <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left; color: #374151; line-height: 1.6;">
+                    <ol style="margin-left: 20px; list-style-type: decimal;">
+                        <li style="margin-bottom: 10px;">Peserta wajib menyalakan kamera selama ujian berlangsung.</li>
+                        <li style="margin-bottom: 10px;">Dilarang membuka tab, browser, atau aplikasi lain selain halaman ujian.</li>
+                        <li style="margin-bottom: 10px;">Dilarang menggunakan alat bantu hitung, komunikasi, atau catatan selain yang diperbolehkan.</li>
+                        <li style="margin-bottom: 10px;">Dilarang meninggalkan tempat duduk selama ujian berlangsung.</li>
+                        <li style="margin-bottom: 10px;">Dilarang capture layar atau menyebarkan soal ujian.</li>
+                        <li>Segala bentuk kecurangan akan mengakibatkan diskualifikasi.</li>
+                    </ol>
+                </div>
+                
+                <div style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                    <input type="checkbox" id="agreeRules" wire:model.live="rulesAgreed" style="width: 20px; height: 20px; cursor: pointer;">
+                    <label for="agreeRules" style="font-size: 16px; font-weight: 500; cursor: pointer; color: #1f2937;">Saya telah membaca dan menyetujui seluruh peraturan ujian.</label>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button 
+                        wire:click="startExam"
+                        style="padding: 14px 32px; font-size: 16px; font-weight: bold; color: white; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s;"
+                        :style="!$wire.rulesAgreed ? 'background-color: #9ca3af; cursor: not-allowed;' : 'background-color: #16a34a;'"
+                        :disabled="!$wire.rulesAgreed">
+                        Mulai Ujian
+                    </button>
+                </div>
+            </div>
+        </div>
+    @elseif($step === 'exam')
+    {{-- CONFIRM FINISH MODAL --}}
+    @if ($showConfirmFinish)
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; width: 400px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                <div style="width: 60px; height: 60px; background: #feebc8; color: #c05621; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 30px; height: 30px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                </div>
+                
+                <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #1f2937;">Konfirmasi Selesai</h3>
+                <p style="color: #4b5563; margin-bottom: 25px; line-height: 1.5;">Apakah Anda yakin ingin menyelesaikan ujian? <br>Jawaban akan dikunci dan tidak dapat diubah.</p>
+                
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button wire:click="cancelFinish" style="background: #e5e7eb; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
+                        Batal
+                    </button>
+                    <button wire:click="submitFinish" style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
+                        Ya, Selesai
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+    
     {{-- OVERLAY RESULT MODAL --}}
     @if ($showResults)
         <div class="result-overlay">
@@ -743,7 +859,7 @@
                     </div>
                 </div>
 
-                <button type="button" class="finish" style="margin-top: 20px;">Selesai Ujian</button>
+                <button type="button" wire:click="confirmFinish" class="finish" style="margin-top: 20px;">Selesai Ujian</button>
             </aside>
         </div>
     @else
@@ -752,6 +868,8 @@
             </h2>
             <p style="color: #666;">Silakan hubungi pengawas atau refresh halaman.</p>
         </div>
+    @endif
+
     @endif
 </div>
 
@@ -988,6 +1106,33 @@
                 // Listen for custom events from the component
                 Livewire.on('answer-saved', function() {
                     showSaveIndicator();
+                });
+                
+                // NEW: Listen for exam start event to kickoff timer
+                Livewire.on('exam-started', function(data) {
+                    console.log('Exam Started Event:', data);
+                    
+                    var endTime = null;
+                    // Handle object {endTime: ...} or array [{endTime: ...}]
+                    if (data && data.endTime) {
+                        endTime = data.endTime;
+                    } else if (Array.isArray(data) && data.length > 0 && data[0].endTime) {
+                         endTime = data[0].endTime;
+                    } else if (typeof data === 'string') {
+                        endTime = data;
+                    }
+                    
+                    var timerEl = document.getElementById('exam-timer');
+                    
+                    if (timerEl && endTime) {
+                        // Manually update the attribute since wire:ignore prevents it
+                        timerEl.setAttribute('data-end-time', endTime);
+                        
+                        // Restart timer
+                        initTimer();
+                    } else {
+                        console.warn('Timer element not found or invalid end time', { timerEl: !!timerEl, endTime: endTime });
+                    }
                 });
 
                 Livewire.on('question-changed', function() {

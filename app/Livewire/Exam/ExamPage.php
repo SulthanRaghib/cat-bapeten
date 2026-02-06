@@ -19,6 +19,14 @@ class ExamPage extends Component
     public $currentDoubtful = false;
     public $totalQuestions = 0;
 
+    // Workflow Steps
+    public $step = 'verification'; // verification, rules, exam
+    public $cameraValid = false;
+    public $rulesAgreed = false;
+
+    // UI State
+    public $showConfirmFinish = false;
+
     public $examTitle = 'Ujian CAT BAPETEN';
     public $candidateName;
     public $candidateIdentifier;
@@ -97,36 +105,87 @@ class ExamPage extends Component
         // Case A: User finished manually previously
         if ($session && $session->status === 'completed') {
             $this->examSessionId = $session->id;
-            $this->questionIds = $session->answers_meta ?? []; // Needed for stats
+            $this->questionIds = $session->answers_meta ?? [];
             $this->loadResults();
             $this->showResults = true;
-            return; // Skip normal initialization
+            return;
         }
 
-        // Case B: Session is ongoing, check if time expired
+        // Case B: Session is ongoing
         if ($session && $session->status === 'ongoing') {
             $startedAt = $session->started_at;
             $expirationTime = $startedAt->copy()->addMinutes($this->durationMinutes);
-            $this->endTime = $expirationTime->toIso8601String(); // Ensure property is set for check
 
             // Check if now is past expiration time
             if (now()->greaterThan($expirationTime)) {
                 $this->examSessionId = $session->id;
-                $this->questionIds = $session->answers_meta ?? []; // Needed for stats
+                $this->endTime = $expirationTime->toIso8601String();
+                $this->questionIds = $session->answers_meta ?? [];
                 $this->handleTimeExpiry();
                 return;
             }
+
+            // Session is valid, resume exam immediately
+            $this->step = 'exam';
+            $this->initializeExamState($session, $user);
+            return;
         }
 
-        // Case C: Create new session if none exists or previous was terminated (retry)
-        if (!$session || $session->status === 'terminated') {
-            $session = ExamSession::create([
-                'exam_participant_id' => $participant->id,
-                'status' => 'ongoing',
-                'started_at' => now(),
-            ]);
+        // Case C: New Session (or previous terminated)
+        // Do NOT create session yet. Go to verification step.
+        $this->step = 'verification';
+        $this->candidateName = $user->name;
+        $this->candidateIdentifier = $user->nip;
+    }
+
+    public function verifyCameraSuccess()
+    {
+        $this->cameraValid = true;
+        $this->step = 'rules';
+    }
+
+    public function startExam()
+    {
+        if (!$this->rulesAgreed) {
+            \Filament\Notifications\Notification::make()
+                ->title('Perhatian')
+                ->body('Anda harus menyetujui peraturan ujian.')
+                ->warning()
+                ->send();
+            return;
         }
 
+        $user = Auth::user();
+
+        // Re-fetch participant for safety
+        $participantId = session('exam_participant_id');
+        if ($participantId) {
+            $participant = ExamParticipant::find($participantId);
+        } else {
+            $participant = ExamParticipant::where('user_id', $user->id)
+                ->where('is_active', true)
+                ->latest()
+                ->first();
+        }
+
+        if (!$participant) return;
+
+        $session = ExamSession::create([
+            'exam_participant_id' => $participant->id,
+            'status' => 'ongoing',
+            'started_at' => now(),
+        ]);
+
+        $this->step = 'exam';
+        $this->initializeExamState($session, $user);
+
+        // Dispatch event to start timer on frontend
+        // Using named parameter for clarity
+        $this->dispatch('exam-started', endTime: $this->endTime);
+    }
+
+    protected function initializeExamState($session, $user)
+    {
         $this->examSessionId = $session->id;
         $this->questionIds = $session->answers_meta ?? [];
         $this->totalQuestions = count($this->questionIds);
@@ -142,7 +201,6 @@ class ExamPage extends Component
         $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
 
         // Load existing answer for current question
-        // Ensure we handle empty question list gracefully
         if (!empty($this->questionIds)) {
             $this->loadCurrentAnswer();
         }
@@ -345,6 +403,34 @@ class ExamPage extends Component
             }
         }
 
+        $this->loadResults();
+        $this->showResults = true;
+    }
+
+    public function confirmFinish()
+    {
+        $this->showConfirmFinish = true;
+    }
+
+    public function cancelFinish()
+    {
+        $this->showConfirmFinish = false;
+    }
+
+    public function submitFinish()
+    {
+        // Mark session as completed
+        if ($this->examSessionId) {
+            $session = ExamSession::find($this->examSessionId);
+            if ($session && $session->status === 'ongoing') {
+                $session->update([
+                    'status' => 'completed',
+                    'finished_at' => now(), // Manual finish uses current time
+                ]);
+            }
+        }
+
+        $this->showConfirmFinish = false;
         $this->loadResults();
         $this->showResults = true;
     }
