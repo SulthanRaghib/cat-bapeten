@@ -90,6 +90,14 @@ class CustomLogin extends BaseLogin
                     ->first();
 
                 if ($participant) {
+                    $participant->loadMissing('examPackage');
+
+                    if (! $participant->examPackage || ! $participant->examPackage->is_active) {
+                        throw ValidationException::withMessages([
+                            'data.login_id' => 'Paket ujian sedang ditutup. Silakan hubungi panitia untuk informasi jadwal berikutnya.',
+                        ]);
+                    }
+
                     // Jika sudah tidak aktif, berikan pesan yang lebih informatif
                     if (! $participant->is_active) {
                         $session = $participant->examSessions()->latest()->first();

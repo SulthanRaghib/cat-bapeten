@@ -93,6 +93,19 @@ class ExamPage extends Component
 
             return redirect()->route('filament.admin.auth.login');
         }
+        if (! $package->is_active) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            \Filament\Notifications\Notification::make()
+                ->title('Paket Ujian Ditutup')
+                ->body('Paket ujian sedang dinonaktifkan oleh panitia. Silakan hubungi panitia untuk informasi lebih lanjut.')
+                ->warning()
+                ->send();
+
+            return redirect()->route('filament.admin.auth.login');
+        }
         $this->durationMinutes = $package->duration_minutes ?? 60;
         $this->examTitle = $package->title ?? $this->examTitle;
 
@@ -170,6 +183,20 @@ class ExamPage extends Component
         }
 
         if (!$participant) return;
+
+        $participant->loadMissing('examPackage');
+
+        if (! $participant->examPackage || ! $participant->examPackage->is_active) {
+            \Filament\Notifications\Notification::make()
+                ->title('Paket Ujian Ditutup')
+                ->body('Paket ujian ini saat ini dinonaktifkan. Silakan hubungi panitia.')
+                ->warning()
+                ->send();
+
+            $this->step = 'verification';
+
+            return;
+        }
 
         $session = ExamSession::create([
             'exam_participant_id' => $participant->id,
@@ -528,6 +555,13 @@ class ExamPage extends Component
 
         if (!$session || $session->status !== 'ongoing') {
             $this->finalizeExternallyCompletedSession($session);
+            return;
+        }
+
+        $session->loadMissing('examParticipant.examPackage');
+
+        if (! $session->examParticipant?->examPackage?->is_active) {
+            $this->finalizeExternallyCompletedSession($session, 'Paket ujian sudah ditutup oleh panitia.');
         }
     }
 
@@ -540,6 +574,14 @@ class ExamPage extends Component
         $session = ExamSession::find($this->examSessionId);
 
         if ($session && $session->status === 'ongoing') {
+            $session->loadMissing('examParticipant.examPackage');
+
+            if (! $session->examParticipant?->examPackage?->is_active) {
+                $this->finalizeExternallyCompletedSession($session, 'Paket ujian sudah ditutup oleh panitia.');
+
+                return false;
+            }
+
             return true;
         }
 
@@ -548,7 +590,7 @@ class ExamPage extends Component
         return false;
     }
 
-    protected function finalizeExternallyCompletedSession(?ExamSession $session): void
+    protected function finalizeExternallyCompletedSession(?ExamSession $session, string $message = 'Sesi ujian Anda telah diakhiri oleh pengawas.'): void
     {
         if ($this->showResults) {
             return;
@@ -578,7 +620,7 @@ class ExamPage extends Component
 
         \Filament\Notifications\Notification::make()
             ->title('Ujian dihentikan')
-            ->body('Sesi ujian Anda telah diakhiri oleh pengawas.')
+            ->body($message)
             ->warning()
             ->send();
     }

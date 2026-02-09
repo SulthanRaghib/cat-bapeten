@@ -4,7 +4,6 @@ namespace App\Filament\Resources\ExamPackages\Schemas;
 
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -49,10 +48,17 @@ class ExamPackageForm
                             ->numeric()
                             ->required(),
 
-                        Toggle::make('is_active')
-                            ->label('Buka Pendaftaran')
-                            ->helperText('Jika dimatikan, peserta tidak bisa mengakses ujian ini.')
-                            ->default(true),
+                        Select::make('is_active')
+                            ->label('Status Ketersediaan')
+                            ->options([
+                                1 => 'Aktif — Peserta dapat mengakses ujian ini',
+                                0 => 'Nonaktif — Paket ditutup untuk peserta',
+                            ])
+                            ->default(1)
+                            ->required()
+                            ->native(false)
+                            ->dehydrateStateUsing(fn($state) => (bool) $state)
+                            ->helperText('Tentukan apakah paket ini terlihat dan dapat diakses oleh peserta.'),
                     ]),
             ]);
     }
