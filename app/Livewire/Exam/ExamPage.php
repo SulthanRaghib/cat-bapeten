@@ -7,6 +7,7 @@ use App\Models\ExamPackage;
 use App\Models\ExamParticipant;
 use App\Models\ExamSession;
 use App\Models\Question;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -409,7 +410,7 @@ class ExamPage extends Component
 
         // Strict check: current time > end time
         // We add a tiny buffer (e.g., 5 seconds) for network latency.
-        return now()->greaterThan(\Carbon\Carbon::parse($this->endTime)->addSeconds(5));
+        return now()->greaterThan(Carbon::parse($this->endTime)->addSeconds(5));
     }
 
     public function handleTimeExpiry()
@@ -418,12 +419,21 @@ class ExamPage extends Component
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
-                $session->update([
+                $finishedAt = $this->endTime
+                    ? Carbon::parse($this->endTime)
+                    : now();
+
+                if ($finishedAt->isFuture()) {
+                    $finishedAt = now();
+                }
+
+                $totalScore = (int) $session->answers()->sum('score');
+
+                $session->forceFill([
                     'status' => 'completed',
-                    'finished_at' => \Carbon\Carbon::parse($this->endTime)->isPast()
-                        ? \Carbon\Carbon::parse($this->endTime)
-                        : now(),
-                ]);
+                    'finished_at' => $finishedAt,
+                    'total_score' => $totalScore,
+                ])->save();
 
                 // Setelah ujian selesai (otomatis karena waktu habis), nonaktifkan akses token peserta
                 if ($session->examParticipant) {
@@ -456,10 +466,13 @@ class ExamPage extends Component
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
-                $session->update([
+                $totalScore = (int) $session->answers()->sum('score');
+
+                $session->forceFill([
                     'status' => 'completed',
                     'finished_at' => now(), // Manual finish uses current time
-                ]);
+                    'total_score' => $totalScore,
+                ])->save();
 
                 // Setelah peserta menekan tombol selesai, blokir akses ujian berikutnya
                 if ($session->examParticipant) {
@@ -497,6 +510,12 @@ class ExamPage extends Component
             'wrong' => $wrongCount, // Includes wrong answered questions
             'total_score' => $totalScore,
         ];
+
+        if ($session = ExamSession::find($this->examSessionId)) {
+            if ((int) $session->total_score !== (int) $totalScore) {
+                $session->forceFill(['total_score' => (int) $totalScore])->save();
+            }
+        }
     }
 
     public function monitorSessionStatus(): void
@@ -537,6 +556,12 @@ class ExamPage extends Component
 
         if ($session) {
             $this->endTime = optional($session->finished_at)->toIso8601String() ?? now()->toIso8601String();
+
+            if ($session->total_score === null) {
+                $session->forceFill([
+                    'total_score' => (int) $session->answers()->sum('score'),
+                ])->save();
+            }
 
             if ($session->examParticipant && $session->examParticipant->is_active) {
                 $session->examParticipant->update(['is_active' => false]);

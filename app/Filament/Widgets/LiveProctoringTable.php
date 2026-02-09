@@ -80,10 +80,13 @@ class LiveProctoringTable extends BaseWidget
                     ->modalHeading('Paksa Selesai Ujian')
                     ->modalDescription('Apakah Anda yakin ingin mengakhiri sesi ujian peserta ini secara paksa? Jawaban yang tersimpan akan dikalkulasi.')
                     ->action(function (ExamSession $record) {
-                        $record->update([
+                        $totalScore = (int) $record->answers()->sum('score');
+
+                        $record->forceFill([
                             'status' => 'completed',
                             'finished_at' => now(),
-                        ]);
+                            'total_score' => $totalScore,
+                        ])->save();
 
                         if ($record->examParticipant && $record->examParticipant->is_active) {
                             $record->examParticipant->update(['is_active' => false]);
