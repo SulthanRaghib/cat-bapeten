@@ -235,6 +235,14 @@ class ExamPage extends Component
 
     public function saveAnswer($option)
     {
+        if ($this->showResults || ! $this->examSessionId) {
+            return;
+        }
+
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         // Validation: Verify if time is strictly up
         if ($this->hasTimeExpired()) {
             // Trigger finish logic immediately
@@ -270,6 +278,10 @@ class ExamPage extends Component
 
     public function toggleDoubtful()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if (!$this->currentQuestion) {
             return;
         }
@@ -299,6 +311,10 @@ class ExamPage extends Component
 
     public function nextQuestion()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if ($this->currentQuestionIndex < $this->totalQuestions - 1) {
             $this->currentQuestionIndex++;
             // Save to session for persistence
@@ -310,6 +326,10 @@ class ExamPage extends Component
 
     public function prevQuestion()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if ($this->currentQuestionIndex > 0) {
             $this->currentQuestionIndex--;
             // Save to session for persistence
@@ -321,6 +341,10 @@ class ExamPage extends Component
 
     public function goToQuestion($index)
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if ($index >= 0 && $index < $this->totalQuestions) {
             $this->currentQuestionIndex = $index;
             session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
@@ -424,6 +448,10 @@ class ExamPage extends Component
 
     public function submitFinish()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         // Mark session as completed
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
@@ -469,6 +497,65 @@ class ExamPage extends Component
             'wrong' => $wrongCount, // Includes wrong answered questions
             'total_score' => $totalScore,
         ];
+    }
+
+    public function monitorSessionStatus(): void
+    {
+        if ($this->showResults || !$this->examSessionId) {
+            return;
+        }
+
+        $session = ExamSession::find($this->examSessionId);
+
+        if (!$session || $session->status !== 'ongoing') {
+            $this->finalizeExternallyCompletedSession($session);
+        }
+    }
+
+    protected function ensureSessionIsActive(): bool
+    {
+        if ($this->showResults || !$this->examSessionId) {
+            return false;
+        }
+
+        $session = ExamSession::find($this->examSessionId);
+
+        if ($session && $session->status === 'ongoing') {
+            return true;
+        }
+
+        $this->finalizeExternallyCompletedSession($session);
+
+        return false;
+    }
+
+    protected function finalizeExternallyCompletedSession(?ExamSession $session): void
+    {
+        if ($this->showResults) {
+            return;
+        }
+
+        if ($session) {
+            $this->endTime = optional($session->finished_at)->toIso8601String() ?? now()->toIso8601String();
+
+            if ($session->examParticipant && $session->examParticipant->is_active) {
+                $session->examParticipant->update(['is_active' => false]);
+            }
+        } else {
+            $this->endTime = now()->toIso8601String();
+        }
+
+        $this->showConfirmFinish = false;
+        $this->loadResults();
+        $this->showResults = true;
+
+        $this->dispatch('exam-stopped', endTime: $this->endTime);
+
+        \Filament\Notifications\Notification::make()
+            ->title('Ujian dihentikan')
+            ->body('Sesi ujian Anda telah diakhiri oleh pengawas.')
+            ->warning()
+            ->send();
     }
 
     public function finishAndLogout()
