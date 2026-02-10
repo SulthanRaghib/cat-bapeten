@@ -53,6 +53,7 @@ class QuestionForm
                                         'medium' => 'Sedang',
                                         'hard' => 'Sulit',
                                     ])
+                                    ->required()
                                     ->columnSpan(4),
                             ])
                             ->visible(fn(Get $get) => $get('type') === 'technical')

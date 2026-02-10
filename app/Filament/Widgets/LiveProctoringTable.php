@@ -3,8 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Models\ExamSession;
-use Filament\Actions\Action;
 use Filament\Tables;
+use Filament\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,19 +71,26 @@ class LiveProctoringTable extends BaseWidget
                         default => 'warning',
                     }),
             ])
-            ->toolbarActions([
+            ->recordActions([
                 Action::make('force_finish')
-                    ->label('Force Finish')
+                    ->label('Paksa Selesai')
                     ->color('danger')
                     ->icon('heroicon-m-stop-circle')
                     ->requiresConfirmation()
                     ->modalHeading('Paksa Selesai Ujian')
                     ->modalDescription('Apakah Anda yakin ingin mengakhiri sesi ujian peserta ini secara paksa? Jawaban yang tersimpan akan dikalkulasi.')
                     ->action(function (ExamSession $record) {
-                        $record->update([
+                        $totalScore = (int) $record->answers()->sum('score');
+
+                        $record->forceFill([
                             'status' => 'completed',
                             'finished_at' => now(),
-                        ]);
+                            'total_score' => $totalScore,
+                        ])->save();
+
+                        if ($record->examParticipant && $record->examParticipant->is_active) {
+                            $record->examParticipant->update(['is_active' => false]);
+                        }
 
                         \Filament\Notifications\Notification::make()
                             ->title('Sesi ujian diakhiri paksa')

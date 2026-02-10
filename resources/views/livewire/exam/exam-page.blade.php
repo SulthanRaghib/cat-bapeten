@@ -14,7 +14,8 @@
             max-width: 1400px;
             margin: 0 auto;
             min-height: calc(100vh - 140px);
-            align-items: start; /* Prevents question box from stretching to match sidebar height */
+            align-items: start;
+            /* Prevents question box from stretching to match sidebar height */
         }
 
         /* ================= SECTION SOAL ================= */
@@ -174,11 +175,12 @@
             background: white;
             border-radius: 12px;
             padding: 20px;
-            
+
             position: sticky;
-            top: 110px; /* Adjusted for Fixed Header 100px + 10px Gap */
+            top: 110px;
+            /* Adjusted for Fixed Header 100px + 10px Gap */
             align-self: start;
-            
+
             /* Full height display (no internal scroll) */
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             border: 1px solid #eee;
@@ -391,13 +393,18 @@
 @endpush
 
 <div>
-    @if($step === 'verification')
-        <div style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
-            <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937;">Verifikasi Kamera</h2>
-                <p style="color: #6b7280; margin-bottom: 30px;">Sistem perlu memverifikasi kamera Anda aktif sebelum ujian dimulai.</p>
-                
-                <div x-data="{ 
+    <span wire:poll.keep-alive.5s="monitorSessionStatus" style="display: none;"></span>
+    @if ($step === 'verification')
+        <div
+            style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
+            <div
+                style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937;">Verifikasi Kamera
+                </h2>
+                <p style="color: #6b7280; margin-bottom: 30px;">Sistem perlu memverifikasi kamera Anda aktif sebelum
+                    ujian dimulai.</p>
+
+                <div x-data="{
                     cameraActive: false,
                     error: null,
                     initCamera() {
@@ -411,7 +418,7 @@
                                 })
                                 .catch(err => {
                                     console.error(err);
-                                    if(err.name === 'NotAllowedError') {
+                                    if (err.name === 'NotAllowedError') {
                                         this.error = 'Akses kamera ditolak. Harap izinkan akses kamera di browser Anda.';
                                     } else {
                                         this.error = 'Tidak dapat mengakses kamera: ' + err.message;
@@ -423,26 +430,24 @@
                         }
                     }
                 }" x-init="initCamera()">
-                    
-                    <div style="position: relative; width: 480px; height: 360px; background: #000; margin: 0 auto 20px auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                         <video x-ref="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
-                         <div x-show="!cameraActive && !error" style="position: absolute; color: white;">Memuat Kamera...</div>
-                         <div x-show="error" x-text="error" style="position: absolute; color: #fca5a5; padding: 20px; text-align: center;"></div>
+
+                    <div
+                        style="position: relative; width: 480px; height: 360px; background: #000; margin: 0 auto 20px auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                        <video x-ref="video" autoplay playsinline
+                            style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <div x-show="!cameraActive && !error" style="position: absolute; color: white;">Memuat Kamera...
+                        </div>
+                        <div x-show="error" x-text="error"
+                            style="position: absolute; color: #fca5a5; padding: 20px; text-align: center;"></div>
                     </div>
 
                     <div style="text-align: center;">
-                        <button 
-                            type="button"
-                            x-show="cameraActive" 
-                            wire:click="verifyCameraSuccess"
-                            style="padding: 12px 24px; background-color: #16a34a; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
+                        <button type="button" x-show="cameraActive" wire:click="verifyCameraSuccess"
+                            style="padding: 12px 24px; background-color: #2563eb; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
                             Kamera Berfungsi - Lanjutkan
                         </button>
-                        
-                        <button 
-                            type="button"
-                            x-show="!cameraActive" 
-                            @click="initCamera()"
+
+                        <button type="button" x-show="!cameraActive" @click="initCamera()"
                             style="padding: 12px 24px; background-color: #4b5563; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
                             Coba Lagi
                         </button>
@@ -451,31 +456,43 @@
             </div>
         </div>
     @elseif($step === 'rules')
-        <div style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
-            <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 800px; width: 100%;">
-                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937; text-align: center;">Peraturan & Tata Tertib Ujian</h2>
-                
-                <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left; color: #374151; line-height: 1.6;">
+        <div
+            style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
+            <div
+                style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 800px; width: 100%;">
+                <h2
+                    style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937; text-align: center;">
+                    Peraturan & Tata Tertib Ujian</h2>
+
+                <div
+                    style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left; color: #374151; line-height: 1.6;">
                     <ol style="margin-left: 20px; list-style-type: decimal;">
                         <li style="margin-bottom: 10px;">Peserta wajib menyalakan kamera selama ujian berlangsung.</li>
-                        <li style="margin-bottom: 10px;">Dilarang membuka tab, browser, atau aplikasi lain selain halaman ujian.</li>
-                        <li style="margin-bottom: 10px;">Dilarang menggunakan alat bantu hitung, komunikasi, atau catatan selain yang diperbolehkan.</li>
-                        <li style="margin-bottom: 10px;">Dilarang meninggalkan tempat duduk selama ujian berlangsung.</li>
+                        <li style="margin-bottom: 10px;">Dilarang membuka tab, browser, atau aplikasi lain selain
+                            halaman ujian.</li>
+                        <li style="margin-bottom: 10px;">Dilarang menggunakan alat bantu hitung, komunikasi, atau
+                            catatan selain yang diperbolehkan.</li>
+                        <li style="margin-bottom: 10px;">Dilarang meninggalkan tempat duduk selama ujian berlangsung.
+                        </li>
                         <li style="margin-bottom: 10px;">Dilarang capture layar atau menyebarkan soal ujian.</li>
                         <li>Segala bentuk kecurangan akan mengakibatkan diskualifikasi.</li>
                     </ol>
                 </div>
-                
-                <div style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 12px;">
-                    <input type="checkbox" id="agreeRules" wire:model.live="rulesAgreed" style="width: 20px; height: 20px; cursor: pointer;">
-                    <label for="agreeRules" style="font-size: 16px; font-weight: 500; cursor: pointer; color: #1f2937;">Saya telah membaca dan menyetujui seluruh peraturan ujian.</label>
+
+                <div
+                    style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                    <input type="checkbox" id="agreeRules" wire:model.live="rulesAgreed"
+                        style="width: 20px; height: 20px; cursor: pointer;">
+                    <label for="agreeRules"
+                        style="font-size: 16px; font-weight: 500; cursor: pointer; color: #1f2937;">Saya telah membaca
+                        dan menyetujui seluruh peraturan ujian.</label>
                 </div>
-                
+
                 <div style="text-align: center;">
-                    <button 
-                        wire:click="startExam"
+                    <button wire:click="startExam"
                         style="padding: 14px 32px; font-size: 16px; font-weight: bold; color: white; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s;"
-                        :style="!$wire.rulesAgreed ? 'background-color: #9ca3af; cursor: not-allowed;' : 'background-color: #16a34a;'"
+                        :style="!$wire.rulesAgreed ? 'background-color: #9ca3af; cursor: not-allowed;' :
+                            'background-color: #16a34a;'"
                         :disabled="!$wire.rulesAgreed">
                         Mulai Ujian
                     </button>
@@ -483,241 +500,451 @@
             </div>
         </div>
     @elseif($step === 'exam')
-    {{-- CONFIRM FINISH MODAL --}}
-    @if ($showConfirmFinish)
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-            <div style="background: white; width: 400px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-                <div style="width: 60px; height: 60px; background: #feebc8; color: #c05621; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 30px; height: 30px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                    </svg>
-                </div>
-                
-                <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #1f2937;">Konfirmasi Selesai</h3>
-                <p style="color: #4b5563; margin-bottom: 25px; line-height: 1.5;">Apakah Anda yakin ingin menyelesaikan ujian? <br>Jawaban akan dikunci dan tidak dapat diubah.</p>
-                
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button wire:click="cancelFinish" style="background: #e5e7eb; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
-                        Batal
-                    </button>
-                    <button wire:click="submitFinish" style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
-                        Ya, Selesai
-                    </button>
+        {{-- CONFIRM FINISH MODAL --}}
+        @if ($showConfirmFinish)
+            <div
+                style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                <div
+                    style="background: white; width: 400px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                    <div
+                        style="width: 60px; height: 60px; background: #feebc8; color: #c05621; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" style="width: 30px; height: 30px;">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+
+                    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #1f2937;">Konfirmasi
+                        Selesai</h3>
+                    <p style="color: #4b5563; margin-bottom: 25px; line-height: 1.5;">Apakah Anda yakin ingin
+                        menyelesaikan ujian? <br>Jawaban akan dikunci dan tidak dapat diubah.</p>
+
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button wire:click="cancelFinish"
+                            style="background: #e5e7eb; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
+                            Batal
+                        </button>
+                        <button wire:click="submitFinish"
+                            style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
+                            Ya, Selesai
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    @endif
-    
+        @endif
 
-    @if ($totalQuestions > 0 && $this->currentQuestion)
-        <div class="container">
-            <!-- AREA SOAL -->
-            <section class="question-section">
-                <div class="question-number">Soal {{ $currentQuestionIndex + 1 }}</div>
+        {{-- OVERLAY RESULT MODAL --}}
+        @if ($showResults)
+            <div class="result-overlay">
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" style="width: 48px; height: 48px;">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2>Ujian Selesai</h2>
+                        <p>Waktu ujian telah berakhir atau Anda telah menyelesaikan ujian.</p>
+                    </div>
 
-                <!-- KONTEN SOAL -->
-                <div class="question-content">
-                    <p class="question-text">{!! $this->currentQuestion->question_text !!}</p>
+                    <div class="score-display">
+                        <span class="score-label">Total Skor</span>
+                        <span class="score-value">{{ $resultStats['total_score'] ?? 0 }}</span>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Soal</span>
+                            <span class="stat-value">{{ $resultStats['total_questions'] ?? 0 }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Dijawab</span>
+                            <span class="stat-value">{{ $resultStats['answered'] ?? 0 }}</span>
+                        </div>
+                        <div class="stat-item correct">
+                            <span class="stat-label">Benar</span>
+                            <span class="stat-value">{{ $resultStats['correct'] ?? 0 }}</span>
+                        </div>
+                        <div class="stat-item wrong">
+                            <span class="stat-label">Salah</span>
+                            <span class="stat-value">{{ $resultStats['wrong'] ?? 0 }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Kosong</span>
+                            <span class="stat-value">{{ $resultStats['unanswered'] ?? 0 }}</span>
+                        </div>
+                    </div>
+
+                    <div class="result-actions">
+                        <button wire:click="finishAndLogout" class="finish-btn">
+                            Selesai & Keluar
+                        </button>
+                        <!-- Small helper text -->
+                        <div style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
+                            Klik tombol di atas untuk mengakhiri sesi dan keluar dari aplikasi.
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <!-- OPSI JAWABAN -->
-                <div class="options" x-data="{
-                    localAnswer: @entangle('currentAnswer'),
-                    saving: false,
-                    selectAnswer(code) {
-                        this.localAnswer = code;
-                        this.saving = true;
-                        $wire.saveAnswer(code).then(() => {
-                            this.saving = false;
-                        }).catch(() => {
-                            this.saving = false;
-                        });
-                    }
-                }" wire:ignore.self>
-                    @php
-                        $options = $this->currentQuestion->options;
-                        if (is_string($options)) {
-                            $decoded = json_decode($options, true);
-                            if (is_array($decoded)) {
-                                $options = $decoded;
-                            }
+            <style>
+                .result-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(243, 244, 246, 0.95);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    backdrop-filter: blur(5px);
+                }
+
+                .result-card {
+                    background: white;
+                    border-radius: 20px;
+                    padding: 40px;
+                    width: 100%;
+                    max-width: 500px;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    text-align: center;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .result-icon {
+                    color: #059669;
+                    margin-bottom: 20px;
+                    display: inline-flex;
+                    background: #ecfdf5;
+                    padding: 15px;
+                    border-radius: 50%;
+                }
+
+                .result-header h2 {
+                    color: #111827;
+                    font-size: 24px;
+                    font-weight: 700;
+                    margin-bottom: 10px;
+                }
+
+                .result-header p {
+                    color: #6b7280;
+                    margin-bottom: 30px;
+                    font-size: 14px;
+                }
+
+                .score-display {
+                    background: #f9fafb;
+                    padding: 20px;
+                    border-radius: 12px;
+                    margin-bottom: 30px;
+                    border: 1px solid #f3f4f6;
+                }
+
+                .score-label {
+                    display: block;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #6b7280;
+                    margin-bottom: 5px;
+                }
+
+                .score-value {
+                    font-size: 48px;
+                    font-weight: 800;
+                    color: #059669;
+                    /* Green score */
+                }
+
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-bottom: 30px;
+                }
+
+                .stat-item {
+                    background: white;
+                    padding: 10px;
+                    border-radius: 8px;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .stat-item.correct {
+                    border-top: 3px solid #059669;
+                    background: #f0fdf4;
+                }
+
+                .stat-item.wrong {
+                    border-top: 3px solid #ef4444;
+                    background: #fef2f2;
+                }
+
+                .stat-label {
+                    display: block;
+                    font-size: 11px;
+                    color: #6b7280;
+                    margin-bottom: 4px;
+                    font-weight: 600;
+                }
+
+                .stat-value {
+                    font-size: 18px;
+                    display: block;
+                    font-weight: 700;
+                    color: #1f2937;
+                }
+
+                .finish-btn {
+                    background: #1f2937;
+                    color: white;
+                    width: 100%;
+                    padding: 14px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    border: none;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                    font-size: 16px;
+                }
+
+                .finish-btn:hover {
+                    background: #111827;
+                }
+            </style>
+        @endif
+
+        @if ($totalQuestions > 0 && $this->currentQuestion)
+            <div class="container"
+                @if ($showResults) style="filter: blur(5px); pointer-events: none;" @endif>
+                <!-- AREA SOAL -->
+                <section class="question-section">
+                    <div class="question-number">Soal {{ $currentQuestionIndex + 1 }}</div>
+
+                    <!-- KONTEN SOAL -->
+                    <div class="question-content">
+                        <p class="question-text">{!! $this->currentQuestion->question_text !!}</p>
+                    </div>
+
+                    <!-- OPSI JAWABAN -->
+                    <div class="options" x-data="{
+                        localAnswer: @entangle('currentAnswer'),
+                        saving: false,
+                        selectAnswer(code) {
+                            this.localAnswer = code;
+                            this.saving = true;
+                            $wire.saveAnswer(code).then(() => {
+                                this.saving = false;
+                            }).catch(() => {
+                                this.saving = false;
+                            });
                         }
-                    @endphp
-
-                    @if (is_array($options) && count($options) > 0)
-                        @foreach ($options as $index => $optionData)
-                            @php
-                                $optionLabel = chr(65 + $index);
-                                $optionValue = (string) $index;
-
-                                if (is_array($optionData)) {
-                                    $optionText = $optionData['answer_text'] ?? ($optionData['teks'] ?? '');
-                                } else {
-                                    $optionText = $optionData;
-                                }
-                            @endphp
-                            <label wire:key="option-{{ $this->currentQuestion->id }}-{{ $index }}"
-                                @click="selectAnswer('{{ $optionValue }}')" class="option cursor-pointer"
-                                :class="localAnswer === '{{ $optionValue }}' ? 'selected' : ''">
-                                <input type="radio" name="answer" value="{{ $optionValue }}"
-                                    :checked="localAnswer === '{{ $optionValue }}'">
-                                <span class="option-text">{!! $optionText !!}</span>
-                            </label>
-                        @endforeach
-                    @else
-                        <p style="color: #999; font-style: italic;">Pilihan jawaban belum tersedia.</p>
-                    @endif
-                </div>
-
-                <!-- RAGU-RAGU -->
-                <div x-data="{
-                    localDoubtful: @entangle('currentDoubtful').live,
-                    toggle() {
-                        this.localDoubtful = !this.localDoubtful;
-                        $wire.toggleDoubtful();
-                    }
-                }" wire:ignore.self>
-                    <button type="button" @click="toggle()" class="flag-toggle" :class="localDoubtful ? 'active' : ''">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M5.5 3a1.5 1.5 0 00-1.5 1.5v15a1 1 0 102 0v-4.146l1.276-.638a3 3 0 012.536.026l1.715.8a5 5 0 004.018.063l4.091-1.636a1.5 1.5 0 00.936-1.384V4.5A1.5 1.5 0 0018.5 3h-13z" />
-                        </svg>
-                        <span x-text="localDoubtful ? 'Ditandai ragu-ragu' : 'Tandai ragu-ragu'"></span>
-                    </button>
-                </div>
-
-                <!-- SAVE INDICATOR -->
-                <div id="save-indicator" class="save-indicator" style="margin-top: 12px;">
-                    <svg viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clip-rule="evenodd" />
-                    </svg>
-                    <span>Jawaban tersimpan</span>
-                </div>
-
-                <!-- NAVIGASI -->
-                <div class="navigation">
-                    <button type="button" wire:click="prevQuestion" @disabled($currentQuestionIndex === 0) class="secondary"
-                        wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
-                        <span wire:loading.remove wire:target="prevQuestion">Sebelumnya</span>
-                        <span wire:loading wire:target="prevQuestion">Memuat...</span>
-                    </button>
-                    <button type="button" wire:click="nextQuestion" @disabled($currentQuestionIndex === $totalQuestions - 1) class="primary"
-                        wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
-                        <span wire:loading.remove wire:target="nextQuestion">Selanjutnya</span>
-                        <span wire:loading wire:target="nextQuestion">Memuat...</span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- SIDEBAR -->
-            <aside class="sidebar">
-                <h3>Daftar Soal</h3>
-
-                <div class="legend">
-                    <div class="legend-item">
-                        <span class="box status-belum"></span>
-                        <span class="text">Belum</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="box status-ragu"></span>
-                        <span class="text">Ragu</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="box status-jawab"></span>
-                        <span class="text">Dijawab</span>
-                    </div>
-                </div>
-
-                <div class="question-list">
-                    @forelse ($questionStatuses as $status)
+                    }" wire:ignore.self>
                         @php
-                            $classes = '';
-                            if ($status['answered']) {
-                                $classes .= ' answered';
-                            }
-                            if ($status['doubtful']) {
-                                $classes .= ' doubt';
-                            }
-                            if ($status['current']) {
-                                $classes .= ' current';
+                            $options = $this->currentQuestion->options;
+                            if (is_string($options)) {
+                                $decoded = json_decode($options, true);
+                                if (is_array($decoded)) {
+                                    $options = $decoded;
+                                }
                             }
                         @endphp
-                        <button type="button" wire:click="goToQuestion({{ $status['index'] }})"
-                            wire:key="nav-{{ $status['question_id'] }}" class="{{ $classes }}">
-                            {{ $status['number'] }}
+
+                        @if (is_array($options) && count($options) > 0)
+                            @foreach ($options as $index => $optionData)
+                                @php
+                                    $optionLabel = chr(65 + $index);
+                                    $optionValue = (string) $index;
+
+                                    if (is_array($optionData)) {
+                                        $optionText = $optionData['answer_text'] ?? ($optionData['teks'] ?? '');
+                                    } else {
+                                        $optionText = $optionData;
+                                    }
+                                @endphp
+                                <label wire:key="option-{{ $this->currentQuestion->id }}-{{ $index }}"
+                                    @click="selectAnswer('{{ $optionValue }}')" class="option cursor-pointer"
+                                    :class="localAnswer === '{{ $optionValue }}' ? 'selected' : ''">
+                                    <input type="radio" name="answer" value="{{ $optionValue }}"
+                                        :checked="localAnswer === '{{ $optionValue }}'">
+                                    <span class="option-text">{!! $optionText !!}</span>
+                                </label>
+                            @endforeach
+                        @else
+                            <p style="color: #999; font-style: italic;">Pilihan jawaban belum tersedia.</p>
+                        @endif
+                    </div>
+
+                    <!-- RAGU-RAGU -->
+                    <div x-data="{
+                        localDoubtful: @entangle('currentDoubtful').live,
+                        toggle() {
+                            this.localDoubtful = !this.localDoubtful;
+                            $wire.toggleDoubtful();
+                        }
+                    }" wire:ignore.self>
+                        <button type="button" @click="toggle()" class="flag-toggle"
+                            :class="localDoubtful ? 'active' : ''">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M5.5 3a1.5 1.5 0 00-1.5 1.5v15a1 1 0 102 0v-4.146l1.276-.638a3 3 0 012.536.026l1.715.8a5 5 0 004.018.063l4.091-1.636a1.5 1.5 0 00.936-1.384V4.5A1.5 1.5 0 0018.5 3h-13z" />
+                            </svg>
+                            <span x-text="localDoubtful ? 'Ditandai ragu-ragu' : 'Tandai ragu-ragu'"></span>
                         </button>
-                    @empty
-                        <p style="grid-column: span 5; text-align: center; color: #999; font-size: 14px;">Belum ada
-                            daftar soal.</p>
-                    @endforelse
-                </div>
+                    </div>
 
-                <div class="answer-stats">
-                    <div>
-                        <span>Dijawab</span>
-                        <span style="font-weight: 700; color: #2e7d32;">{{ $answeredCount }}</span>
+                    <!-- SAVE INDICATOR -->
+                    <div id="save-indicator" class="save-indicator" style="margin-top: 12px;">
+                        <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        <span>Jawaban tersimpan</span>
                     </div>
-                    <div>
-                        <span>Ragu-ragu</span>
-                        <span style="font-weight: 700; color: #f9a825;">{{ $doubtfulCount }}</span>
-                    </div>
-                    <div>
-                        <span>Belum dijawab</span>
-                        <span style="font-weight: 700; color: #333;">{{ $unansweredCount }}</span>
-                    </div>
-                    <div>
-                        <span>Total Soal</span>
-                        <span style="font-weight: 700; color: #000;">{{ $totalQuestions }}</span>
-                    </div>
-                </div>
 
-                <button type="button" wire:click="confirmFinish" class="finish" style="margin-top: 20px;">Selesai Ujian</button>
-            </aside>
-        </div>
-    @else
-        <div style="background: white; border-radius: 12px; padding: 40px; text-align: center;">
-            <h2 style="font-size: 20px; font-weight: 600; color: #c62828; margin-bottom: 8px;">Belum ada soal tersedia.
-            </h2>
-            <p style="color: #666;">Silakan hubungi pengawas atau refresh halaman.</p>
-        </div>
-    @endif
+                    <!-- NAVIGASI -->
+                    <div class="navigation">
+                        <button type="button" wire:click="prevQuestion" @disabled($currentQuestionIndex === 0)
+                            class="secondary" wire:loading.class="opacity-70"
+                            wire:target="prevQuestion,nextQuestion">
+                            <span wire:loading.remove wire:target="prevQuestion">Sebelumnya</span>
+                            <span wire:loading wire:target="prevQuestion">Memuat...</span>
+                        </button>
+                        <button type="button" wire:click="nextQuestion" @disabled($currentQuestionIndex === $totalQuestions - 1) class="primary"
+                            wire:loading.class="opacity-70" wire:target="prevQuestion,nextQuestion">
+                            <span wire:loading.remove wire:target="nextQuestion">Selanjutnya</span>
+                            <span wire:loading wire:target="nextQuestion">Memuat...</span>
+                        </button>
+                    </div>
+                </section>
 
+                <!-- SIDEBAR -->
+                <aside class="sidebar">
+                    <h3>Daftar Soal</h3>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <span class="box status-belum"></span>
+                            <span class="text">Belum</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="box status-ragu"></span>
+                            <span class="text">Ragu</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="box status-jawab"></span>
+                            <span class="text">Dijawab</span>
+                        </div>
+                    </div>
+
+                    <div class="question-list">
+                        @forelse ($questionStatuses as $status)
+                            @php
+                                $classes = '';
+                                if ($status['answered']) {
+                                    $classes .= ' answered';
+                                }
+                                if ($status['doubtful']) {
+                                    $classes .= ' doubt';
+                                }
+                                if ($status['current']) {
+                                    $classes .= ' current';
+                                }
+                            @endphp
+                            <button type="button" wire:click="goToQuestion({{ $status['index'] }})"
+                                wire:key="nav-{{ $status['question_id'] }}" class="{{ $classes }}">
+                                {{ $status['number'] }}
+                            </button>
+                        @empty
+                            <p style="grid-column: span 5; text-align: center; color: #999; font-size: 14px;">Belum ada
+                                daftar soal.</p>
+                        @endforelse
+                    </div>
+
+                    <div class="answer-stats">
+                        <div>
+                            <span>Dijawab</span>
+                            <span style="font-weight: 700; color: #2e7d32;">{{ $answeredCount }}</span>
+                        </div>
+                        <div>
+                            <span>Ragu-ragu</span>
+                            <span style="font-weight: 700; color: #f9a825;">{{ $doubtfulCount }}</span>
+                        </div>
+                        <div>
+                            <span>Belum dijawab</span>
+                            <span style="font-weight: 700; color: #333;">{{ $unansweredCount }}</span>
+                        </div>
+                        <div>
+                            <span>Total Soal</span>
+                            <span style="font-weight: 700; color: #000;">{{ $totalQuestions }}</span>
+                        </div>
+                    </div>
+
+                    <button type="button" wire:click="confirmFinish" class="finish"
+                        style="margin-top: 20px;">Selesai Ujian</button>
+                </aside>
+            </div>
+        @else
+            <div style="background: white; border-radius: 12px; padding: 40px; text-align: center;">
+                <h2 style="font-size: 20px; font-weight: 600; color: #c62828; margin-bottom: 8px;">Belum ada soal
+                    tersedia.
+                </h2>
+                <p style="color: #666;">Silakan hubungi pengawas atau refresh halaman.</p>
+            </div>
+        @endif
     @elseif($step === 'result')
-        <div style="position: fixed; inset: 0; background: #f9fafb; z-index: 99999; overflow-y: auto; font-family: 'Poppins', sans-serif;">
+        <div
+            style="position: fixed; inset: 0; background: #f9fafb; z-index: 99999; overflow-y: auto; font-family: 'Poppins', sans-serif;">
             <div style="min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px;">
                 <div style="width: 100%; max-width: 480px;">
-                    <div style="background: white; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative;">
+                    <div
+                        style="background: white; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative;">
                         <!-- Brand Accent Bar -->
                         <div style="height: 6px; background: #f9a825;"></div>
-                        
+
                         <div style="padding: 40px;">
                             <div style="text-align: center; margin-bottom: 35px;">
                                 <!-- Logo Instansi -->
-                                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" style="height: 60px; margin-bottom: 24px; object-fit: contain;">
+                                <img src="{{ asset('assets/img/logo.png') }}" alt="Logo"
+                                    style="height: 60px; margin-bottom: 24px; object-fit: contain;">
 
-                                <h2 style="font-size: 24px; font-weight: 800; color: #1f2937; margin: 0 0 8px 0; letter-spacing: -0.5px;">Ujian Selesai</h2>
-                                <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.5;">Jawaban Anda telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
+                                <h2
+                                    style="font-size: 24px; font-weight: 800; color: #1f2937; margin: 0 0 8px 0; letter-spacing: -0.5px;">
+                                    Ujian Selesai</h2>
+                                <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.5;">Jawaban Anda
+                                    telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
                             </div>
 
                             <!-- Score Card -->
-                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px 20px; text-align: center; margin-bottom: 32px; position: relative;">
-                                <div style="color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Nilai Akhir</div>
-                                <div style="font-size: 72px; font-weight: 900; color: black; line-height: 1; letter-spacing: -2px;">
+                            <div
+                                style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px 20px; text-align: center; margin-bottom: 32px; position: relative;">
+                                <div
+                                    style="color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
+                                    Nilai Akhir</div>
+                                <div
+                                    style="font-size: 72px; font-weight: 900; color: black; line-height: 1; letter-spacing: -2px;">
                                     {{ $resultStats['total_score'] ?? 0 }}
                                 </div>
                             </div>
 
                             <div style="text-align: center;">
-                                <button 
-                                    wire:click="finishAndLogout"
+                                <button wire:click="finishAndLogout"
                                     style="width: 100%; padding: 16px 24px; background-color: #f9a825; color: white; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
                                     onmouseover="this.style.backgroundColor='#f9a825'; this.style.transform='translateY(-1px)'"
                                     onmouseout="this.style.backgroundColor='#f9a825'; this.style.transform='translateY(0)'">
                                     <span>Kembali ke Halaman Utama</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                     </svg>
                                 </button>
                             </div>
@@ -740,6 +967,14 @@
             var timerInterval = null;
             var mathRenderDebounce = null;
             var fiveMinuteWarningShown = false;
+
+            function lockExamUI() {
+                document.querySelectorAll('input, button, a.nav-btn').forEach(function(el) {
+                    el.disabled = true;
+                    el.style.pointerEvents = 'none';
+                    el.style.opacity = '0.6';
+                });
+            }
 
             function initTimer() {
                 var timerEl = document.getElementById('exam-timer');
@@ -791,11 +1026,7 @@
                         setTimerState('danger');
 
                         // UX: Disable interactions immediately
-                        document.querySelectorAll('input, button, a.nav-btn').forEach(function(el) {
-                            el.disabled = true;
-                            el.style.pointerEvents = 'none';
-                            el.style.opacity = '0.6';
-                        });
+                        lockExamUI();
 
                         // Clear interval to stop ticking
                         if (timerInterval) clearInterval(timerInterval);
@@ -819,24 +1050,24 @@
                     // 5-minute warning notification
                     if (remaining <= 5 * 60 * 1000 && !fiveMinuteWarningShown) {
                         fiveMinuteWarningShown = true;
-                        
+
                         var warningDiv = document.createElement('div');
                         warningDiv.id = 'timer-warning-notif';
                         warningDiv.innerHTML = `
                             <div style="
-                                position: fixed; 
-                                top: 20px; 
-                                left: 50%; 
-                                transform: translateX(-50%); 
-                                background: #c62828; 
-                                color: white; 
-                                padding: 16px 24px; 
-                                border-radius: 12px; 
-                                box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
-                                z-index: 9999; 
-                                display: flex; 
-                                align-items: center; 
-                                gap: 16px; 
+                                position: fixed;
+                                top: 20px;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                background: #c62828;
+                                color: white;
+                                padding: 16px 24px;
+                                border-radius: 12px;
+                                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                                z-index: 9999;
+                                display: flex;
+                                align-items: center;
+                                gap: 16px;
                                 min-width: 320px;
                                 animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                             ">
@@ -850,9 +1081,9 @@
                                     <span style="font-size: 14px; opacity: 0.9;">Segera selesaikan ujian Anda.</span>
                                 </div>
                                 <button onclick="document.getElementById('timer-warning-notif').remove()" style="
-                                    background: none; 
-                                    border: none; 
-                                    color: white; 
+                                    background: none;
+                                    border: none;
+                                    color: white;
                                     padding: 4px;
                                     cursor: pointer;
                                     opacity: 0.8;
@@ -871,7 +1102,7 @@
                             </style>
                         `;
                         document.body.appendChild(warningDiv);
-                        
+
                         // Auto-dismiss after 10 seconds
                         setTimeout(function() {
                             if (document.body.contains(warningDiv)) {
@@ -963,31 +1194,69 @@
                 Livewire.on('answer-saved', function() {
                     showSaveIndicator();
                 });
-                
+
                 // NEW: Listen for exam start event to kickoff timer
                 Livewire.on('exam-started', function(data) {
                     console.log('Exam Started Event:', data);
-                    
+
                     var endTime = null;
                     // Handle object {endTime: ...} or array [{endTime: ...}]
                     if (data && data.endTime) {
                         endTime = data.endTime;
                     } else if (Array.isArray(data) && data.length > 0 && data[0].endTime) {
-                         endTime = data[0].endTime;
+                        endTime = data[0].endTime;
                     } else if (typeof data === 'string') {
                         endTime = data;
                     }
-                    
+
                     var timerEl = document.getElementById('exam-timer');
-                    
+
                     if (timerEl && endTime) {
                         // Manually update the attribute since wire:ignore prevents it
                         timerEl.setAttribute('data-end-time', endTime);
-                        
+
                         // Restart timer
                         initTimer();
                     } else {
-                        console.warn('Timer element not found or invalid end time', { timerEl: !!timerEl, endTime: endTime });
+                        console.warn('Timer element not found or invalid end time', {
+                            timerEl: !!timerEl,
+                            endTime: endTime
+                        });
+                    }
+                });
+
+                Livewire.on('exam-stopped', function(data) {
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                    }
+
+                    lockExamUI();
+
+                    var timerEl = document.getElementById('exam-timer');
+
+                    if (timerEl) {
+                        var forcedEnd = null;
+
+                        if (data && data.endTime) {
+                            forcedEnd = data.endTime;
+                        } else if (Array.isArray(data) && data.length > 0 && data[0].endTime) {
+                            forcedEnd = data[0].endTime;
+                        }
+
+                        if (!forcedEnd) {
+                            forcedEnd = new Date().toISOString();
+                        }
+
+                        timerEl.setAttribute('data-end-time', forcedEnd);
+                        timerEl.textContent = '00:00';
+                        timerEl.setAttribute('data-state', 'danger');
+
+                        var container = timerEl.closest('[data-timer-container]');
+                        if (container) {
+                            container.setAttribute('data-state', 'danger');
+                            container.classList.add('timer-warning');
+                        }
                     }
                 });
 
@@ -1009,7 +1278,10 @@
 
                     // Stop all camera streams
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                        navigator.mediaDevices.getUserMedia({
+                                video: true,
+                                audio: false
+                            })
                             .then(function(stream) {
                                 stream.getTracks().forEach(function(track) {
                                     track.stop();
@@ -1019,14 +1291,14 @@
                                 // Ignore errors if no stream active
                             });
                     }
-                    
+
                     // Also try to stop any video elements on page
                     document.querySelectorAll('video').forEach(function(vid) {
-                         if (vid.srcObject) {
+                        if (vid.srcObject) {
                             vid.srcObject.getTracks().forEach(track => track.stop());
-                         }
-                         vid.pause();
-                         vid.src = "";
+                        }
+                        vid.pause();
+                        vid.src = "";
                     });
                 });
             });

@@ -7,6 +7,7 @@ use App\Models\ExamPackage;
 use App\Models\ExamParticipant;
 use App\Models\ExamSession;
 use App\Models\Question;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -92,6 +93,19 @@ class ExamPage extends Component
 
             return redirect()->route('filament.admin.auth.login');
         }
+        if (! $package->is_active) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            \Filament\Notifications\Notification::make()
+                ->title('Paket Ujian Ditutup')
+                ->body('Paket ujian sedang dinonaktifkan oleh panitia. Silakan hubungi panitia untuk informasi lebih lanjut.')
+                ->warning()
+                ->send();
+
+            return redirect()->route('filament.admin.auth.login');
+        }
         $this->durationMinutes = $package->duration_minutes ?? 60;
         $this->examTitle = $package->title ?? $this->examTitle;
 
@@ -170,6 +184,20 @@ class ExamPage extends Component
 
         if (!$participant) return;
 
+        $participant->loadMissing('examPackage');
+
+        if (! $participant->examPackage || ! $participant->examPackage->is_active) {
+            \Filament\Notifications\Notification::make()
+                ->title('Paket Ujian Ditutup')
+                ->body('Paket ujian ini saat ini dinonaktifkan. Silakan hubungi panitia.')
+                ->warning()
+                ->send();
+
+            $this->step = 'verification';
+
+            return;
+        }
+
         $session = ExamSession::create([
             'exam_participant_id' => $participant->id,
             'status' => 'ongoing',
@@ -235,6 +263,14 @@ class ExamPage extends Component
 
     public function saveAnswer($option)
     {
+        if ($this->showResults || ! $this->examSessionId) {
+            return;
+        }
+
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         // Validation: Verify if time is strictly up
         if ($this->hasTimeExpired()) {
             // Trigger finish logic immediately
@@ -270,6 +306,10 @@ class ExamPage extends Component
 
     public function toggleDoubtful()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if (!$this->currentQuestion) {
             return;
         }
@@ -299,6 +339,10 @@ class ExamPage extends Component
 
     public function nextQuestion()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if ($this->currentQuestionIndex < $this->totalQuestions - 1) {
             $this->currentQuestionIndex++;
             // Save to session for persistence
@@ -310,6 +354,10 @@ class ExamPage extends Component
 
     public function prevQuestion()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if ($this->currentQuestionIndex > 0) {
             $this->currentQuestionIndex--;
             // Save to session for persistence
@@ -321,6 +369,10 @@ class ExamPage extends Component
 
     public function goToQuestion($index)
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         if ($index >= 0 && $index < $this->totalQuestions) {
             $this->currentQuestionIndex = $index;
             session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
@@ -386,7 +438,7 @@ class ExamPage extends Component
 
         // Strict check: current time > end time
         // We add a tiny buffer (e.g., 5 seconds) for network latency.
-        return now()->greaterThan(\Carbon\Carbon::parse($this->endTime)->addSeconds(5));
+        return now()->greaterThan(Carbon::parse($this->endTime)->addSeconds(5));
     }
 
     public function handleTimeExpiry()
@@ -395,12 +447,21 @@ class ExamPage extends Component
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
-                $session->update([
+                $finishedAt = $this->endTime
+                    ? Carbon::parse($this->endTime)
+                    : now();
+
+                if ($finishedAt->isFuture()) {
+                    $finishedAt = now();
+                }
+
+                $totalScore = (int) $session->answers()->sum('score');
+
+                $session->forceFill([
                     'status' => 'completed',
-                    'finished_at' => \Carbon\Carbon::parse($this->endTime)->isPast()
-                        ? \Carbon\Carbon::parse($this->endTime)
-                        : now(),
-                ]);
+                    'finished_at' => $finishedAt,
+                    'total_score' => $totalScore,
+                ])->save();
 
                 // Setelah ujian selesai (otomatis karena waktu habis), nonaktifkan akses token peserta
                 if ($session->examParticipant) {
@@ -426,14 +487,21 @@ class ExamPage extends Component
 
     public function submitFinish()
     {
+        if (! $this->ensureSessionIsActive()) {
+            return;
+        }
+
         // Mark session as completed
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
-                $session->update([
+                $totalScore = (int) $session->answers()->sum('score');
+
+                $session->forceFill([
                     'status' => 'completed',
                     'finished_at' => now(), // Manual finish uses current time
-                ]);
+                    'total_score' => $totalScore,
+                ])->save();
 
                 // Setelah peserta menekan tombol selesai, blokir akses ujian berikutnya
                 if ($session->examParticipant) {
@@ -472,6 +540,92 @@ class ExamPage extends Component
             'wrong' => $wrongCount, // Includes wrong answered questions
             'total_score' => $totalScore,
         ];
+
+        if ($session = ExamSession::find($this->examSessionId)) {
+            if ((int) $session->total_score !== (int) $totalScore) {
+                $session->forceFill(['total_score' => (int) $totalScore])->save();
+            }
+        }
+    }
+
+    public function monitorSessionStatus(): void
+    {
+        if ($this->showResults || !$this->examSessionId) {
+            return;
+        }
+
+        $session = ExamSession::find($this->examSessionId);
+
+        if (!$session || $session->status !== 'ongoing') {
+            $this->finalizeExternallyCompletedSession($session);
+            return;
+        }
+
+        $session->loadMissing('examParticipant.examPackage');
+
+        if (! $session->examParticipant?->examPackage?->is_active) {
+            $this->finalizeExternallyCompletedSession($session, 'Paket ujian sudah ditutup oleh panitia.');
+        }
+    }
+
+    protected function ensureSessionIsActive(): bool
+    {
+        if ($this->showResults || !$this->examSessionId) {
+            return false;
+        }
+
+        $session = ExamSession::find($this->examSessionId);
+
+        if ($session && $session->status === 'ongoing') {
+            $session->loadMissing('examParticipant.examPackage');
+
+            if (! $session->examParticipant?->examPackage?->is_active) {
+                $this->finalizeExternallyCompletedSession($session, 'Paket ujian sudah ditutup oleh panitia.');
+
+                return false;
+            }
+
+            return true;
+        }
+
+        $this->finalizeExternallyCompletedSession($session);
+
+        return false;
+    }
+
+    protected function finalizeExternallyCompletedSession(?ExamSession $session, string $message = 'Sesi ujian Anda telah diakhiri oleh pengawas.'): void
+    {
+        if ($this->showResults) {
+            return;
+        }
+
+        if ($session) {
+            $this->endTime = optional($session->finished_at)->toIso8601String() ?? now()->toIso8601String();
+
+            if ($session->total_score === null) {
+                $session->forceFill([
+                    'total_score' => (int) $session->answers()->sum('score'),
+                ])->save();
+            }
+
+            if ($session->examParticipant && $session->examParticipant->is_active) {
+                $session->examParticipant->update(['is_active' => false]);
+            }
+        } else {
+            $this->endTime = now()->toIso8601String();
+        }
+
+        $this->showConfirmFinish = false;
+        $this->loadResults();
+        $this->showResults = true;
+
+        $this->dispatch('exam-stopped', endTime: $this->endTime);
+
+        \Filament\Notifications\Notification::make()
+            ->title('Ujian dihentikan')
+            ->body($message)
+            ->warning()
+            ->send();
     }
 
     public function finishAndLogout()
