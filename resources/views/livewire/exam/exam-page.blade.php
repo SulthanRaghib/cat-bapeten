@@ -1113,8 +1113,6 @@
 
                     if (remaining <= 5 * 60 * 1000) {
                         setTimerState('danger');
-                    } else if (remaining <= 10 * 60 * 1000) {
-                        setTimerState('warning');
                     } else {
                         setTimerState('normal');
                     }
