@@ -502,18 +502,7 @@ class ExamPage extends Component
                     $finishedAt = now();
                 }
 
-                $totalScore = (int) $session->answers()->sum('score');
-
-                $session->forceFill([
-                    'status' => 'completed',
-                    'finished_at' => $finishedAt,
-                    'total_score' => $totalScore,
-                ])->save();
-
-                // Setelah ujian selesai (otomatis karena waktu habis), nonaktifkan akses token peserta
-                if ($session->examParticipant) {
-                    $session->examParticipant->update(['is_active' => false]);
-                }
+                $this->completeExamSession($session, $finishedAt);
             }
         }
 
@@ -542,18 +531,7 @@ class ExamPage extends Component
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
-                $totalScore = (int) $session->answers()->sum('score');
-
-                $session->forceFill([
-                    'status' => 'completed',
-                    'finished_at' => now(), // Manual finish uses current time
-                    'total_score' => $totalScore,
-                ])->save();
-
-                // Setelah peserta menekan tombol selesai, blokir akses ujian berikutnya
-                if ($session->examParticipant) {
-                    $session->examParticipant->update(['is_active' => false]);
-                }
+                $this->completeExamSession($session, now());
             }
         }
 
@@ -617,6 +595,22 @@ class ExamPage extends Component
 
         if (! $session->examParticipant?->examPackage?->is_active) {
             $this->finalizeExternallyCompletedSession($session, 'Paket ujian sudah ditutup oleh panitia.');
+        }
+    }
+
+    private function completeExamSession(ExamSession $session, ?Carbon $finishedAt = null)
+    {
+        $finishedAt = $finishedAt ?? now();
+        $totalScore = (int) $session->answers()->sum('score');
+
+        $session->forceFill([
+            'status' => 'completed',
+            'finished_at' => $finishedAt,
+            'total_score' => $totalScore,
+        ])->save();
+
+        if ($session->examParticipant) {
+            $session->examParticipant->update(['is_active' => false]);
         }
     }
 
