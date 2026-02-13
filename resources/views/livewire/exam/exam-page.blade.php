@@ -395,108 +395,200 @@
 <div>
     <span wire:poll.keep-alive.5s="monitorSessionStatus" style="display: none;"></span>
     @if ($step === 'verification')
-        <div
-            style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
-            <div
-                style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937;">Verifikasi Kamera
-                </h2>
-                <p style="color: #6b7280; margin-bottom: 30px;">Sistem perlu memverifikasi kamera Anda aktif sebelum
-                    ujian dimulai.</p>
+        <div style="position: fixed; top: 100px; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: #f9fafb; z-index: 50;">
+            <div style="background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 850px; height: auto; max-height: 500px; overflow: hidden; display: flex; flex-direction: row; margin: 20px;">
+                
+                {{-- Left Side: Instructions & Actions --}}
+                <div style="flex: 1; padding: 32px; display: flex; flex-direction: column; justify-content: center; min-width: 320px; border-right: 1px solid #f3f4f6;">
+                    <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #1f2937;">Verifikasi Kamera</h2>
+                    <p style="color: #6b7280; margin-bottom: 24px; font-size: 14px; line-height: 1.6;">
+                        Sistem perlu memverifikasi kamera Anda aktif dan berfungsi dengan baik sebelum ujian dapat dimulai.
+                    </p>
 
-                <div x-data="{
-                    cameraActive: false,
-                    error: null,
-                    initCamera() {
-                        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                            navigator.mediaDevices.getUserMedia({ video: true })
-                                .then(stream => {
-                                    this.$refs.video.srcObject = stream;
-                                    window.activeExamStream = stream; // Store globally
-                                    this.cameraActive = true;
-                                    this.error = null;
-                                })
-                                .catch(err => {
-                                    console.error(err);
-                                    if (err.name === 'NotAllowedError') {
-                                        this.error = 'Akses kamera ditolak. Harap izinkan akses kamera di browser Anda.';
-                                    } else {
-                                        this.error = 'Tidak dapat mengakses kamera: ' + err.message;
-                                    }
-                                    this.cameraActive = false;
-                                });
-                        } else {
-                            this.error = 'Browser tidak mendukung akses kamera.';
+                    <div wire:ignore x-data="{
+                        cameraActive: false,
+                        error: null,
+                        initCamera() {
+                            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                                navigator.mediaDevices.getUserMedia({ video: true })
+                                    .then(stream => {
+                                        this.$refs.video.srcObject = stream;
+                                        window.activeExamStream = stream; // Store globally
+                                        this.cameraActive = true;
+                                        this.error = null;
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        if (err.name === 'NotAllowedError') {
+                                            this.error = 'Akses kamera ditolak.';
+                                        } else {
+                                            this.error = 'Error: ' + err.message;
+                                        }
+                                        this.cameraActive = false;
+                                    });
+                            } else {
+                                this.error = 'Browser tidak support.';
+                            }
                         }
-                    }
-                }" x-init="initCamera()">
+                    }" x-init="initCamera()" style="width: 100%;">
 
-                    <div
-                        style="position: relative; width: 480px; height: 360px; background: #000; margin: 0 auto 20px auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                        <video x-ref="video" autoplay playsinline
-                            style="width: 100%; height: 100%; object-fit: cover;"></video>
-                        <div x-show="!cameraActive && !error" style="position: absolute; color: white;">Memuat Kamera...
+                        <div style="margin-top: auto;">
+                            <!-- Changed to @click for Alpine-Livewire interop inside wire:ignore -->
+                            <button type="button" x-show="cameraActive" @click="$wire.verifyCameraSuccess()"
+                                style="width: 100%; padding: 12px 16px; background-color: #2563eb; color: white; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="M22 4L12 14.01l-3-3"></path></svg>
+                                Lanjutkan Ujian
+                            </button>
+
+                            <button type="button" x-show="!cameraActive" @click="initCamera()"
+                                style="width: 100%; padding: 12px 16px; background-color: #4b5563; color: white; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                Coba Lagi
+                            </button>
+                            
+                            <div x-show="error" x-text="error" style="margin-top: 10px; font-size: 12px; color: #ef4444; background: #fee2e2; padding: 8px; border-radius: 4px;"></div>
                         </div>
-                        <div x-show="error" x-text="error"
-                            style="position: absolute; color: #fca5a5; padding: 20px; text-align: center;"></div>
-                    </div>
 
-                    <div style="text-align: center;">
-                        <button type="button" x-show="cameraActive" wire:click="verifyCameraSuccess"
-                            style="padding: 12px 24px; background-color: #2563eb; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
-                            Kamera Berfungsi - Lanjutkan
-                        </button>
-
-                        <button type="button" x-show="!cameraActive" @click="initCamera()"
-                            style="padding: 12px 24px; background-color: #4b5563; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
-                            Coba Lagi
-                        </button>
+                        {{-- Hidden on desktop and moved --}}
+                        <template x-teleport="#video-teleport-target">
+                             <div style="width: 100%; height: 100%; background: #000; position: relative;">
+                                <video x-ref="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                <div x-show="!cameraActive && !error" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;">
+                                    <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                                    <span>Menghubungkan...</span>
+                                </div>
+                            </div>
+                        </template>
                     </div>
+                </div>
+
+                {{-- Right Side: Video --}}
+                <div wire:ignore id="video-teleport-target" style="flex: 1.3; background: #000; display: flex; flex-direction: column; min-height: 280px;">
+                    {{-- Video teleported here --}}
                 </div>
             </div>
+            
+            <style>
+                /* Remove body scroll when in verification step */
+                body { overflow: hidden; }
+                
+                @media (max-width: 768px) {
+                    body { overflow: auto; }
+                    div[style*="flex-direction: row"] {
+                        flex-direction: column !important;
+                        height: auto !important;
+                        max-height: none !important;
+                    }
+                    div[style*="border-right: 1px solid"] {
+                        border-right: none !important;
+                        border-bottom: 1px solid #f3f4f6 !important;
+                    }
+                    #video-teleport-target {
+                        height: 250px;
+                        flex: none !important;
+                    }
+                }
+            </style>
         </div>
     @elseif($step === 'rules')
-        <div
-            style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
-            <div
-                style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 800px; width: 100%;">
-                <h2
-                    style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937; text-align: center;">
-                    Peraturan & Tata Tertib Ujian</h2>
+        <div style="max-width: 900px; margin: 0 auto; padding: 30px 20px 0 20px; min-height: 100vh;">
+            
+            {{-- Header --}}
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 style="font-size: 28px; font-weight: 800; margin: 0 0 12px 0; color: #1f2937; letter-spacing: -0.025em;">
+                    Peraturan & Tata Tertib Ujian
+                </h2>
+                <p style="margin: 0; color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto;">Harap membaca dan mematuhi seluruh peraturan di bawah ini demi kelancaran proses ujian Anda.</p>
+            </div>
 
-                <div
-                    style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left; color: #374151; line-height: 1.6;">
-                    <ol style="margin-left: 20px; list-style-type: decimal;">
-                        <li style="margin-bottom: 10px;">Peserta wajib menyalakan kamera selama ujian berlangsung.</li>
-                        <li style="margin-bottom: 10px;">Dilarang membuka tab, browser, atau aplikasi lain selain
-                            halaman ujian.</li>
-                        <li style="margin-bottom: 10px;">Dilarang menggunakan alat bantu hitung, komunikasi, atau
-                            catatan selain yang diperbolehkan.</li>
-                        <li style="margin-bottom: 10px;">Dilarang meninggalkan tempat duduk selama ujian berlangsung.
-                        </li>
-                        <li style="margin-bottom: 10px;">Dilarang capture layar atau menyebarkan soal ujian.</li>
-                        <li>Segala bentuk kecurangan akan mengakibatkan diskualifikasi.</li>
-                    </ol>
+            {{-- Content List --}}
+            <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 50px;">
+                
+                <!-- Item 1 -->
+                <div style="display: flex; gap: 20px; padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; align-items: flex-start; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <div style="color: #0284c7; margin-top: 4px; flex-shrink: 0; background: #f0f9ff; padding: 12px; border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">1. Wajib Kamera On</h4>
+                        <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Peserta wajib menyalakan kamera dan memastikan wajah terlihat jelas oleh pengawas sepanjang waktu ujian.</p>
+                    </div>
                 </div>
 
-                <div
-                    style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                <!-- Item 2 -->
+                <div style="display: flex; gap: 20px; padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; align-items: flex-start; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <div style="color: #0284c7; margin-top: 4px; flex-shrink: 0; background: #f0f9ff; padding: 12px; border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">2. Dilarang Membuka Tab Lain</h4>
+                        <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Dilarang keras membuka browser tab baru, window baru, atau aplikasi lain selain halaman ujian ini.</p>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div style="display: flex; gap: 20px; padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; align-items: flex-start; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <div style="color: #0284c7; margin-top: 4px; flex-shrink: 0; background: #f0f9ff; padding: 12px; border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25v-.008zm2.25-2.25h.008v.008H10.5v-.008zm0 2.25h.008v.008H10.5v-.008zm2.25-2.25h.008v.008H12.75v-.008zm0 2.25h.008v.008H12.75v-.008zm2.25-2.25h.008v.008H15v-.008zm0 2.25h.008v.008H15v-.008zM7.5 10.5h3v-3h-3v3zm0-3h3v-3h-3v3zm-4.5 9h18v6h-18v-6z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">3. Dilarang Alat Bantu</h4>
+                        <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Tidak diperkenankan menggunakan kalkulator, catatan fisik, buku, smartphone, atau alat bantu hitung lainnya.</p>
+                    </div>
+                </div>
+
+                <!-- Item 4 -->
+                <div style="display: flex; gap: 20px; padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; align-items: flex-start; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <div style="color: #0284c7; margin-top: 4px; flex-shrink: 0; background: #f0f9ff; padding: 12px; border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.675.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.675-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">4. Tetap di Tempat</h4>
+                        <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Dilarang meninggalkan tempat duduk atau menghilang dari pantauan kamera selama ujian berlangsung.</p>
+                    </div>
+                </div>
+
+                 <!-- Item 5 -->
+                <div style="display: flex; gap: 20px; padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; align-items: flex-start; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <div style="color: #0284c7; margin-top: 4px; flex-shrink: 0; background: #f0f9ff; padding: 12px; border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">5. Dilarang Screenshot</h4>
+                        <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Dilarang memotret, screenshot, atau merekam layar soal ujian dengan cara apapun.</p>
+                    </div>
+                </div>
+
+                 <!-- Item 6 -->
+                <div style="display: flex; gap: 20px; padding: 24px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 16px; align-items: flex-start; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <div style="color: #e11d48; margin-top: 4px; flex-shrink: 0; background: #ffe4e6; padding: 12px; border-radius: 12px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 28px; height: 28px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #9f1239;">6. Sanksi Tegas</h4>
+                        <p style="font-size: 15px; margin: 0; color: #9f1239; line-height: 1.6;">Pelanggaran terhadap tata tertib di atas dapat mengakibatkan diskualifikasi atau pembatalan hasil ujian secara sepihak.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Footer Action --}}
+            <div style="margin-top: 30px; padding-bottom: 60px; display: flex; flex-direction: column; align-items: center;">
+                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px; max-width: 900px;">
                     <input type="checkbox" id="agreeRules" wire:model.live="rulesAgreed"
-                        style="width: 20px; height: 20px; cursor: pointer;">
-                    <label for="agreeRules"
-                        style="font-size: 16px; font-weight: 500; cursor: pointer; color: #1f2937;">Saya telah membaca
-                        dan menyetujui seluruh peraturan ujian.</label>
+                        style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: #0284c7;">
+                    <label for="agreeRules" style="font-size: 14px; font-weight: 500; cursor: pointer; color: #334155; line-height: 1.2;">
+                        Saya menyatakan telah membaca, memahami, dan bersedia mematuhi seluruh peraturan serta tata tertib ujian yang berlaku.
+                    </label>
                 </div>
 
-                <div style="text-align: center;">
-                    <button wire:click="startExam"
-                        style="padding: 14px 32px; font-size: 16px; font-weight: bold; color: white; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s;"
-                        :style="!$wire.rulesAgreed ? 'background-color: #9ca3af; cursor: not-allowed;' :
-                            'background-color: #16a34a;'"
-                        :disabled="!$wire.rulesAgreed">
-                        Mulai Ujian
-                    </button>
-                </div>
+                <button wire:click="startExam"
+                    style="padding: 16px 80px; font-size: 16px; font-weight: 700; color: white; border-radius: 50px; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
+                    :style="!$wire.rulesAgreed ? 'background-color: #94a3b8; cursor: not-allowed; transform: scale(0.98); opacity: 0.8;' : 'background-color: #0284c7; transform: scale(1); opacity: 1; box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);'"
+                    :disabled="!$wire.rulesAgreed"
+                    onmouseover="if(this.disabled) return; this.style.backgroundColor='#0369a1'; this.style.transform='scale(1.02)'"
+                    onmouseout="if(this.disabled) return; this.style.backgroundColor='#0284c7'; this.style.transform='scale(1)'">
+                    Mulai Kerjakan Ujian
+                </button>
             </div>
         </div>
     @elseif($step === 'exam')
