@@ -41,7 +41,50 @@ class ExamPage extends Component
     public $showResults = false;
     public $resultStats = [];
 
+    // Security Monitoring
+    public $violationCount = 0;
+    public $showViolationModal = false;
+    public $violationMessage = '';
+
     protected $listeners = ['refreshMathJax' => '$refresh', 'timeExpired' => 'handleTimeExpiry'];
+
+    public function logActivity($action, $message = null, $severity = 'warning')
+    {
+        if (!$this->examSessionId) {
+            return;
+        }
+
+        // Map actions to Indonesian messages
+        $messageMap = [
+            'tab_switch' => 'Peserta berpindah tab atau meminimalkan browser.',
+            'window_blur' => 'Peserta mengklik di luar jendela ujian.',
+            'copy_attempt' => 'Percobaan menyalin teks soal (Copy).',
+            'paste_attempt' => 'Percobaan menempel teks (Paste).',
+            'right_click' => 'Percobaan klik kanan (Context Menu).',
+        ];
+
+        // Use custom message if provided, otherwise use mapped message
+        $logMessage = $message ?? ($messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.');
+
+        // Increment violation count for warnings
+        if (in_array($severity, ['warning', 'danger', 'critical'])) {
+            $this->violationCount++;
+            $this->violationMessage = $logMessage;
+            $this->showViolationModal = true;
+        }
+
+        \App\Models\ExamActivityLog::create([
+            'exam_session_id' => $this->examSessionId,
+            'action' => $action,
+            'message' => $logMessage,
+            'severity' => $severity,
+        ]);
+    }
+
+    public function closeViolationModal()
+    {
+        $this->showViolationModal = false;
+    }
 
     public function mount()
     {
@@ -128,9 +171,11 @@ class ExamPage extends Component
         // Case B: Session is ongoing
         if ($session && $session->status === 'ongoing') {
             $startedAt = $session->started_at;
-            $expirationTime = $startedAt->copy()->addMinutes($this->durationMinutes);
 
-            // Check if now is past expiration time
+            $expirationTime = $startedAt->copy()
+                ->addMinutes($this->durationMinutes);
+
+            // Check expiry only if ongoing
             if (now()->greaterThan($expirationTime)) {
                 $this->examSessionId = $session->id;
                 $this->endTime = $expirationTime->toIso8601String();
@@ -207,9 +252,9 @@ class ExamPage extends Component
         $this->step = 'exam';
         $this->initializeExamState($session, $user);
 
-        // Dispatch event to start timer on frontend
-        // Using named parameter for clarity
-        $this->dispatch('exam-started', endTime: $this->endTime);
+        // Dispatch event to start timer on frontend with explicit end time
+        // This ensures the timer logic can pick up the new time immediately
+        $this->dispatch('exam-started', $this->endTime);
     }
 
     protected function initializeExamState($session, $user)
@@ -222,8 +267,10 @@ class ExamPage extends Component
         $this->candidateName = $user->name;
         $this->candidateIdentifier = $user->nip;
 
-        // Calculate end time (started_at + duration)
-        $this->endTime = $session->started_at->copy()->addMinutes($this->durationMinutes)->toIso8601String();
+        // Calculate end time
+        $this->endTime = $session->started_at->copy()
+            ->addMinutes($this->durationMinutes)
+            ->toIso8601String();
 
         // Restore question index from session (persist across refresh)
         $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
@@ -556,7 +603,12 @@ class ExamPage extends Component
 
         $session = ExamSession::find($this->examSessionId);
 
-        if (!$session || $session->status !== 'ongoing') {
+        if (!$session) {
+            $this->finalizeExternallyCompletedSession($session);
+            return;
+        }
+
+        if ($session->status !== 'ongoing') {
             $this->finalizeExternallyCompletedSession($session);
             return;
         }
@@ -570,10 +622,6 @@ class ExamPage extends Component
 
     protected function ensureSessionIsActive(): bool
     {
-        if ($this->showResults || !$this->examSessionId) {
-            return false;
-        }
-
         $session = ExamSession::find($this->examSessionId);
 
         if ($session && $session->status === 'ongoing') {
