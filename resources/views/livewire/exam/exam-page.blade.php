@@ -1,8 +1,67 @@
 @push('styles')
     <style>
-        * {
-            box-sizing: border-box;
+        .violation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
         }
+
+        .violation-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.95);
+            animation: zoomIn 0.3s ease-out forwards;
+            border-top: 6px solid #ef4444;
+        }
+
+        .violation-icon {
+            width: 80px;
+            height: 80px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: #ef4444;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
 
         /* ================= LAYOUT ================= */
         .container {
@@ -392,8 +451,94 @@
     </style>
 @endpush
 
-<div>
-    <span wire:poll.keep-alive.5s="monitorSessionStatus" style="display: none;"></span>
+<div x-data="{
+    logActivity(action, message, severity = 'warning') {
+        // Simple throttle to prevent spamming DB
+        if (this._lastLog && Date.now() - this._lastLog < 2000) return;
+        this._lastLog = Date.now();
+
+        @this.call('logActivity', action, null, severity);
+    }
+}" x-init="// 1. Detect Tab Switching / Visibility Change
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        logActivity('tab_switch', '', 'warning');
+        // alert('Peringatan: Dilarang beralih tab selama ujian berlangsung!');
+    }
+});
+
+// 2. Detect Window Blur (Clicking outside browser)
+// window.addEventListener('blur', () => {
+// Optional: strict mode, might trigger on some popups
+// logActivity('window_blur', '', 'info');
+// });
+
+// 3. Detect Copy/Paste
+document.addEventListener('copy', (e) => {
+    e.preventDefault();
+    logActivity('copy_attempt', '', 'warning');
+    return false;
+});
+document.addEventListener('paste', (e) => {
+    e.preventDefault();
+    logActivity('paste_attempt', '', 'warning');
+    return false;
+});
+document.addEventListener('cut', (e) => {
+    e.preventDefault();
+    return false;
+});
+
+// 4. Disable Context Menu
+document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    logActivity('right_click', '', 'warning');
+    return false;
+});">
+
+    {{-- Violation Modal --}}
+    @if ($showViolationModal)
+        <div class="violation-modal">
+            <div class="violation-content">
+                <div class="violation-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" style="width: 40px; height: 40px;">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Peringatan Pelanggaran</h2>
+                <p class="text-gray-600 mb-6 font-medium">{{ $violationMessage }}</p>
+
+                <div class="bg-red-50 p-4 rounded-lg mb-6 text-left border border-red-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-red-600 font-semibold uppercase tracking-wider">Total
+                            Pelanggaran</span>
+                        <span
+                            class="bg-red-200 text-red-800 text-xs font-bold px-2 py-1 rounded-full">{{ $violationCount }}x</span>
+                    </div>
+
+                    @if ($violationCount >= 3)
+                        <p class="text-red-700 text-sm font-semibold mt-2">
+                            ⚠️ Perhatian: Admin berhak memberhentikan ujian Anda jika pelanggaran berlanjut.
+                        </p>
+                    @else
+                        <p class="text-gray-500 text-xs mt-1">
+                            Harap patuhi tata tertib ujian. Segala aktivitas Anda dipantau oleh sistem.
+                        </p>
+                    @endif
+                </div>
+
+                <button wire:click="closeViolationModal"
+                    class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    SAYA MENGERTI
+                </button>
+            </div>
+        </div>
+    @endif
+
+    <span wire:poll.keep-alive.5s="monitorSessionStatus" style="display: none;" id="exam-session-status"></span>
     @if ($step === 'verification')
         <div
             style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fafb;">
@@ -403,7 +548,6 @@
                 </h2>
                 <p style="color: #6b7280; margin-bottom: 30px;">Sistem perlu memverifikasi kamera Anda aktif sebelum
                     ujian dimulai.</p>
-
                 <div x-data="{
                     cameraActive: false,
                     error: null,
@@ -430,7 +574,6 @@
                         }
                     }
                 }" x-init="initCamera()">
-
                     <div
                         style="position: relative; width: 480px; height: 360px; background: #000; margin: 0 auto 20px auto; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                         <video x-ref="video" autoplay playsinline
@@ -440,18 +583,13 @@
                         <div x-show="error" x-text="error"
                             style="position: absolute; color: #fca5a5; padding: 20px; text-align: center;"></div>
                     </div>
-
-                    <div style="text-align: center;">
-                        <button type="button" x-show="cameraActive" wire:click="verifyCameraSuccess"
-                            style="padding: 12px 24px; background-color: #2563eb; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
-                            Kamera Berfungsi - Lanjutkan
-                        </button>
-
-                        <button type="button" x-show="!cameraActive" @click="initCamera()"
-                            style="padding: 12px 24px; background-color: #4b5563; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">
-                            Coba Lagi
-                        </button>
-                    </div>
+                    <div style="text-align: center;"><button type="button" x-show="cameraActive"
+                            wire:click="verifyCameraSuccess"
+                            style="padding: 12px 24px; background-color: #2563eb; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">Kamera
+                            Berfungsi - Lanjutkan </button><button type="button" x-show="!cameraActive"
+                            @click="initCamera()"
+                            style="padding: 12px 24px; background-color: #4b5563; color: white; border-radius: 8px; border: none; cursor: pointer; font-size: 16px;">Coba
+                            Lagi </button></div>
                 </div>
             </div>
         </div>
@@ -463,45 +601,38 @@
                 <h2
                     style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1f2937; text-align: center;">
                     Peraturan & Tata Tertib Ujian</h2>
-
                 <div
                     style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left; color: #374151; line-height: 1.6;">
                     <ol style="margin-left: 20px; list-style-type: decimal;">
                         <li style="margin-bottom: 10px;">Peserta wajib menyalakan kamera selama ujian berlangsung.</li>
-                        <li style="margin-bottom: 10px;">Dilarang membuka tab, browser, atau aplikasi lain selain
-                            halaman ujian.</li>
-                        <li style="margin-bottom: 10px;">Dilarang menggunakan alat bantu hitung, komunikasi, atau
-                            catatan selain yang diperbolehkan.</li>
+                        <li style="margin-bottom: 10px;">Dilarang membuka tab,
+                            browser,
+                            atau aplikasi lain selain halaman ujian.</li>
+                        <li style="margin-bottom: 10px;">Dilarang menggunakan alat bantu hitung,
+                            komunikasi,
+                            atau catatan selain yang diperbolehkan.</li>
                         <li style="margin-bottom: 10px;">Dilarang meninggalkan tempat duduk selama ujian berlangsung.
                         </li>
                         <li style="margin-bottom: 10px;">Dilarang capture layar atau menyebarkan soal ujian.</li>
                         <li>Segala bentuk kecurangan akan mengakibatkan diskualifikasi.</li>
                     </ol>
                 </div>
-
                 <div
                     style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 12px;">
                     <input type="checkbox" id="agreeRules" wire:model.live="rulesAgreed"
-                        style="width: 20px; height: 20px; cursor: pointer;">
-                    <label for="agreeRules"
+                        style="width: 20px; height: 20px; cursor: pointer;"><label for="agreeRules"
                         style="font-size: 16px; font-weight: 500; cursor: pointer; color: #1f2937;">Saya telah membaca
                         dan menyetujui seluruh peraturan ujian.</label>
                 </div>
-
-                <div style="text-align: center;">
-                    <button wire:click="startExam"
+                <div style="text-align: center;"><button wire:click="startExam"
                         style="padding: 14px 32px; font-size: 16px; font-weight: bold; color: white; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s;"
                         :style="!$wire.rulesAgreed ? 'background-color: #9ca3af; cursor: not-allowed;' :
                             'background-color: #16a34a;'"
-                        :disabled="!$wire.rulesAgreed">
-                        Mulai Ujian
-                    </button>
-                </div>
+                        :disabled="!$wire.rulesAgreed">Mulai Ujian </button></div>
             </div>
         </div>
     @elseif($step === 'exam')
-        {{-- CONFIRM FINISH MODAL --}}
-        @if ($showConfirmFinish)
+        {{-- CONFIRM FINISH MODAL --}} @if ($showConfirmFinish)
             <div
                 style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
                 <div
@@ -514,211 +645,77 @@
                                 d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                         </svg>
                     </div>
-
                     <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #1f2937;">Konfirmasi
                         Selesai</h3>
                     <p style="color: #4b5563; margin-bottom: 25px; line-height: 1.5;">Apakah Anda yakin ingin
                         menyelesaikan ujian? <br>Jawaban akan dikunci dan tidak dapat diubah.</p>
-
-                    <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button wire:click="cancelFinish"
-                            style="background: #e5e7eb; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
-                            Batal
-                        </button>
-                        <button wire:click="submitFinish"
-                            style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">
-                            Ya, Selesai
-                        </button>
-                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;"><button wire:click="cancelFinish"
+                            style="background: #e5e7eb; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">Batal
+                        </button><button wire:click="submitFinish"
+                            style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer;">Ya,
+                            Selesai </button></div>
                 </div>
             </div>
         @endif
 
         {{-- OVERLAY RESULT MODAL --}}
         @if ($showResults)
-            <div class="result-overlay">
-                <div class="result-card">
-                    <div class="result-header">
-                        <div class="result-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" style="width: 48px; height: 48px;">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h2>Ujian Selesai</h2>
-                        <p>Waktu ujian telah berakhir atau Anda telah menyelesaikan ujian.</p>
-                    </div>
+            <div
+                style="position: fixed; inset: 0; background: #f9fafb; z-index: 99999; overflow-y: auto; font-family: 'Poppins', sans-serif;">
+                <div
+                    style="min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                    <div style="width: 100%; max-width: 480px;">
+                        <div
+                            style="background: white; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative;">
+                            <!-- Brand Accent Bar - Red for Warning -->
+                            <div style="height: 6px; background: #ef4444;"></div>
 
-                    <div class="score-display">
-                        <span class="score-label">Total Skor</span>
-                        <span class="score-value">{{ $resultStats['total_score'] ?? 0 }}</span>
-                    </div>
+                            <div style="padding: 40px;">
+                                <div style="text-align: center; margin-bottom: 35px;">
+                                    <!-- Logo Instansi -->
+                                    <img src="{{ asset('assets/img/logo.png') }}" alt="Logo"
+                                        style="height: 60px; margin-bottom: 24px; object-fit: contain;">
 
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label">Total Soal</span>
-                            <span class="stat-value">{{ $resultStats['total_questions'] ?? 0 }}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Dijawab</span>
-                            <span class="stat-value">{{ $resultStats['answered'] ?? 0 }}</span>
-                        </div>
-                        <div class="stat-item correct">
-                            <span class="stat-label">Benar</span>
-                            <span class="stat-value">{{ $resultStats['correct'] ?? 0 }}</span>
-                        </div>
-                        <div class="stat-item wrong">
-                            <span class="stat-label">Salah</span>
-                            <span class="stat-value">{{ $resultStats['wrong'] ?? 0 }}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Kosong</span>
-                            <span class="stat-value">{{ $resultStats['unanswered'] ?? 0 }}</span>
-                        </div>
-                    </div>
+                                    <h2
+                                        style="font-size: 24px; font-weight: 800; color: #1f2937; margin: 0 0 8px 0; letter-spacing: -0.5px;">
+                                        Ujian Dihentikan</h2>
+                                    <p style="color: #ef4444; font-size: 14px; font-weight: 600; margin: 0; line-height: 1.5;">
+                                        Sesi ujian Anda telah berakhir otomatis.<br>
+                                        <span style="color: #6b7280; font-weight: 400;">(Waktu habis atau dihentikan oleh pengawas)</span>
+                                    </p>
+                                </div>
 
-                    <div class="result-actions">
-                        <button wire:click="finishAndLogout" class="finish-btn">
-                            Selesai & Keluar
-                        </button>
-                        <!-- Small helper text -->
-                        <div style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
-                            Klik tombol di atas untuk mengakhiri sesi dan keluar dari aplikasi.
+                                <!-- Score Card -->
+                                <div
+                                    style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 16px; padding: 32px 20px; text-align: center; margin-bottom: 32px; position: relative;">
+                                    <div
+                                        style="color: #991b1b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
+                                        Nilai Akhir</div>
+                                    <div
+                                        style="font-size: 72px; font-weight: 900; color: #7f1d1d; line-height: 1; letter-spacing: -2px;">
+                                        {{ $resultStats['total_score'] ?? 0 }}
+                                    </div>
+                                </div>
+
+                                <div style="text-align: center;">
+                                    <button wire:click="finishAndLogout"
+                                        style="width: 100%; padding: 16px 24px; background-color: #ef4444; color: white; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
+                                        onmouseover="this.style.backgroundColor='#dc2626'; this.style.transform='translateY(-1px)'"
+                                        onmouseout="this.style.backgroundColor='#ef4444'; this.style.transform='translateY(0)'">
+                                        <span>Kembali ke Halaman Utama</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="2" stroke="currentColor"
+                                            style="width: 18px; height: 18px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <style>
-                .result-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(243, 244, 246, 0.95);
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                    backdrop-filter: blur(5px);
-                }
-
-                .result-card {
-                    background: white;
-                    border-radius: 20px;
-                    padding: 40px;
-                    width: 100%;
-                    max-width: 500px;
-                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                    text-align: center;
-                    border: 1px solid #e5e7eb;
-                }
-
-                .result-icon {
-                    color: #059669;
-                    margin-bottom: 20px;
-                    display: inline-flex;
-                    background: #ecfdf5;
-                    padding: 15px;
-                    border-radius: 50%;
-                }
-
-                .result-header h2 {
-                    color: #111827;
-                    font-size: 24px;
-                    font-weight: 700;
-                    margin-bottom: 10px;
-                }
-
-                .result-header p {
-                    color: #6b7280;
-                    margin-bottom: 30px;
-                    font-size: 14px;
-                }
-
-                .score-display {
-                    background: #f9fafb;
-                    padding: 20px;
-                    border-radius: 12px;
-                    margin-bottom: 30px;
-                    border: 1px solid #f3f4f6;
-                }
-
-                .score-label {
-                    display: block;
-                    font-size: 14px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: #6b7280;
-                    margin-bottom: 5px;
-                }
-
-                .score-value {
-                    font-size: 48px;
-                    font-weight: 800;
-                    color: #059669;
-                    /* Green score */
-                }
-
-                .stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 15px;
-                    margin-bottom: 30px;
-                }
-
-                .stat-item {
-                    background: white;
-                    padding: 10px;
-                    border-radius: 8px;
-                    border: 1px solid #e5e7eb;
-                }
-
-                .stat-item.correct {
-                    border-top: 3px solid #059669;
-                    background: #f0fdf4;
-                }
-
-                .stat-item.wrong {
-                    border-top: 3px solid #ef4444;
-                    background: #fef2f2;
-                }
-
-                .stat-label {
-                    display: block;
-                    font-size: 11px;
-                    color: #6b7280;
-                    margin-bottom: 4px;
-                    font-weight: 600;
-                }
-
-                .stat-value {
-                    font-size: 18px;
-                    display: block;
-                    font-weight: 700;
-                    color: #1f2937;
-                }
-
-                .finish-btn {
-                    background: #1f2937;
-                    color: white;
-                    width: 100%;
-                    padding: 14px;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    border: none;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                    font-size: 16px;
-                }
-
-                .finish-btn:hover {
-                    background: #111827;
-                }
-            </style>
         @endif
 
         @if ($totalQuestions > 0 && $this->currentQuestion)
@@ -889,7 +886,8 @@
                     </div>
 
                     <button type="button" wire:click="confirmFinish" class="finish"
-                        style="margin-top: 20px;">Selesai Ujian</button>
+                        style="margin-top: 20px;">Selesai
+                        Ujian</button>
                 </aside>
             </div>
         @else
@@ -964,10 +962,19 @@
             }
 
             window.__examPageInitialised = true;
-            var timerInterval = null;
+
+            // ============================================================
+            // TIMER STATE — single source of truth
+            // ============================================================
+            var timerInterval = null; // setInterval ID
+            var timerEndTime = null; // end timestamp in ms (parsed from ISO)
+
             var mathRenderDebounce = null;
             var fiveMinuteWarningShown = false;
 
+            // ============================================================
+            // HELPERS
+            // ============================================================
             function lockExamUI() {
                 document.querySelectorAll('input, button, a.nav-btn').forEach(function(el) {
                     el.disabled = true;
@@ -976,158 +983,178 @@
                 });
             }
 
-            function initTimer() {
-                var timerEl = document.getElementById('exam-timer');
-                if (!timerEl) {
+            function prefix(v) {
+                return v.toString().padStart(2, '0');
+            }
+
+            function formatRemaining(ms) {
+                if (ms <= 0) return '00:00';
+                var h = Math.floor(ms / 3600000);
+                var m = Math.floor((ms % 3600000) / 60000);
+                var s = Math.floor((ms % 60000) / 1000);
+                return h > 0 ?
+                    prefix(h) + ':' + prefix(m) + ':' + prefix(s) :
+                    prefix(m) + ':' + prefix(s);
+            }
+
+            function getTimerEl() {
+                return document.getElementById('exam-timer');
+            }
+
+            function setTimerState(timerEl, state) {
+                timerEl.setAttribute('data-state', state);
+                var container = timerEl.closest('[data-timer-container]');
+                if (container) {
+                    container.setAttribute('data-state', state);
+                    container.classList.remove('timer-warning');
+                    if (state === 'warning' || state === 'danger') {
+                        container.classList.add('timer-warning');
+                    }
+                }
+            }
+
+            // ============================================================
+            // CORE TIMER TICK — called every second by setInterval
+            // ============================================================
+            function tick() {
+                var timerEl = getTimerEl();
+                if (!timerEl || !timerEndTime) return;
+
+                var remaining = timerEndTime - Date.now();
+
+                if (remaining <= 0) {
+                    timerEl.textContent = '00:00';
+                    setTimerState(timerEl, 'danger');
+                    lockExamUI();
+                    stopInterval();
+                    @this.call('handleTimeExpiry');
                     return;
+                }
+
+                timerEl.textContent = formatRemaining(remaining);
+
+                // 5-minute warning
+                if (remaining <= 5 * 60 * 1000 && !fiveMinuteWarningShown) {
+                    fiveMinuteWarningShown = true;
+                    showFiveMinuteWarning();
+                }
+
+                setTimerState(timerEl, remaining <= 5 * 60 * 1000 ? 'danger' : 'normal');
+            }
+
+            // ============================================================
+            // INTERVAL MANAGEMENT
+            // ============================================================
+            function stopInterval() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+
+            function startInterval() {
+                stopInterval();
+                tick(); // Show current value immediately
+                timerInterval = setInterval(tick, 1000);
+            }
+
+            // ============================================================
+            // INIT TIMER — reads data-end-time from DOM
+            // ============================================================
+            function initTimer() {
+                var timerEl = getTimerEl();
+                if (!timerEl) {
+                    console.warn('Timer element not found, will retry...');
+                    return false;
                 }
 
                 var endAttr = timerEl.getAttribute('data-end-time');
                 if (!endAttr) {
                     timerEl.textContent = '--:--';
-                    return;
+                    console.warn('Timer end-time attribute not set');
+                    return false;
                 }
 
-                var endTime = Date.parse(endAttr);
-                if (isNaN(endTime)) {
+                var parsed = Date.parse(endAttr);
+                if (isNaN(parsed)) {
                     timerEl.textContent = '--:--';
-                    return;
+                    console.warn('Timer end-time invalid:', endAttr);
+                    return false;
                 }
 
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
+                timerEndTime = parsed;
 
-                var container = timerEl.closest('[data-timer-container]');
-
-                function setTimerState(state) {
-                    timerEl.setAttribute('data-state', state);
-                    if (container) {
-                        container.setAttribute('data-state', state);
-                        // Update timer box class based on state
-                        container.classList.remove('timer-warning');
-                        if (state === 'warning' || state === 'danger') {
-                            container.classList.add('timer-warning');
-                        }
-                    }
-                }
-
-                function prefix(value) {
-                    return value.toString().padStart(2, '0');
-                }
-
-                function updateTimer() {
-                    var now = Date.now();
-                    var remaining = endTime - now;
-
-                    if (remaining <= 0) {
-                        timerEl.textContent = '00:00';
-                        setTimerState('danger');
-
-                        // UX: Disable interactions immediately
-                        lockExamUI();
-
-                        // Clear interval to stop ticking
-                        if (timerInterval) clearInterval(timerInterval);
-
-                        // Call Livewire to handle expiration and show results
-                        @this.call('handleTimeExpiry');
-
-                        return;
-                    }
-
-                    var hours = Math.floor(remaining / (1000 * 60 * 60));
-                    var minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                    var seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-                    if (hours > 0) {
-                        timerEl.textContent = prefix(hours) + ':' + prefix(minutes) + ':' + prefix(seconds);
-                    } else {
-                        timerEl.textContent = prefix(minutes) + ':' + prefix(seconds);
-                    }
-
-                    // 5-minute warning notification
-                    if (remaining <= 5 * 60 * 1000 && !fiveMinuteWarningShown) {
-                        fiveMinuteWarningShown = true;
-
-                        var warningDiv = document.createElement('div');
-                        warningDiv.id = 'timer-warning-notif';
-                        warningDiv.innerHTML = `
-                            <div style="
-                                position: fixed;
-                                top: 20px;
-                                left: 50%;
-                                transform: translateX(-50%);
-                                background: #c62828;
-                                color: white;
-                                padding: 16px 24px;
-                                border-radius: 12px;
-                                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-                                z-index: 9999;
-                                display: flex;
-                                align-items: center;
-                                gap: 16px;
-                                min-width: 320px;
-                                animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                            ">
-                                <span style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%;">
-                                    <svg style="width: 24px; height: 24px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </span>
-                                <div style="flex: 1;">
-                                    <strong style="display: block; font-size: 16px; margin-bottom: 4px;">Sisa Waktu 5 Menit!</strong>
-                                    <span style="font-size: 14px; opacity: 0.9;">Segera selesaikan ujian Anda.</span>
-                                </div>
-                                <button onclick="document.getElementById('timer-warning-notif').remove()" style="
-                                    background: none;
-                                    border: none;
-                                    color: white;
-                                    padding: 4px;
-                                    cursor: pointer;
-                                    opacity: 0.8;
-                                    transition: opacity 0.2s;
-                                ">
-                                    <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <style>
-                                @keyframes slideDown {
-                                    from { top: -100px; opacity: 0; }
-                                    to { top: 20px; opacity: 1; }
-                                }
-                            </style>
-                        `;
-                        document.body.appendChild(warningDiv);
-
-                        // Auto-dismiss after 10 seconds
-                        setTimeout(function() {
-                            if (document.body.contains(warningDiv)) {
-                                warningDiv.remove();
-                            }
-                        }, 10000);
-                    }
-
-                    if (remaining <= 5 * 60 * 1000) {
-                        setTimerState('danger');
-                    } else {
-                        setTimerState('normal');
-                    }
-                }
-
-                updateTimer();
-                timerInterval = setInterval(updateTimer, 1000);
+                // Not paused: start normal countdown
+                startInterval();
+                console.log('Timer initialized successfully, end time:', new Date(parsed));
+                return true;
             }
 
+            // Retry timer initialization up to 10 times with exponential backoff
+            function initTimerWithRetry(attempt = 0) {
+                if (attempt > 10) {
+                    console.error('Failed to initialize timer after 10 attempts');
+                    return;
+                }
+
+                if (initTimer()) {
+                    return; // Success
+                }
+
+                var delay = Math.min(100 * Math.pow(1.5, attempt), 3000);
+                console.log('Retrying timer init in', delay, 'ms (attempt', attempt + 1, ')');
+                setTimeout(function() {
+                    initTimerWithRetry(attempt + 1);
+                }, delay);
+            }
+
+            // ============================================================
+            // 5-MINUTE WARNING POPUP
+            // ============================================================
+            function showFiveMinuteWarning() {
+                var warningDiv = document.createElement('div');
+                warningDiv.id = 'timer-warning-notif';
+                warningDiv.innerHTML =
+                    `
+                    <div style="
+                        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                        background: #c62828; color: white; padding: 16px 24px;
+                        border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                        z-index: 9999; display: flex; align-items: center; gap: 16px;
+                        min-width: 320px; animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    ">
+                        <span style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%;">
+                            <svg style="width: 24px; height: 24px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        <div style="flex: 1;">
+                            <strong style="display: block; font-size: 16px; margin-bottom: 4px;">Sisa Waktu 5 Menit!</strong>
+                            <span style="font-size: 14px; opacity: 0.9;">Segera selesaikan ujian Anda.</span>
+                        </div>
+                        <button onclick="document.getElementById('timer-warning-notif').remove()" style="
+                            background: none; border: none; color: white; padding: 4px;
+                            cursor: pointer; opacity: 0.8; transition: opacity 0.2s;">
+                            <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <style>@keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } }</style>`;
+                document.body.appendChild(warningDiv);
+                setTimeout(function() {
+                    if (document.body.contains(warningDiv)) warningDiv.remove();
+                }, 10000);
+            }
+
+            // ============================================================
+            // MATHJAX
+            // ============================================================
             function renderMath() {
                 if (window.renderMathJax) {
                     window.renderMathJax();
                     return;
                 }
-
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     var nodeList = document.querySelectorAll('.question-content, .option-text');
                     if (nodeList.length) {
@@ -1135,7 +1162,6 @@
                         if (typeof window.MathJax.typesetClear === 'function') {
                             window.MathJax.typesetClear(nodes);
                         }
-
                         window.MathJax.typesetPromise(nodes).catch(function(err) {
                             console.warn('MathJax error:', err);
                         });
@@ -1143,31 +1169,29 @@
                 }
             }
 
+            function debouncedRenderMath() {
+                if (mathRenderDebounce) clearTimeout(mathRenderDebounce);
+                mathRenderDebounce = setTimeout(renderMath, 50);
+            }
+
+            // ============================================================
+            // SAVE INDICATOR
+            // ============================================================
             function showSaveIndicator() {
                 var indicator = document.getElementById('save-indicator');
-                if (!indicator) {
-                    return;
-                }
-
+                if (!indicator) return;
                 indicator.classList.add('show');
                 setTimeout(function() {
                     indicator.classList.remove('show');
                 }, 1600);
             }
 
+            // ============================================================
+            // INIT ENHANCEMENTS (page load / navigation)
+            // ============================================================
             function initialiseEnhancements() {
-                initTimer();
+                initTimerWithRetry();
                 renderMath();
-            }
-
-            // Debounced MathJax render to prevent multiple rapid calls
-            function debouncedRenderMath() {
-                if (mathRenderDebounce) {
-                    clearTimeout(mathRenderDebounce);
-                }
-                mathRenderDebounce = setTimeout(function() {
-                    renderMath();
-                }, 50);
             }
 
             // Initial setup
@@ -1177,104 +1201,104 @@
                 document.addEventListener('DOMContentLoaded', initialiseEnhancements);
             }
 
-            // Livewire 3 compatible hooks
+            // Watch for timer element changes (when Livewire updates it)
+            var timerObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'data-end-time') {
+                        var target = mutation.target;
+                        if (target.id === 'exam-timer') {
+                            console.log('Timer data-end-time changed, reinitializing...');
+                            initTimerWithRetry();
+                        }
+                    }
+                });
+            });
+
+            // Handle exam-started event directly
             document.addEventListener('livewire:init', function() {
-                // Hook into Livewire's morph cycle for MathJax re-rendering
+                Livewire.on('exam-started', (endTime) => {
+                    console.log('Event exam-started received', endTime);
+
+                    // The endTime might be an array if sent as parameter, or string
+                    var timeStr = Array.isArray(endTime) ? endTime[0] : endTime;
+
+                    var timerEl = getTimerEl();
+                    if (timerEl) {
+                        timerEl.setAttribute('data-end-time', timeStr);
+                        // Trigger re-init manually immediately
+                        initTimerWithRetry();
+                    } else {
+                        // If DOM not ready yet, wait a bit
+                        setTimeout(() => {
+                            var retryEl = getTimerEl();
+                            if (retryEl) {
+                                retryEl.setAttribute('data-end-time', timeStr);
+                                initTimerWithRetry();
+                            }
+                        }, 500);
+                    }
+                });
+            });
+
+            // Start observing timer element once it exists
+            setTimeout(function watchTimer() {
+                var timerEl = getTimerEl();
+                if (timerEl) {
+                    timerObserver.observe(timerEl, {
+                        attributes: true,
+                        attributeFilter: ['data-end-time']
+                    });
+                    console.log('Timer observer attached');
+                } else {
+                    setTimeout(watchTimer, 500);
+                }
+            }, 100);
+
+            // ============================================================
+            // LIVEWIRE EVENT HOOKS
+            // ============================================================
+            document.addEventListener('livewire:init', function() {
+
                 Livewire.hook('morph.updated', function({
                     el,
                     component
                 }) {
-                    // Only re-render MathJax, don't reinit timer (it's wire:ignore)
                     debouncedRenderMath();
                 });
 
-                // Listen for custom events from the component
                 Livewire.on('answer-saved', function() {
                     showSaveIndicator();
                 });
 
-                // NEW: Listen for exam start event to kickoff timer
-                Livewire.on('exam-started', function(data) {
-                    console.log('Exam Started Event:', data);
-
-                    var endTime = null;
-                    // Handle object {endTime: ...} or array [{endTime: ...}]
-                    if (data && data.endTime) {
-                        endTime = data.endTime;
-                    } else if (Array.isArray(data) && data.length > 0 && data[0].endTime) {
-                        endTime = data[0].endTime;
-                    } else if (typeof data === 'string') {
-                        endTime = data;
-                    }
-
-                    var timerEl = document.getElementById('exam-timer');
-
-                    if (timerEl && endTime) {
-                        // Manually update the attribute since wire:ignore prevents it
-                        timerEl.setAttribute('data-end-time', endTime);
-
-                        // Restart timer
-                        initTimer();
-                    } else {
-                        console.warn('Timer element not found or invalid end time', {
-                            timerEl: !!timerEl,
-                            endTime: endTime
-                        });
-                    }
-                });
-
+                // -------- STOPPED: force-finished by admin --------
                 Livewire.on('exam-stopped', function(data) {
-                    if (timerInterval) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                    }
-
+                    stopInterval();
                     lockExamUI();
 
-                    var timerEl = document.getElementById('exam-timer');
-
+                    var timerEl = getTimerEl();
                     if (timerEl) {
-                        var forcedEnd = null;
-
-                        if (data && data.endTime) {
-                            forcedEnd = data.endTime;
-                        } else if (Array.isArray(data) && data.length > 0 && data[0].endTime) {
-                            forcedEnd = data[0].endTime;
-                        }
-
-                        if (!forcedEnd) {
-                            forcedEnd = new Date().toISOString();
-                        }
-
-                        timerEl.setAttribute('data-end-time', forcedEnd);
                         timerEl.textContent = '00:00';
-                        timerEl.setAttribute('data-state', 'danger');
-
-                        var container = timerEl.closest('[data-timer-container]');
-                        if (container) {
-                            container.setAttribute('data-state', 'danger');
-                            container.classList.add('timer-warning');
-                        }
+                        setTimerState(timerEl, 'danger');
                     }
                 });
 
+                // -------- QUESTION CHANGED: re-render MathJax only --------
                 Livewire.on('question-changed', function() {
-                    requestAnimationFrame(initialiseEnhancements);
+                    requestAnimationFrame(function() {
+                        renderMath();
+                        initTimerWithRetry();
+                    });
                 });
 
+                // -------- EXAM FINISHED: cleanup --------
                 Livewire.on('exam-finished', function() {
-                    if (timerInterval) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                    }
+                    stopInterval();
 
-                    // Stop global stream if exists
                     if (window.activeExamStream) {
                         window.activeExamStream.getTracks().forEach(track => track.stop());
                         window.activeExamStream = null;
                     }
 
-                    // Stop all camera streams
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                         navigator.mediaDevices.getUserMedia({
                                 video: true,
@@ -1284,13 +1308,9 @@
                                 stream.getTracks().forEach(function(track) {
                                     track.stop();
                                 });
-                            })
-                            .catch(function(e) {
-                                // Ignore errors if no stream active
-                            });
+                            }).catch(function() {});
                     }
 
-                    // Also try to stop any video elements on page
                     document.querySelectorAll('video').forEach(function(vid) {
                         if (vid.srcObject) {
                             vid.srcObject.getTracks().forEach(track => track.stop());
@@ -1301,9 +1321,10 @@
                 });
             });
 
-            // Fallback for initial page load
+            // Fallback for initial page load (SPA navigation)
             document.addEventListener('livewire:navigated', function() {
-                initialiseEnhancements();
+                initTimerWithRetry();
+                renderMath();
             });
         })();
     </script>
