@@ -9,7 +9,8 @@
     <title>{{ config('app.name', 'CAT BAPETEN') }} - Ujian</title>
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap"
+        rel="stylesheet" />
 
     @livewireStyles
 
@@ -84,7 +85,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 24px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
 
         /* LOGO */
@@ -165,8 +166,10 @@
 
         @media (max-width: 768px) {
             .topbar {
-                flex-direction: row; /* Keep row layout */
-                height: 80px; /* Reduced height */
+                flex-direction: row;
+                /* Keep row layout */
+                height: 80px;
+                /* Reduced height */
                 padding: 0 12px;
                 gap: 8px;
                 justify-content: space-between;
@@ -183,20 +186,23 @@
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
-                flex: 1; /* Allow title to shrink/grow */
+                flex: 1;
+                /* Allow title to shrink/grow */
                 margin: 0 8px;
                 line-height: 1.2;
             }
 
             .timer-box {
-                min-width: auto; /* Allow shrink */
+                min-width: auto;
+                /* Allow shrink */
                 padding: 4px 8px;
                 flex-direction: row;
                 gap: 6px;
             }
 
             .timer-label {
-                display: none; /* Hide label "Sisa Waktu" on small screens to save space */
+                display: none;
+                /* Hide label "Sisa Waktu" on small screens to save space */
             }
 
             .timer-time {
@@ -204,7 +210,8 @@
             }
 
             body {
-                padding-top: 100px; /* Adjust padding back to standardish */
+                padding-top: 100px;
+                /* Adjust padding back to standardish */
             }
         }
     </style>
@@ -218,22 +225,22 @@
 
         @isset($examTitle)
             <h1>{{ $examTitle ?: 'Computer Assisted Test' }}</h1>
-            
-            @if(!($hideTimer ?? false))
-            <div class="timer-box" data-timer-container>
-                <span class="timer-label">Sisa Waktu</span>
-                <span id="exam-timer" class="timer-time" data-state="normal" data-end-time="{{ $endTime ?? '' }}"
-                    wire:ignore>--:--</span>
-            </div>
+
+            @if (!($hideTimer ?? false))
+                <div class="timer-box" data-timer-container>
+                    <span class="timer-label">Sisa Waktu</span>
+                    <span id="exam-timer" class="timer-time" data-state="normal" data-end-time="{{ $endTime ?? '' }}"
+                        wire:ignore>--:--</span>
+                </div>
             @endif
         @else
             <h1>Computer Assisted Test</h1>
-            
-            @if(!($hideTimer ?? false))
-            <div class="timer-box">
-                <span class="timer-label">Sisa Waktu</span>
-                <span class="timer-time">--:--</span>
-            </div>
+
+            @if (!($hideTimer ?? false))
+                <div class="timer-box">
+                    <span class="timer-label">Sisa Waktu</span>
+                    <span class="timer-time">--:--</span>
+                </div>
             @endif
         @endisset
     </header>
@@ -293,7 +300,7 @@
         }
     </script>
 
-        @stack('scripts')
+    @stack('scripts')
 </body>
 
 </html>
