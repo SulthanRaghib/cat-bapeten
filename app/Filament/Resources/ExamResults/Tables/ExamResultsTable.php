@@ -38,26 +38,37 @@ class ExamResultsTable
                     ->sortable(),
                 TextColumn::make('duration')
                     ->label('Durasi')
-                    ->state(function (ExamSession $record) {
-                        if ($record->started_at && $record->finished_at) {
-                            return $record->started_at->diffForHumans($record->finished_at, true);
+                    ->icon('heroicon-m-clock')
+                    ->state(function (ExamSession $record): string {
+                        if (! $record->started_at || ! $record->finished_at) {
+                            return '-';
                         }
-                        return '-';
+                        $total = (int) $record->started_at->diffInSeconds($record->finished_at);
+                        $h = intdiv($total, 3600);
+                        $m = intdiv($total % 3600, 60);
+                        $s = $total % 60;
+                        if ($h > 0) {
+                            return "{$h}j {$m}m {$s}d";
+                        }
+                        if ($m > 0) {
+                            return "{$m}m {$s}d";
+                        }
+                        return "{$s} detik";
                     }),
                 TextColumn::make('total_score')
                     ->label('Nilai Akhir')
                     ->badge()
-                    ->color(fn(string $state): string => match (true) {
-                        $state >= 75 => 'success',
-                        $state >= 60 => 'warning',
+                    ->color(fn(ExamSession $record, string $state): string => match (true) {
+                        $state >= ($record->examPackage->passing_grade ?? 0) => 'success',
                         default => 'danger',
                     })
-                    ->icon(fn(string $state): ?string => $state >= 75 ? 'heroicon-m-check-circle' : null)
+                    ->icon(fn(ExamSession $record, string $state): ?string => $state >= ($record->examPackage->passing_grade ?? 0) ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle')
+                    ->description(fn(ExamSession $record) => 'Nilai Kelulusan: ' . ($record->examPackage->passing_grade ?? '-'))
                     ->sortable(),
                 TextColumn::make('status_lulus')
                     ->label('Status')
                     ->badge()
-                    ->state(fn(ExamSession $record) => $record->total_score >= 70 ? 'Lulus' : 'Tidak Lulus')
+                    ->state(fn(ExamSession $record) => $record->total_score >= ($record->examPackage->passing_grade ?? 0) ? 'Lulus' : 'Tidak Lulus')
                     ->color(fn(string $state): string => match ($state) {
                         'Lulus' => 'success',
                         default => 'danger',
@@ -85,21 +96,25 @@ class ExamResultsTable
                             );
                     }),
                 Filter::make('score_category')
-                    ->label('Kategori Nilai')
+                    ->label('Status Kelulusan')
                     ->form([
                         \Filament\Forms\Components\Select::make('status')
                             ->options([
-                                'passed' => 'Passed (> 70)',
-                                'failed' => 'Failed (< 70)',
+                                'passed' => 'Lulus (Passed)',
+                                'failed' => 'Tidak Lulus (Failed)',
                             ]),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when($data['status'], function (Builder $query, $status) {
-                            if ($status === 'passed') {
-                                $query->where('total_score', '>=', 70);
-                            } elseif ($status === 'failed') {
-                                $query->where('total_score', '<', 70);
-                            }
+                            $operator = $status === 'passed' ? '>=' : '<';
+
+                            $query->whereRaw("total_score $operator (
+                                SELECT ep.passing_grade
+                                FROM exam_packages ep
+                                JOIN exam_participants part ON part.exam_package_id = ep.id
+                                WHERE part.id = exam_sessions.exam_participant_id
+                                LIMIT 1
+                            )");
                         });
                     }),
             ])
@@ -117,9 +132,10 @@ class ExamResultsTable
                                 Column::make('user.nip')->heading('NIP'),
                                 Column::make('finished_at')->heading('Date'),
                                 Column::make('total_score')->heading('Score'),
+                                Column::make('examPackage.passing_grade')->heading('Passing Grade'),
                                 Column::make('status_lulus')
                                     ->heading('Status')
-                                    ->formatStateUsing(fn($record) => $record->total_score >= 70 ? 'Lulus' : 'Tidak Lulus'),
+                                    ->formatStateUsing(fn($record) => $record->total_score >= ($record->examPackage->passing_grade ?? 0) ? 'Lulus' : 'Tidak Lulus'),
                             ]),
                     ]),
             ])
