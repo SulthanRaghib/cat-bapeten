@@ -32,11 +32,20 @@ class ExamSession extends Model
     protected static function booted(): void
     {
         static::creating(function (ExamSession $session) {
-            // Set started_at timestamp
+            // Set started_at timestamp only when creating
             $session->started_at = now();
 
             // Auto-shuffle questions and store in answers_meta
             $session->answers_meta = $session->generateShuffledQuestionOrder();
+        });
+
+        static::updating(function (ExamSession $session) {
+            // Guard: never allow started_at to be changed once it is set.
+            // This prevents MySQL's ON UPDATE CURRENT_TIMESTAMP (or accidental
+            // code) from overwriting the real exam start time.
+            if ($session->isDirty('started_at') && $session->getOriginal('started_at') !== null) {
+                $session->started_at = $session->getOriginal('started_at');
+            }
         });
     }
 
