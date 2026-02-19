@@ -376,5 +376,141 @@
                 renderMath();
             });
         })();
+
+        // ============================================================
+        // EXAM CLIENT — Alpine.js component factory
+        // Defined OUTSIDE the IIFE so it is always available at page
+        // load time, even before the exam step is rendered via Livewire.
+        // Dynamically-injected <script> tags (via DOM morphing) are NOT
+        // executed by browsers, so this MUST live in the initial HTML.
+        // ============================================================
+        window.createExamClient = function(initialQuestions, initialAnswers, wireEntangle) {
+            return {
+                questions: initialQuestions || [],
+                answersMap: initialAnswers || {},
+                currentIndex: wireEntangle,
+
+                init() {
+                    this.startCamera();
+                },
+
+                get totalQuestions() { return this.questions.length; },
+
+                get currentQuestion() {
+                    return (this.questions && this.questions[this.currentIndex]) || {
+                        id: null,
+                        question_text: '',
+                        options: []
+                    };
+                },
+
+                get normalizedOptions() {
+                    let options = this.currentQuestion.options;
+                    if (!options) return [];
+                    if (typeof options === 'string') {
+                        try { options = JSON.parse(options); } catch(e) { options = []; }
+                    }
+                    let result = [];
+                    if (Array.isArray(options)) {
+                        options.forEach((opt, idx) => {
+                            let text = '';
+                            if (typeof opt === 'string') text = opt;
+                            else if (opt && opt.answer_text) text = opt.answer_text;
+                            else if (opt && opt.teks) text = opt.teks;
+                            result.push({ value: String(idx), text: text });
+                        });
+                    }
+                    return result;
+                },
+
+                get currentAnswerData() {
+                    return this.answersMap[this.currentQuestion.id] || { answer: null, doubtful: false };
+                },
+
+                get isDoubtful() {
+                    return !!this.currentAnswerData.doubtful;
+                },
+
+                get stats() {
+                    let answered = 0, doubtful = 0;
+                    let total = this.totalQuestions;
+                    Object.values(this.answersMap).forEach(a => {
+                        if (a.doubtful) doubtful++;
+                        else if (a.answer !== null && a.answer !== '') answered++;
+                    });
+                    return { answered, doubtful, unanswered: total - answered - doubtful };
+                },
+
+                isAnswerSelected(val) {
+                    let saved = this.currentAnswerData.answer;
+                    return saved !== null && saved === String(val);
+                },
+
+                selectExample(val) {
+                    let valStr = String(val);
+                    let qId = this.currentQuestion.id;
+                    if (!this.answersMap[qId]) this.answersMap[qId] = { answer: null, doubtful: false };
+                    this.answersMap[qId].answer = valStr;
+                    this.$wire.saveAnswerClient(qId, valStr);
+                },
+
+                toggleDoubtful() {
+                    let qId = this.currentQuestion.id;
+                    if (!this.answersMap[qId]) this.answersMap[qId] = { answer: null, doubtful: false };
+                    let newState = !this.answersMap[qId].doubtful;
+                    this.answersMap[qId].doubtful = newState;
+                    this.$wire.toggleDoubtfulClient(qId, newState);
+                },
+
+                next() {
+                    if (this.currentIndex < this.totalQuestions - 1) {
+                        this.currentIndex++;
+                        this.scrollToTop();
+                    }
+                },
+
+                prev() {
+                    if (this.currentIndex > 0) {
+                        this.currentIndex--;
+                        this.scrollToTop();
+                    }
+                },
+
+                jumpTo(idx) {
+                    this.currentIndex = idx;
+                    this.scrollToTop();
+                },
+
+                scrollToTop() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                getSidebarClass(qId, idx) {
+                    let data = this.answersMap[qId];
+                    let classes = [];
+                    if (data && data.doubtful) classes.push('doubt');
+                    else if (data && data.answer !== null && data.answer !== '') classes.push('answered');
+                    if (idx === this.currentIndex) classes.push('current');
+                    return classes.join(' ');
+                },
+
+                async startCamera() {
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        try {
+                            if (window.activeExamStream) {
+                                window.activeExamStream.getTracks().forEach(t => t.stop());
+                            }
+                            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                            if (this.$refs.proctorVideo) {
+                                this.$refs.proctorVideo.srcObject = stream;
+                            }
+                            window.activeExamStream = stream;
+                        } catch (err) {
+                            console.error('Proctoring Camera Failed:', err);
+                        }
+                    }
+                }
+            };
+        };
     </script>
 @endpush
