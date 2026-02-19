@@ -1,4 +1,9 @@
 @if ($totalQuestions > 0 && $this->currentQuestion)
+    <style>
+        body {
+            background-color: #f9fafb;
+        }
+    </style>
     <div class="container" @if ($showResults) style="filter: blur(5px); pointer-events: none;" @endif>
         <!-- AREA SOAL -->
         <section class="question-section">

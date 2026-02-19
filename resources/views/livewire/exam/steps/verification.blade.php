@@ -37,8 +37,8 @@
 
                 <div style="margin-top: auto;">
                     <!-- Changed to @click for Alpine-Livewire interop inside wire:ignore -->
-                    <button type="button" x-show="cameraActive" @click="$wire.verifyCameraSuccess()"
-                        style="width: 100%; padding: 12px 16px; background-color: #2563eb; color: white; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                    <button type="button" x-show="cameraActive" @click="$wire.verifyCameraSuccess()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded w-full flex items-center justify-center gap-2"
+                        style="width: 100%; padding: 12px 16px; background-color: #2e7d32; color: white !important; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="M22 4L12 14.01l-3-3"></path></svg>
                         Lanjutkan Ujian
                     </button>

@@ -1,3 +1,6 @@
+<style>
+    body { background-color: #f9fafb; }
+</style>
 <div style="max-width: 900px; margin: 0 auto; padding: 30px 20px 0 20px; min-height: 100vh;">
 
     {{-- Header --}}
@@ -91,11 +94,11 @@
 
         <button wire:click="startExam"
             style="padding: 16px 80px; font-size: 16px; font-weight: 700; color: white; border-radius: 50px; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
-            :style="!$wire.rulesAgreed ? 'background-color: #94a3b8; cursor: not-allowed; transform: scale(0.98); opacity: 0.8;' : 'background-color: #0284c7; transform: scale(1); opacity: 1; box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);'"
+            :style="!$wire.rulesAgreed ? 'background-color: #94a3b8; cursor: not-allowed; transform: scale(0.98); opacity: 0.8; color: white;' : 'background-color: #2e7d32; transform: scale(1); opacity: 1; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); color: white !important;'"
             :disabled="!$wire.rulesAgreed"
-            onmouseover="if(this.disabled) return; this.style.backgroundColor='#0369a1'; this.style.transform='scale(1.02)'"
-            onmouseout="if(this.disabled) return; this.style.backgroundColor='#0284c7'; this.style.transform='scale(1)'">
-            Mulai Kerjakan Ujian
+            onmouseover="if(this.disabled) return; this.style.backgroundColor='#2e7d32'; this.style.transform='scale(1.02)'"
+            onmouseout="if(this.disabled) return; this.style.backgroundColor='#2e7d32'; this.style.transform='scale(1)'">
+            <span style="color: white !important;">Mulai Kerjakan Ujian</span>
         </button>
     </div>
 </div>

@@ -1,6 +1,8 @@
 <x-filament-panels::page.simple>
     {{-- CUSTOM CSS: Using inline styles to guarantee layout stability without rebuilding assets --}}
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
         /* [CRITICAL] Override Filament's default simple page layout constraints */
         .fi-simple-main,
         .fi-simple-page,
@@ -24,7 +26,7 @@
 
         /* Body background correction */
         body {
-            background-color: #f8fafc !important; /* Slate-50 */
+            background-color: #f9fafb !important; /* Slate-50 */
             margin: 0;
             padding: 0;
         }
@@ -40,7 +42,7 @@
             box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
             border: 1px solid #e2e8f0;
             margin: 10px;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Poppins', sans-serif !important;
             position: relative;
             z-index: 10;
             /* Removed min-height to fit content better */
