@@ -30,7 +30,7 @@ class ExamMonitorsTable
                     ->copyMessage('Token disalin!')
                     ->copyMessageDuration(2000)
                     ->weight('bold')
-                    ->color('success'),
+                    ->color('primary'),
                 TextColumn::make('examPackage.title')
                     ->label('Paket Ujian')
                     ->limit(30),
