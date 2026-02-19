@@ -310,6 +310,11 @@
                     debouncedRenderMath();
                 });
 
+                Livewire.on('question-changed', function() {
+                    // Scroll to absolute top of the page
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+
                 Livewire.on('answer-saved', function() {
                     showSaveIndicator();
                 });

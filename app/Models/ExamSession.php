@@ -62,7 +62,8 @@ class ExamSession extends Model
         }
 
         // Fetch all question IDs belonging to the related ExamPackage via many-to-many relationship
-        $questionIds = $examPackage->questions()->pluck('questions.id')->toArray();
+        // Use 'id' explicitly to target the questions table primary key to avoid ambiguity
+        $questionIds = $examPackage->questions()->pluck('questions.id')->unique()->values()->toArray();
 
         // Shuffle the array randomly
         shuffle($questionIds);

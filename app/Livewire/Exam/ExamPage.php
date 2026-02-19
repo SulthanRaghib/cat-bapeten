@@ -10,6 +10,7 @@ use App\Models\Question;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\Attributes\Renderless;
 
 class ExamPage extends Component
 {
@@ -19,6 +20,10 @@ class ExamPage extends Component
     public $currentAnswer = '';
     public $currentDoubtful = false;
     public $totalQuestions = 0;
+
+    // Client-side Data
+    public $questionsJson = []; // Stores all questions for JS
+    public $initialAnswers = []; // Stores initial answers state
 
     // Workflow Steps
     public $step = 'verification'; // verification, rules, exam
@@ -249,8 +254,23 @@ class ExamPage extends Component
             'started_at' => now(),
         ]);
 
+        // Explicitly reload to ensure all attributes/casts are loaded
+        $session->refresh();
+
+        // Safety check: if answers_meta is empty despite 'creating' event, regenerate it.
+        if (empty($session->answers_meta) || count($session->answers_meta) === 0) {
+            $session->answers_meta = $session->generateShuffledQuestionOrder();
+            $session->save();
+            $session->refresh();
+        }
+
         $this->step = 'exam';
         $this->initializeExamState($session, $user);
+
+        // EXTRA SAFETY: Force re-read if initialization failed silently
+        if (empty($this->questionsJson)) {
+            $this->initializeClientData();
+        }
 
         // Dispatch event to start timer on frontend with explicit end time
         // This ensures the timer logic can pick up the new time immediately
@@ -275,9 +295,63 @@ class ExamPage extends Component
         // Restore question index from session (persist across refresh)
         $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
 
+        // Initialize Client-Side Data
+        $this->initializeClientData();
+
         // Load existing answer for current question
         if (!empty($this->questionIds)) {
             $this->loadCurrentAnswer();
+        }
+    }
+
+    protected function initializeClientData()
+    {
+        // 0. Safety Check: If questionIds is empty, try to reload session again
+        if (empty($this->questionIds) && $this->examSessionId) {
+            $session = ExamSession::find($this->examSessionId);
+            if ($session && !empty($session->answers_meta)) {
+                $this->questionIds = $session->answers_meta;
+                $this->totalQuestions = count($this->questionIds);
+            }
+        }
+
+        // 1. Fetch ALL Questions at once
+        // Fetch all columns to avoid missing attribute issues and ensure proper serialization
+        $questions = Question::whereIn('id', $this->questionIds)->get();
+
+        // 2. Map them in the correct order based on questionIds
+        $this->questionsJson = collect($this->questionIds)->map(function ($id) use ($questions) {
+            $q = $questions->firstWhere('id', $id);
+            if (!$q) return null;
+
+            // Ensure options are array
+            $options = $q->options;
+            // Handle double encoded JSON or string storage
+            if (is_string($options)) {
+                $decoded = json_decode($options, true);
+                if (is_array($decoded)) {
+                    $options = $decoded;
+                }
+            }
+
+            return [
+                'id' => $q->id,
+                'question_text' => (string) $q->question_text, // Force string to avoid any object issues
+                'options' => $options,
+            ];
+        })->filter()->values()->toArray();
+
+        // 3. Load ALL Answers at once
+        $answers = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
+
+        $this->initialAnswers = [];
+        foreach ($this->questionIds as $index => $qid) {
+            $ans = $answers->firstWhere('question_id', $qid);
+            $this->initialAnswers[$qid] = [
+                'answer' => $ans ? (string)$ans->answer : null, // Ensure string for JS comparison
+                'doubtful' => $ans ? (bool)$ans->is_doubtful : false,
+                'answered' => $ans && $ans->answer !== null && $ans->answer !== '',
+            ];
         }
     }
 
@@ -308,48 +382,58 @@ class ExamPage extends Component
         $this->saveAnswer($value);
     }
 
+    // Gunakan #[Renderless] agar penyimpanan jawaban tidak memicu re-render UI yang 'berat'
+    #[Renderless]
     public function saveAnswer($option)
     {
-        if ($this->showResults || ! $this->examSessionId) {
-            return;
+        $questionId = $this->questionIds[$this->currentQuestionIndex] ?? null;
+        if ($questionId) {
+            $this->saveAnswerClient($questionId, $option);
         }
+    }
 
-        if (! $this->ensureSessionIsActive()) {
-            return;
-        }
-
-        // Validation: Verify if time is strictly up
+    #[Renderless]
+    public function saveAnswerClient($questionId, $option)
+    {
+        if ($this->showResults || ! $this->examSessionId) return;
         if ($this->hasTimeExpired()) {
-            // Trigger finish logic immediately
             $this->handleTimeExpiry();
-            // Return early to prevent saving
             return;
         }
-
-        if (!$this->currentQuestion) return;
-
-        $this->currentAnswer = $option;
 
         $answer = ExamAnswer::updateOrCreate(
             [
                 'exam_session_id' => $this->examSessionId,
-                'question_id' => $this->currentQuestion->id,
+                'question_id' => $questionId
             ],
             [
                 'answer' => $option,
-                'score' => 0,
+                'score' => 0
             ]
         );
-
-        // Calculate score immediately
         $answer->calculateScore();
         $answer->save();
 
-        $this->currentDoubtful = (bool) $answer->is_doubtful;
-
-        // Dispatch event to re-render MathJax (answer saved, UI might update)
-        $this->dispatch('answer-saved');
+        // Sync local
+        if ($questionId == ($this->questionIds[$this->currentQuestionIndex] ?? null)) {
+            $this->currentAnswer = $option;
+        }
     }
+
+    #[Renderless]
+    public function toggleDoubtfulClient($questionId, $status)
+    {
+        if ($this->showResults || ! $this->examSessionId) return;
+
+        $answer = ExamAnswer::firstOrNew([
+            'exam_session_id' => $this->examSessionId,
+            'question_id' => $questionId
+        ]);
+
+        $answer->is_doubtful = $status;
+        $answer->save();
+    }
+
 
     public function toggleDoubtful()
     {
@@ -390,6 +474,11 @@ class ExamPage extends Component
             return;
         }
 
+        // Ensure current answer is saved before moving
+        if ($this->currentQuestion && $this->currentAnswer !== '' && $this->currentAnswer !== null) {
+            $this->saveAnswer($this->currentAnswer);
+        }
+
         if ($this->currentQuestionIndex < $this->totalQuestions - 1) {
             $this->currentQuestionIndex++;
             // Save to session for persistence
@@ -405,6 +494,11 @@ class ExamPage extends Component
             return;
         }
 
+        // Ensure current answer is saved before moving
+        if ($this->currentQuestion && $this->currentAnswer !== '' && $this->currentAnswer !== null) {
+            $this->saveAnswer($this->currentAnswer);
+        }
+
         if ($this->currentQuestionIndex > 0) {
             $this->currentQuestionIndex--;
             // Save to session for persistence
@@ -418,6 +512,11 @@ class ExamPage extends Component
     {
         if (! $this->ensureSessionIsActive()) {
             return;
+        }
+
+        // Ensure current answer is saved before moving
+        if ($this->currentQuestion && $this->currentAnswer !== '' && $this->currentAnswer !== null) {
+            $this->saveAnswer($this->currentAnswer);
         }
 
         if ($index >= 0 && $index < $this->totalQuestions) {
