@@ -23,6 +23,7 @@ class ExamParticipantsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->poll('5s')
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('examPackage.title')
