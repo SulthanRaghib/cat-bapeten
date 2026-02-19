@@ -38,11 +38,22 @@ class ExamResultsTable
                     ->sortable(),
                 TextColumn::make('duration')
                     ->label('Durasi')
-                    ->state(function (ExamSession $record) {
-                        if ($record->started_at && $record->finished_at) {
-                            return $record->started_at->diffForHumans($record->finished_at, true);
+                    ->icon('heroicon-m-clock')
+                    ->state(function (ExamSession $record): string {
+                        if (! $record->started_at || ! $record->finished_at) {
+                            return '-';
                         }
-                        return '-';
+                        $total = (int) $record->started_at->diffInSeconds($record->finished_at);
+                        $h = intdiv($total, 3600);
+                        $m = intdiv($total % 3600, 60);
+                        $s = $total % 60;
+                        if ($h > 0) {
+                            return "{$h}j {$m}m {$s}d";
+                        }
+                        if ($m > 0) {
+                            return "{$m}m {$s}d";
+                        }
+                        return "{$s} detik";
                     }),
                 TextColumn::make('total_score')
                     ->label('Nilai Akhir')
@@ -52,7 +63,7 @@ class ExamResultsTable
                         default => 'danger',
                     })
                     ->icon(fn(ExamSession $record, string $state): ?string => $state >= ($record->examPackage->passing_grade ?? 0) ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle')
-                    ->description(fn(ExamSession $record) => 'Passing Grade: ' . ($record->examPackage->passing_grade ?? '-'))
+                    ->description(fn(ExamSession $record) => 'Nilai Kelulusan: ' . ($record->examPackage->passing_grade ?? '-'))
                     ->sortable(),
                 TextColumn::make('status_lulus')
                     ->label('Status')
