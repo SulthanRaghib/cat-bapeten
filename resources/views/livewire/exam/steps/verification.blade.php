@@ -1,8 +1,8 @@
-<div style="position: fixed; top: 100px; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: #f9fafb; z-index: 50;">
-    <div style="background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 850px; height: auto; max-height: 500px; overflow: hidden; display: flex; flex-direction: row; margin: 20px;">
+<div style="position: fixed; top: 100px; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: #f9fafb; z-index: 50; padding: 20px;">
+    <div class="verification-card" style="background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 850px; height: auto; max-height: 500px; overflow: hidden; display: flex; flex-direction: row; margin: 0 auto;">
 
         {{-- Left Side: Instructions & Actions --}}
-        <div style="flex: 1; padding: 32px; display: flex; flex-direction: column; justify-content: center; min-width: 320px; border-right: 1px solid #f3f4f6;">
+        <div class="verification-content" style="flex: 1; padding: 32px; display: flex; flex-direction: column; justify-content: center; min-width: 320px; border-right: 1px solid #f3f4f6;">
             <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 8px; color: #1f2937;">Verifikasi Kamera</h2>
             <p style="color: #6b7280; margin-bottom: 24px; font-size: 14px; line-height: 1.6;">
                 Sistem perlu memverifikasi kamera Anda aktif dan berfungsi dengan baik sebelum ujian dapat dimulai.
@@ -77,18 +77,24 @@
 
         @media (max-width: 768px) {
             body { overflow: auto; }
-            div[style*="flex-direction: row"] {
+            .verification-card {
                 flex-direction: column !important;
                 height: auto !important;
-                max-height: none !important;
+                max-height: 85vh !important;
+                overflow-y: auto !important;
             }
-            div[style*="border-right: 1px solid"] {
+            .verification-content {
+                min-width: 100% !important;
                 border-right: none !important;
                 border-bottom: 1px solid #f3f4f6 !important;
+                padding: 24px !important;
+                order: 2; /* Put content below video on mobile if preferred, or remove to keep top */
             }
-            #video-teleport-target {
-                height: 250px;
+             #video-teleport-target {
                 flex: none !important;
+                height: 300px !important;
+                width: 100% !important;
+                order: 1; /* Put video on top */
             }
         }
     </style>
