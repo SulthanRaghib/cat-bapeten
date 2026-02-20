@@ -84,11 +84,18 @@ class QuestionForm
                         RichEditor::make('question_text')
                             ->label('Pertanyaan')
                             ->required()
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsDirectory('question-images')
                             ->columnSpanFull(),
+
+                        View::make('filament.components.image-insert-widget'),
 
                         RichEditor::make('explanation')
                             ->label('Pembahasan Jawaban')
-                            ->columnSpanFull(),
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsDirectory('question-images')
+                            ->columnSpanFull()
+                            ->hidden(),
                     ]),
 
                 Section::make('Jawaban')
@@ -98,7 +105,11 @@ class QuestionForm
                                 RichEditor::make('answer_text')
                                     ->label('Teks Jawaban')
                                     ->required()
+                                    ->fileAttachmentsDisk('public')
+                                    ->fileAttachmentsDirectory('question-images')
                                     ->columnSpanFull(),
+
+                                View::make('filament.components.image-insert-widget'),
 
                                 // Technical: Correct/Incorrect (5 points implicity or via hidden logic)
                                 Toggle::make('is_correct')

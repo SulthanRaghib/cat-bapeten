@@ -12,6 +12,11 @@ Route::get('/ujian', \App\Livewire\Exam\ExamPage::class)
     ->middleware('auth')
     ->name('exam.index');
 
+// Admin: upload gambar untuk bank soal (RichEditor image insert widget)
+Route::post('/admin/question-image-upload', [\App\Http\Controllers\QuestionImageUploadController::class, 'store'])
+    ->middleware('auth')
+    ->name('question.image.upload');
+
 Route::post('/logout', function () {
     \Illuminate\Support\Facades\Auth::logout();
     session()->invalidate();
