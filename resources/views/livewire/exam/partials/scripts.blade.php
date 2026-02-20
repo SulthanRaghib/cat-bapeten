@@ -497,10 +497,22 @@
                 async startCamera() {
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                         try {
-                            if (window.activeExamStream) {
-                                window.activeExamStream.getTracks().forEach(t => t.stop());
+                            // Check if stream already exists and is active to prevent interruption
+                            if (window.activeExamStream && window.activeExamStream.active) {
+                                console.log('Reusing existing camera stream');
+                                if (this.$refs.proctorVideo) {
+                                    this.$refs.proctorVideo.srcObject = window.activeExamStream;
+                                }
+                                return;
                             }
+
+                            // Stop dead stream if exists
+                            if (window.activeExamStream) {
+                                try { window.activeExamStream.getTracks().forEach(t => t.stop()); } catch(e){}
+                            }
+
                             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+
                             if (this.$refs.proctorVideo) {
                                 this.$refs.proctorVideo.srcObject = stream;
                             }

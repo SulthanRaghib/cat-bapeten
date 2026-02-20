@@ -53,8 +53,9 @@
 
                 {{-- Hidden on desktop and moved --}}
                 <template x-teleport="#video-teleport-target">
-                        <div style="width: 100%; height: 100%; background: #000; position: relative;">
-                        <video x-ref="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <div style="width: 100%; height: 100%; background: #000; position: relative;">
+                        <!-- Adjusted to flip video horizontally if needed, though user requested standard view. Adding transform: scaleX(-1) often rectifies a mirrored front camera. -->
+                        <video x-ref="video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
                         <div x-show="!cameraActive && !error" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;">
                             <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
                             <span>Menghubungkan...</span>
