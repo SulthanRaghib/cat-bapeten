@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources\ExamPackages\Pages;
 
+use App\DTOs\ExamPackage\CreateExamPackageDTO;
 use App\Filament\Resources\ExamPackages\ExamPackageResource;
+use App\Services\ExamPackageService;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateExamPackage extends CreateRecord
 {
@@ -37,5 +42,15 @@ class CreateExamPackage extends CreateRecord
             'record' => $this->record,
             'relation' => 0, // <--- Filament otomatis menjadikannya ?relation=0
         ]);
+    }
+
+    /**
+     * Delegate creation to ExamPackageService.
+     */
+    protected function handleRecordCreation(array $data): Model
+    {
+        return app(ExamPackageService::class)->create(
+            CreateExamPackageDTO::fromFormData($data),
+        );
     }
 }
