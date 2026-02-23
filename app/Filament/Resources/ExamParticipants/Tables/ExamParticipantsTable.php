@@ -171,8 +171,7 @@ class ExamParticipantsTable
                         ->modalHeading('Hapus Peserta Terpilih')
                         ->modalDescription('Apakah Anda yakin ingin menghapus peserta yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),
-                ])
-                    ->label('Tindakan pada Peserta Terpilih')
+                ])->label('Tindakan Massal'),
             ]);
     }
 }

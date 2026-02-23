@@ -51,12 +51,17 @@ class UsersTable
                     ]),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->label('Edit Pengguna'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    DeleteBulkAction::make()
+                        ->label('Hapus Pengguna Terpilih')
+                        ->modalHeading('Hapus Pengguna Terpilih')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus pengguna yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
+                ])->label('Tindakan Massal'),
             ]);
     }
 }

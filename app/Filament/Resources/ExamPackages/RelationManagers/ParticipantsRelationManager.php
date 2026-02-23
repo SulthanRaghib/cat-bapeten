@@ -169,8 +169,7 @@ class ParticipantsRelationManager extends RelationManager
                         ->modalHeading('Hapus Peserta dari Ujian')
                         ->modalDescription('Apakah Anda yakin ingin menghapus peserta terpilih dari paket ujian?')
                         ->modalSubmitActionLabel('Ya, Hapus'),
-                ])
-                    ->label('Tindakan pada Peserta Terpilih'),
+                ])->label('Tindakan Massal'),
             ]);
     }
 }

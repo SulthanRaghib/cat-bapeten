@@ -124,7 +124,7 @@ class ExamPackagesTable
                         ->modalHeading('Hapus Paket Ujian Terpilih')
                         ->modalDescription('Apakah Anda yakin ingin menghapus paket ujian yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),
-                ]),
+                ])->label('Tindakan Massal'),
             ]);
     }
 }
