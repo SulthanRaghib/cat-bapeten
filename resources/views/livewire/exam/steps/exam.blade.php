@@ -13,8 +13,7 @@
     <div class="container" x-data="createExamClient(@js($questionsJson), @js($initialAnswers), @entangle('currentQuestionIndex').live)" x-cloak wire:ignore.self
         @if ($showResults) style="filter: blur(5px); pointer-events: none;" @endif>
 
-        <!-- Hidden Video for Proctoring -->
-        <video x-ref="proctorVideo" autoplay playsinline muted style="display: none;"></video>
+        <!-- Hidden Video Removed -->
 
         <!-- AREA SOAL -->
         <section class="question-section">

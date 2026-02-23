@@ -45,8 +45,8 @@ class ExamPage extends Component
 
     // == Alur Kerja (Tahap Ujian) ==============================================================
     /** Tahap aktif: verification | rules | exam | result */
-    public string  $step        = 'verification';
-    public bool    $cameraValid = false;
+    public string  $step        = 'rules';
+    public bool    $cameraValid = true;
     public bool    $rulesAgreed = false;
 
     // == Pembantu UI ============================================================
@@ -128,12 +128,6 @@ class ExamPage extends Component
     // ALUR KERJA (TAHAP UJIAN)
     // =========================================================================
 
-    public function verifyCameraSuccess(): void
-    {
-        $this->cameraValid = true;
-        $this->step        = 'rules';
-    }
-
     public function startExam(): void
     {
         if (! $this->rulesAgreed) {
@@ -159,7 +153,7 @@ class ExamPage extends Component
                 ->body('Paket ujian ini saat ini dinonaktifkan. Silakan hubungi panitia.')
                 ->warning()
                 ->send();
-            $this->step = 'verification';
+            $this->step = 'rules';
             return;
         }
 
@@ -556,8 +550,8 @@ class ExamPage extends Component
             return;
         }
 
-        // Kasus C: belum ada sesi ujian - arahkan ke langkah verifikasi kamera.
-        $this->step = 'verification';
+        // Kasus C: belum ada sesi ujian - langsung ke Tata Tertib (lewati verifikasi).
+        $this->step = 'rules';
     }
 
     // =========================================================================
