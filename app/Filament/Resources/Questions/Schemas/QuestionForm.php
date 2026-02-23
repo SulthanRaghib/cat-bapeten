@@ -122,7 +122,6 @@ class QuestionForm
                                 TextInput::make('score')
                                     ->label('Bobot Nilai')
                                     ->numeric()
-                                    ->default(0)
                                     ->visible(fn(Get $get) => $get('../../type') === 'structural')
                                     ->required(fn(Get $get) => $get('../../type') === 'structural'),
 
