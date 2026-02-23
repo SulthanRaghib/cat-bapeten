@@ -27,8 +27,8 @@
     }
 
     $questionHtml = fixImageUrlsForDisplay($record->question_text);
-    $examPackage = $record->examPackage;
-    $tipe = $examPackage->type ?? 'technical';
+    // tipe ada di Question itu sendiri — bukan di ExamPackage
+    $tipe = $record->type ?? 'technical';
     $kunciJawaban = $record->scoring_config['correct'] ?? null;
 @endphp
 
@@ -75,6 +75,15 @@
             </div>
         </div>
         <div class="p-6">
+            {{-- show explanatory banner when structural design applies --}}
+            @if ($tipe === 'structural')
+                <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded">
+                    <strong>Soal struktural:</strong> setiap opsi memiliki bobot poin
+                    masing‑masing. Tidak ada jawaban "benar" tunggal;
+                    peserta akan mendapatkan poin sesuai bobot opsi yang dipilih.
+                </div>
+            @endif
+
             <div class="space-y-4">
                 @forelse ($record->options as $kode => $optionData)
                     @php
@@ -105,18 +114,36 @@
                                 $isCorrect = (string) $kunciJawaban === (string) $kode;
                             }
                         } elseif ($tipe === 'structural') {
-                            // Trying to get score from option data first
+                            // Coba ambil score dari data opsi langsung
                             if (is_array($optionData) && isset($optionData['score'])) {
                                 $bobot = $optionData['score'];
                             } else {
-                                // Fallback to scoring_config map
-                                $bobot = $record->scoring_config[$kode] ?? 0;
+                                // Fallback: scoring_config['bobot']['A'], ['B'], dst.
+                                $bobot =
+                                    $record->scoring_config['bobot'][$label] ??
+                                    // atau scoring_config keyed by label langsung
+                                    ($record->scoring_config[$label] ??
+                                        // atau scoring_config keyed by numeric index
+                                        ($record->scoring_config[$loop->index] ?? 0));
                             }
                         }
                     @endphp
 
+                    @php
+                        // choose card color depending on type
+                        $cardClass = $isCorrect
+                            ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-400 shadow-green-100 shadow-md'
+                            : ($tipe === 'structural'
+                                ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
+                                : 'bg-gray-50 border-gray-200 hover:border-gray-300');
+
+                        $badgeBg = $isCorrect
+                            ? 'from-green-500 to-emerald-600 text-white'
+                            : 'bg-gray-200 text-gray-600';
+                    @endphp
+
                     <div
-                        class="flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 {{ $isCorrect ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-400 shadow-green-100 shadow-md' : 'bg-gray-50 border-gray-200 hover:border-gray-300' }}">
+                        class="flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 {{ $cardClass }}">
                         <div class="flex-shrink-0">
                             <div
                                 class="flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg {{ $isCorrect ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600' }}">
@@ -199,7 +226,28 @@
                     </div>
                 </div>
                 <div class="text-sm font-medium text-purple-900">
-                    {!! $manager->formatScoringConfig($record) !!}
+                    @php
+                        if ($tipe === 'structural') {
+                            $scoringHtml = '<strong>Ringkasan Bobot:</strong><ul class="list-disc pl-5 mt-1">';
+                            foreach ($record->options as $idx => $opt) {
+                                $lbl = chr(65 + $idx);
+                                // prioritas: score di dalam opsi, lalu scoring_config['bobot'], lalu scoring_config[lbl], lalu 0
+                                if (is_array($opt) && isset($opt['score'])) {
+                                    $sc = $opt['score'];
+                                } else {
+                                    $sc =
+                                        $record->scoring_config['bobot'][$lbl] ??
+                                        ($record->scoring_config[$lbl] ?? ($record->scoring_config[$idx] ?? 0));
+                                }
+                                $scoringHtml .= "<li>{$lbl}: {$sc} poin</li>";
+                            }
+                            $scoringHtml .= '</ul>';
+                        } else {
+                            $scoringHtml = '<strong>Teknis:</strong> benar/salah — nilai penuh bila jawaban tepat';
+                        }
+                    @endphp
+
+                    {!! $scoringHtml !!}
                 </div>
             </div>
         </div>

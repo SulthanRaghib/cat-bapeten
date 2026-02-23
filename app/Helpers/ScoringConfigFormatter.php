@@ -12,18 +12,24 @@ class ScoringConfigFormatter
     public function formatScoringConfig(Question $question): string
     {
         if ($question->type === 'structural') {
-            $score = 0;
+            $html = '<strong>Bobot per opsi:</strong><ul class="ml-5 list-disc">';
             $options = $question->options;
             if (is_array($options)) {
-                foreach ($options as $opt) {
-                    if (isset($opt['score'])) {
+                foreach ($options as $idx => $opt) {
+                    $label = chr(65 + $idx);
+                    $score = null;
+                    if (is_array($opt) && isset($opt['score'])) {
                         $score = $opt['score'];
-                        break;
+                    } elseif (isset($question->scoring_config[$idx])) {
+                        $score = $question->scoring_config[$idx];
                     }
+                    $score = $score !== null ? $score : 0;
+                    $html .= "<li>{$label}: {$score} poin</li>";
                 }
             }
+            $html .= '</ul>';
 
-            return '<strong>Bobot Nilai:</strong> ' . $score . ' Poin';
+            return $html;
         }
 
         return '<strong>Tipe Teknis:</strong> Benar/Salah';
