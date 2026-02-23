@@ -10,10 +10,11 @@ namespace App\DTOs\ExamPackage;
 final readonly class CreateExamPackageDTO
 {
     public function __construct(
-        public string $name,
-        public string $description = '',
-        public int    $duration    = 60,
-        public bool   $isActive    = false,
+        public string $title,
+        public string $type,
+        public int    $passingGrade,
+        public int    $durationMinutes,
+        public bool   $isActive = true,
     ) {}
 
     /**
@@ -22,10 +23,11 @@ final readonly class CreateExamPackageDTO
     public static function fromFormData(array $data): self
     {
         return new self(
-            name: (string) ($data['name']        ?? ''),
-            description: (string) ($data['description'] ?? ''),
-            duration: (int)    ($data['duration']    ?? 60),
-            isActive: (bool)   ($data['is_active']   ?? false),
+            title: (string) ($data['title']            ?? ''),
+            type: (string) ($data['type']             ?? 'technical'),
+            passingGrade: (int)    ($data['passing_grade']    ?? 0),
+            durationMinutes: (int)    ($data['duration_minutes'] ?? 60),
+            isActive: (bool)   ($data['is_active']        ?? true),
         );
     }
 }

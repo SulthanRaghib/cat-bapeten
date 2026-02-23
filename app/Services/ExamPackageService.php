@@ -35,10 +35,11 @@ final class ExamPackageService
     {
         return DB::transaction(static function () use ($dto): ExamPackage {
             return ExamPackage::create([
-                'name'        => $dto->name,
-                'description' => $dto->description,
-                'duration'    => $dto->duration,
-                'is_active'   => $dto->isActive,
+                'title'            => $dto->title,
+                'type'             => $dto->type,
+                'passing_grade'    => $dto->passingGrade,
+                'duration_minutes' => $dto->durationMinutes,
+                'is_active'        => $dto->isActive,
             ]);
         });
     }
@@ -52,10 +53,11 @@ final class ExamPackageService
     {
         return DB::transaction(static function () use ($package, $dto): ExamPackage {
             $package->update([
-                'name'        => $dto->name,
-                'description' => $dto->description,
-                'duration'    => $dto->duration,
-                'is_active'   => $dto->isActive,
+                'title'            => $dto->title,
+                'type'             => $dto->type,
+                'passing_grade'    => $dto->passingGrade,
+                'duration_minutes' => $dto->durationMinutes,
+                'is_active'        => $dto->isActive,
             ]);
 
             return $package->fresh();
