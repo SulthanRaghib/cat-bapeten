@@ -1,217 +1,143 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Exam;
 
+use App\DTOs\ExamSession\FinishExamDTO;
+use App\DTOs\ExamSession\SaveAnswerDTO;
+use App\DTOs\ExamSession\StartExamDTO;
+use App\Models\ExamActivityLog;
 use App\Models\ExamAnswer;
 use App\Models\ExamPackage;
 use App\Models\ExamParticipant;
 use App\Models\ExamSession;
 use App\Models\Question;
+use App\Services\ExamSessionService;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Component;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Renderless;
+use Livewire\Component;
 
 class ExamPage extends Component
 {
-    public $examSessionId;
-    public $currentQuestionIndex = 0;
-    public $questionIds = [];
-    public $currentAnswer = '';
-    public $currentDoubtful = false;
-    public $totalQuestions = 0;
+    // == Sesi & Identitas ====================================================
+    public ?int    $examSessionId      = null;
+    /** Di-cache agar startExam() tidak perlu membaca ulang PHP session. */
+    public ?int    $examParticipantId  = null;
 
-    // Client-side Data
-    public $questionsJson = []; // Stores all questions for JS
-    public $initialAnswers = []; // Stores initial answers state
+    // == Navigasi Soal ============================================================
+    public int     $currentQuestionIndex = 0;
+    public array   $questionIds          = [];
+    public int     $totalQuestions       = 0;
 
-    // Workflow Steps
-    public $step = 'verification'; // verification, rules, exam
-    public $cameraValid = false;
-    public $rulesAgreed = false;
+    // == State Soal yang Sedang Ditampilkan ================================================
+    public string  $currentAnswer   = '';
+    public bool    $currentDoubtful = false;
 
-    // UI State
-    public $showConfirmFinish = false;
+    // == Data Bulk untuk JavaScript =================================================
+    /** Semua soal yang diserialisasi untuk JS - dimuat sekali saat sesi dimulai/dilanjutkan. */
+    public array   $questionsJson  = [];
+    /** Status jawaban awal per soal, dipakai JS untuk inisialisasi tampilan. */
+    public array   $initialAnswers = [];
 
-    public $examTitle = 'Ujian CAT BAPETEN';
-    public $candidateName;
-    public $candidateIdentifier;
+    // == Alur Kerja (Tahap Ujian) ==============================================================
+    /** Tahap aktif: verification | rules | exam | result */
+    public string  $step        = 'verification';
+    public bool    $cameraValid = false;
+    public bool    $rulesAgreed = false;
 
-    // Timer properties
-    public $durationMinutes = 0;
-    public $startedAt;
-    public $endTime;
+    // == Pembantu UI ============================================================
+    public bool    $showConfirmFinish = false;
 
-    // Results State
-    public $showResults = false;
-    public $resultStats = [];
+    // == Informasi Meta Peserta ==================================================================
+    public string  $examTitle            = 'Ujian CAT BAPETEN';
+    public ?string $candidateName        = null;
+    public ?string $candidateIdentifier  = null;
 
-    // Security Monitoring
-    public $violationCount = 0;
-    public $showViolationModal = false;
-    public $violationMessage = '';
+    // == Timer (string ISO 8601 - di-serialize Livewire sebagai JSON ke frontend) ==
+    public int     $durationMinutes = 0;
+    public ?string $startedAt       = null;
+    public ?string $endTime         = null;
 
-    protected $listeners = ['refreshMathJax' => '$refresh', 'timeExpired' => 'handleTimeExpiry'];
+    // == Hasil Ujian ===============================================================
+    public bool    $showResults = false;
+    public array   $resultStats = [];
 
-    public function logActivity($action, $message = null, $severity = 'warning')
+    // == Pemantauan Keamanan ===================================================
+    public int     $violationCount     = 0;
+    public bool    $showViolationModal = false;
+    public string  $violationMessage   = '';
+
+    // =========================================================================
+    // SIKLUS HIDUP KOMPONEN
+    // =========================================================================
+
+    public function mount(): void
     {
-        if (!$this->examSessionId) {
-            return;
-        }
+        $user        = Auth::user();
+        $participant = $this->resolveParticipant($user);
 
-        // Map actions to Indonesian messages
-        $messageMap = [
-            'tab_switch' => 'Peserta berpindah tab atau meminimalkan browser.',
-            'window_blur' => 'Peserta mengklik di luar jendela ujian.',
-            'copy_attempt' => 'Percobaan menyalin teks soal (Copy).',
-            'paste_attempt' => 'Percobaan menempel teks (Paste).',
-            'right_click' => 'Percobaan klik kanan (Context Menu).',
-        ];
-
-        // Use custom message if provided, otherwise use mapped message
-        $logMessage = $message ?? ($messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.');
-
-        // Increment violation count for warnings
-        if (in_array($severity, ['warning', 'danger', 'critical'])) {
-            $this->violationCount++;
-            $this->violationMessage = $logMessage;
-            $this->showViolationModal = true;
-        }
-
-        \App\Models\ExamActivityLog::create([
-            'exam_session_id' => $this->examSessionId,
-            'action' => $action,
-            'message' => $logMessage,
-            'severity' => $severity,
-        ]);
-    }
-
-    public function closeViolationModal()
-    {
-        $this->showViolationModal = false;
-    }
-
-    public function mount()
-    {
-        $user = Auth::user();
-
-        // 1. Find active participant record
-        // Priority: Use session-stored participant ID (from login with token)
-        $participantId = session('exam_participant_id');
-
-        if ($participantId) {
-            $participant = ExamParticipant::where('id', $participantId)
-                ->where('user_id', $user->id) // Security check
-                ->where('is_active', true)
-                ->first();
-        } else {
-            // Fallback: Get latest active participant (for admin testing)
-            $participant = ExamParticipant::where('user_id', $user->id)
-                ->where('is_active', true)
-                ->latest()
-                ->first();
-        }
-
-        if (!$participant) {
-            Auth::logout();
-            session()->invalidate();
-            session()->regenerateToken();
-
-            \Filament\Notifications\Notification::make()
+        if (! $participant) {
+            $this->performLogout();
+            Notification::make()
                 ->title('Akses Ditolak')
                 ->body('Akses ujian tidak ditemukan atau akun Anda tidak aktif.')
                 ->danger()
                 ->send();
-
-            return redirect()->route('filament.admin.auth.login');
+            redirect()->route('filament.admin.auth.login');
+            return;
         }
 
-        // Get duration from ExamPackage early to validate time
         $package = ExamPackage::find($participant->exam_package_id);
-        if (!$package) {
-            Auth::logout();
-            session()->invalidate();
-            session()->regenerateToken();
 
-            \Filament\Notifications\Notification::make()
+        if (! $package) {
+            $this->performLogout();
+            Notification::make()
                 ->title('Error Sistem')
                 ->body('Paket ujian tidak ditemukan. Hubungi administrator.')
                 ->danger()
                 ->send();
-
-            return redirect()->route('filament.admin.auth.login');
+            redirect()->route('filament.admin.auth.login');
+            return;
         }
-        if (! $package->is_active) {
-            Auth::logout();
-            session()->invalidate();
-            session()->regenerateToken();
 
-            \Filament\Notifications\Notification::make()
+        if (! $package->is_active) {
+            $this->performLogout();
+            Notification::make()
                 ->title('Paket Ujian Ditutup')
                 ->body('Paket ujian sedang dinonaktifkan oleh panitia. Silakan hubungi panitia untuk informasi lebih lanjut.')
                 ->warning()
                 ->send();
-
-            return redirect()->route('filament.admin.auth.login');
-        }
-        $this->durationMinutes = $package->duration_minutes ?? 60;
-        $this->examTitle = $package->title ?? $this->examTitle;
-
-        // 2. Find Exam Session
-        $session = ExamSession::where('exam_participant_id', $participant->id)
-            ->latest()
-            ->first();
-
-        // LOGIC REVISION: Check Status & Time Expiry
-
-        // Case A: User finished manually previously
-        if ($session && $session->status === 'completed') {
-            $this->examSessionId = $session->id;
-            $this->questionIds = $session->answers_meta ?? [];
-            $this->loadResults();
-            $this->step = 'result';
+            redirect()->route('filament.admin.auth.login');
             return;
         }
 
-        // Case B: Session is ongoing
-        if ($session && $session->status === 'ongoing') {
-            $startedAt = $session->started_at;
-
-            $expirationTime = $startedAt->copy()
-                ->addMinutes($this->durationMinutes);
-
-            // Check expiry only if ongoing
-            if (now()->greaterThan($expirationTime)) {
-                $this->examSessionId = $session->id;
-                $this->endTime = $expirationTime->toIso8601String();
-                $this->questionIds = $session->answers_meta ?? [];
-                $this->handleTimeExpiry();
-                return;
-            }
-
-            // Session is valid, resume exam immediately
-            $this->step = 'exam';
-            $this->initializeExamState($session, $user);
-            return;
-        }
-
-        // Case C: New Session (or previous terminated)
-        // Do NOT create session yet. Go to verification step.
-        $this->step = 'verification';
-        $this->candidateName = $user->name;
+        $this->durationMinutes     = $package->duration_minutes ?? 60;
+        $this->examTitle           = $package->title ?? $this->examTitle;
+        $this->examParticipantId   = $participant->id;
+        $this->candidateName       = $user->name;
         $this->candidateIdentifier = $user->nip;
+
+        $this->resolveSessionStep($participant);
     }
 
-    public function verifyCameraSuccess()
+    // =========================================================================
+    // ALUR KERJA (TAHAP UJIAN)
+    // =========================================================================
+
+    public function verifyCameraSuccess(): void
     {
         $this->cameraValid = true;
-        $this->step = 'rules';
+        $this->step        = 'rules';
     }
 
-    public function startExam()
+    public function startExam(): void
     {
-        if (!$this->rulesAgreed) {
-            \Filament\Notifications\Notification::make()
+        if (! $this->rulesAgreed) {
+            Notification::make()
                 ->title('Perhatian')
                 ->body('Anda harus menyetujui peraturan ujian.')
                 ->warning()
@@ -219,414 +145,202 @@ class ExamPage extends Component
             return;
         }
 
-        $user = Auth::user();
+        $participant = ExamParticipant::find($this->examParticipantId);
 
-        // Re-fetch participant for safety
-        $participantId = session('exam_participant_id');
-        if ($participantId) {
-            $participant = ExamParticipant::find($participantId);
-        } else {
-            $participant = ExamParticipant::where('user_id', $user->id)
-                ->where('is_active', true)
-                ->latest()
-                ->first();
+        if (! $participant) {
+            return;
         }
-
-        if (!$participant) return;
 
         $participant->loadMissing('examPackage');
 
-        if (! $participant->examPackage || ! $participant->examPackage->is_active) {
-            \Filament\Notifications\Notification::make()
+        if (! $participant->examPackage?->is_active) {
+            Notification::make()
                 ->title('Paket Ujian Ditutup')
                 ->body('Paket ujian ini saat ini dinonaktifkan. Silakan hubungi panitia.')
                 ->warning()
                 ->send();
-
             $this->step = 'verification';
-
             return;
         }
 
-        $session = ExamSession::create([
-            'exam_participant_id' => $participant->id,
-            'status' => 'ongoing',
-            'started_at' => now(),
-        ]);
+        $session = app(ExamSessionService::class)->start(
+            new StartExamDTO($participant->id),
+        );
 
-        // Explicitly reload to ensure all attributes/casts are loaded
-        $session->refresh();
-
-        // Safety check: if answers_meta is empty despite 'creating' event, regenerate it.
-        if (empty($session->answers_meta) || count($session->answers_meta) === 0) {
+        // Pengaman: jika event model gagal mengisi answers_meta, generate ulang di sini.
+        if (empty($session->answers_meta)) {
             $session->answers_meta = $session->generateShuffledQuestionOrder();
             $session->save();
             $session->refresh();
         }
 
         $this->step = 'exam';
-        $this->initializeExamState($session, $user);
+        $this->initializeExamState($session);
 
-        // EXTRA SAFETY: Force re-read if initialization failed silently
+        // Pengaman tambahan: initializeExamState bisa gagal diam-diam jika answers_meta belum terisi.
         if (empty($this->questionsJson)) {
             $this->initializeClientData();
         }
 
-        // Dispatch event to start timer on frontend with explicit end time
-        // This ensures the timer logic can pick up the new time immediately
         $this->dispatch('exam-started', $this->endTime);
     }
 
-    protected function initializeExamState($session, $user)
-    {
-        $this->examSessionId = $session->id;
-        $this->questionIds = $session->answers_meta ?? [];
-        $this->totalQuestions = count($this->questionIds);
-        $this->startedAt = $session->started_at;
+    // =========================================================================
+    // AKSI SAAT UJIAN BERLANGSUNG
+    // =========================================================================
 
-        $this->candidateName = $user->name;
-        $this->candidateIdentifier = $user->nip;
-
-        // Calculate end time
-        $this->endTime = $session->started_at->copy()
-            ->addMinutes($this->durationMinutes)
-            ->toIso8601String();
-
-        // Restore question index from session (persist across refresh)
-        $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
-
-        // Initialize Client-Side Data
-        $this->initializeClientData();
-
-        // Load existing answer for current question
-        if (!empty($this->questionIds)) {
-            $this->loadCurrentAnswer();
-        }
-    }
-
-    protected function initializeClientData()
-    {
-        // 0. Safety Check: If questionIds is empty, try to reload session again
-        if (empty($this->questionIds) && $this->examSessionId) {
-            $session = ExamSession::find($this->examSessionId);
-            if ($session && !empty($session->answers_meta)) {
-                $this->questionIds = $session->answers_meta;
-                $this->totalQuestions = count($this->questionIds);
-            }
-        }
-
-        // 1. Fetch ALL Questions at once
-        // Fetch all columns to avoid missing attribute issues and ensure proper serialization
-        $questions = Question::whereIn('id', $this->questionIds)->get();
-
-        // 2. Map them in the correct order based on questionIds
-        $this->questionsJson = collect($this->questionIds)->map(function ($id) use ($questions) {
-            $q = $questions->firstWhere('id', $id);
-            if (!$q) return null;
-
-            // Ensure options are array
-            $options = $q->options;
-            // Handle double encoded JSON or string storage
-            if (is_string($options)) {
-                $decoded = json_decode($options, true);
-                if (is_array($decoded)) {
-                    $options = $decoded;
-                }
-            }
-
-            return [
-                'id' => $q->id,
-                'question_text' => (string) $q->question_text, // Force string to avoid any object issues
-                'options' => $options,
-            ];
-        })->filter()->values()->toArray();
-
-        // 3. Load ALL Answers at once
-        $answers = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
-
-        $this->initialAnswers = [];
-        foreach ($this->questionIds as $index => $qid) {
-            $ans = $answers->firstWhere('question_id', $qid);
-            $this->initialAnswers[$qid] = [
-                'answer' => $ans ? (string)$ans->answer : null, // Ensure string for JS comparison
-                'doubtful' => $ans ? (bool)$ans->is_doubtful : false,
-                'answered' => $ans && $ans->answer !== null && $ans->answer !== '',
-            ];
-        }
-    }
-
-    public function getCurrentQuestionProperty()
-    {
-        if (empty($this->questionIds) || !isset($this->questionIds[$this->currentQuestionIndex])) {
-            return null;
-        }
-
-        return Question::find($this->questionIds[$this->currentQuestionIndex]);
-    }
-
-    public function loadCurrentAnswer()
-    {
-        $questionId = $this->questionIds[$this->currentQuestionIndex] ?? null;
-        if (!$questionId) return;
-
-        $answer = ExamAnswer::where('exam_session_id', $this->examSessionId)
-            ->where('question_id', $questionId)
-            ->first();
-
-        $this->currentAnswer = $answer ? $answer->answer : '';
-        $this->currentDoubtful = $answer ? (bool) $answer->is_doubtful : false;
-    }
-
-    public function updatedCurrentAnswer($value)
+    public function updatedCurrentAnswer(string $value): void
     {
         $this->saveAnswer($value);
     }
 
-    // Gunakan #[Renderless] agar penyimpanan jawaban tidak memicu re-render UI yang 'berat'
     #[Renderless]
-    public function saveAnswer($option)
+    public function saveAnswer(string $option): void
     {
         $questionId = $this->questionIds[$this->currentQuestionIndex] ?? null;
+
         if ($questionId) {
-            $this->saveAnswerClient($questionId, $option);
+            $this->saveAnswerForQuestion($questionId, $option);
         }
     }
 
+    /** Dipanggil langsung dari JS/Alpine - melewati siklus render Livewire agar lebih cepat. */
     #[Renderless]
-    public function saveAnswerClient($questionId, $option)
+    public function saveAnswerClient(int $questionId, string $option): void
     {
-        if ($this->showResults || ! $this->examSessionId) return;
+        if ($this->showResults || ! $this->examSessionId) {
+            return;
+        }
+
         if ($this->hasTimeExpired()) {
             $this->handleTimeExpiry();
             return;
         }
 
-        $answer = ExamAnswer::updateOrCreate(
-            [
-                'exam_session_id' => $this->examSessionId,
-                'question_id' => $questionId
-            ],
-            [
-                'answer' => $option,
-                'score' => 0
-            ]
-        );
-        $answer->calculateScore();
-        $answer->save();
+        $this->saveAnswerForQuestion($questionId, $option);
 
-        // Sync local
-        if ($questionId == ($this->questionIds[$this->currentQuestionIndex] ?? null)) {
+        // Sinkronkan state lokal agar tampilan soal yang aktif tetap konsisten.
+        if ($questionId === ($this->questionIds[$this->currentQuestionIndex] ?? null)) {
             $this->currentAnswer = $option;
         }
     }
 
+    /** Hanya toggle flag ragu-ragu - tidak mempengaruhi skor - update langsung ke model sudah cukup. */
     #[Renderless]
-    public function toggleDoubtfulClient($questionId, $status)
+    public function toggleDoubtfulClient(int $questionId, bool $status): void
     {
-        if ($this->showResults || ! $this->examSessionId) return;
+        if ($this->showResults || ! $this->examSessionId) {
+            return;
+        }
 
-        $answer = ExamAnswer::firstOrNew([
-            'exam_session_id' => $this->examSessionId,
-            'question_id' => $questionId
-        ]);
-
-        $answer->is_doubtful = $status;
-        $answer->save();
+        ExamAnswer::firstOrCreate(
+            ['exam_session_id' => $this->examSessionId, 'question_id' => $questionId],
+            ['answer' => null, 'score' => 0],
+        )->update(['is_doubtful' => $status]);
     }
 
-
-    public function toggleDoubtful()
+    public function toggleDoubtful(): void
     {
         if (! $this->ensureSessionIsActive()) {
             return;
         }
 
-        if (!$this->currentQuestion) {
+        $question = $this->currentQuestion;
+
+        if (! $question) {
             return;
         }
 
         $answer = ExamAnswer::firstOrNew([
             'exam_session_id' => $this->examSessionId,
-            'question_id' => $this->currentQuestion->id,
+            'question_id'     => $question->id,
         ]);
 
-        if (!$answer->exists) {
+        if (! $answer->exists) {
             $answer->answer = $this->currentAnswer ?: null;
-            $answer->score = 0;
+            $answer->score  = 0;
         }
 
-        $answer->is_doubtful = !($answer->is_doubtful ?? false);
+        $answer->is_doubtful = ! ($answer->is_doubtful ?? false);
 
         if ($answer->answer) {
-            $answer->calculateScore();
+            $answer->score = $answer->calculateScore();
         }
 
         $answer->save();
 
         $this->currentDoubtful = (bool) $answer->is_doubtful;
-
         $this->dispatch('question-flagged', $this->currentDoubtful);
     }
 
-    public function nextQuestion()
+    public function nextQuestion(): void
     {
         if (! $this->ensureSessionIsActive()) {
             return;
         }
 
-        // Ensure current answer is saved before moving
-        if ($this->currentQuestion && $this->currentAnswer !== '' && $this->currentAnswer !== null) {
-            $this->saveAnswer($this->currentAnswer);
-        }
+        $this->persistCurrentAnswerIfSet();
 
         if ($this->currentQuestionIndex < $this->totalQuestions - 1) {
             $this->currentQuestionIndex++;
-            // Save to session for persistence
-            session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
+            $this->persistNavigationIndex();
             $this->loadCurrentAnswer();
             $this->dispatch('question-changed');
         }
     }
 
-    public function prevQuestion()
+    public function prevQuestion(): void
     {
         if (! $this->ensureSessionIsActive()) {
             return;
         }
 
-        // Ensure current answer is saved before moving
-        if ($this->currentQuestion && $this->currentAnswer !== '' && $this->currentAnswer !== null) {
-            $this->saveAnswer($this->currentAnswer);
-        }
+        $this->persistCurrentAnswerIfSet();
 
         if ($this->currentQuestionIndex > 0) {
             $this->currentQuestionIndex--;
-            // Save to session for persistence
-            session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
+            $this->persistNavigationIndex();
             $this->loadCurrentAnswer();
             $this->dispatch('question-changed');
         }
     }
 
-    public function goToQuestion($index)
+    public function goToQuestion(int $index): void
     {
         if (! $this->ensureSessionIsActive()) {
             return;
         }
 
-        // Ensure current answer is saved before moving
-        if ($this->currentQuestion && $this->currentAnswer !== '' && $this->currentAnswer !== null) {
-            $this->saveAnswer($this->currentAnswer);
-        }
+        $this->persistCurrentAnswerIfSet();
 
         if ($index >= 0 && $index < $this->totalQuestions) {
             $this->currentQuestionIndex = $index;
-            session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
+            $this->persistNavigationIndex();
             $this->loadCurrentAnswer();
             $this->dispatch('question-changed');
         }
     }
 
-    public function render()
-    {
-        $answersMap = collect();
+    // =========================================================================
+    // SELESAI / SUBMIT UJIAN
+    // =========================================================================
 
-        if ($this->examSessionId) {
-            $answersMap = ExamAnswer::where('exam_session_id', $this->examSessionId)
-                ->get()
-                ->keyBy('question_id');
-        }
-
-        $questionStatuses = collect($this->questionIds)->values()->map(function ($questionId, $index) use ($answersMap) {
-            $answer = $answersMap[$questionId] ?? null;
-            return [
-                'index' => $index,
-                'question_id' => $questionId,
-                'number' => $index + 1,
-                'answered' => $answer && $answer->answer !== null && $answer->answer !== '',
-                'current' => $index === $this->currentQuestionIndex,
-                'answer' => $answer ? $answer->answer : null,
-                'doubtful' => $answer ? (bool) $answer->is_doubtful : false,
-            ];
-        })->all();
-
-        $answeredCount = $answersMap
-            ->filter(function ($answer) {
-                return $answer && $answer->answer !== null && $answer->answer !== '';
-            })
-            ->count();
-        $doubtfulCount = $answersMap
-            ->filter(function ($answer) {
-                return $answer && (bool) $answer->is_doubtful;
-            })
-            ->count();
-        $unansweredCount = max($this->totalQuestions - $answeredCount, 0);
-
-        return view('livewire.exam.exam-page', [
-            'questionStatuses' => $questionStatuses,
-            'answeredCount' => $answeredCount,
-            'unansweredCount' => $unansweredCount,
-            'doubtfulCount' => $doubtfulCount,
-        ])->layout('layouts.exam', [
-            'examTitle' => $this->examTitle,
-            'candidateName' => $this->candidateName,
-            'candidateIdentifier' => $this->candidateIdentifier,
-            'endTime' => $this->endTime,
-            'answeredCount' => $answeredCount,
-            'totalQuestions' => $this->totalQuestions,
-            'hideTimer' => $this->step === 'result',
-        ]);
-    }
-
-    protected function hasTimeExpired(): bool
-    {
-        if (!$this->endTime) return false;
-
-        // Strict check: current time > end time
-        // We add a tiny buffer (e.g., 5 seconds) for network latency.
-        return now()->greaterThan(Carbon::parse($this->endTime)->addSeconds(5));
-    }
-
-    public function handleTimeExpiry()
-    {
-        // Mark session as completed
-        if ($this->examSessionId) {
-            $session = ExamSession::find($this->examSessionId);
-            if ($session && $session->status === 'ongoing') {
-                $finishedAt = $this->endTime
-                    ? Carbon::parse($this->endTime)
-                    : now();
-
-                if ($finishedAt->isFuture()) {
-                    $finishedAt = now();
-                }
-
-                $this->completeExamSession($session, $finishedAt);
-            }
-        }
-
-        $this->dispatch('exam-finished');
-        $this->loadResults();
-        $this->step = 'result';
-    }
-
-    public function confirmFinish()
+    public function confirmFinish(): void
     {
         $this->showConfirmFinish = true;
     }
 
-    public function cancelFinish()
+    public function cancelFinish(): void
     {
         $this->showConfirmFinish = false;
     }
 
-    public function submitFinish()
+    public function submitFinish(): void
     {
         if (! $this->ensureSessionIsActive()) {
             return;
         }
 
-        // Mark session as completed
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
@@ -634,54 +348,65 @@ class ExamPage extends Component
             }
         }
 
-        $this->dispatch('exam-finished');
         $this->showConfirmFinish = false;
+        $this->dispatch('exam-finished');
         $this->loadResults();
         $this->step = 'result';
     }
 
-    protected function loadResults()
+    public function finishAndLogout(): void
     {
-        if (!$this->examSessionId) return;
+        $this->performLogout();
 
-        $answers = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
+        Notification::make()
+            ->title('Ujian Selesai')
+            ->body('Terima kasih telah mengikuti ujian.')
+            ->success()
+            ->send();
 
-        $totalQuestions = count($this->questionIds);
-        $answeredCount = $answers->count();
-        // Assuming 'score' is already calculated per answer (0 or 1/weight)
-        // If simply 1 for correct, 0 for wrong:
-        $totalScore = $answers->sum('score');
-
-        // Count correct answers (assuming score > 0 is correct)
-        $correctCount = $answers->where('score', '>', 0)->count();
-        $wrongCount = $answeredCount - $correctCount;
-
-        $this->resultStats = [
-            'total_questions' => $totalQuestions,
-            'answered' => $answeredCount,
-            'unanswered' => max($totalQuestions - $answeredCount, 0),
-            'correct' => $correctCount,
-            'wrong' => $wrongCount, // Includes wrong answered questions
-            'total_score' => $totalScore,
-        ];
-
-        if ($session = ExamSession::find($this->examSessionId)) {
-            if ((int) $session->total_score !== (int) $totalScore) {
-                $session->forceFill(['total_score' => (int) $totalScore])->save();
-            }
-        }
+        redirect()->route('filament.admin.auth.login');
     }
 
-    public function monitorSessionStatus(): void
+    // =========================================================================
+    // TIMER & PEMANTAUAN SESI
+    // =========================================================================
+
+    /** Listener event Livewire v3 - menggantikan array $listeners yang sudah deprecated. */
+    #[On('timeExpired')]
+    public function handleTimeExpiry(): void
     {
-        if ($this->showResults || !$this->examSessionId) {
+        if (! $this->examSessionId) {
             return;
         }
 
         $session = ExamSession::find($this->examSessionId);
 
-        if (!$session) {
-            $this->finalizeExternallyCompletedSession($session);
+        if ($session && $session->status === 'ongoing') {
+            $finishedAt = $this->endTime ? Carbon::parse($this->endTime) : now();
+
+            if ($finishedAt->isFuture()) {
+                $finishedAt = now();
+            }
+
+            $this->completeExamSession($session, $finishedAt);
+        }
+
+        $this->dispatch('exam-finished');
+        $this->loadResults();
+        $this->step = 'result';
+    }
+
+    public function monitorSessionStatus(): void
+    {
+        if ($this->showResults || ! $this->examSessionId) {
+            return;
+        }
+
+        $session = ExamSession::find($this->examSessionId);
+
+        if (! $session) {
+            // Sesi dihapus dari luar sistem, misalnya oleh admin.
+            $this->finalizeExternallyCompletedSession(null, 'Sesi ujian tidak ditemukan. Silakan hubungi administrator.');
             return;
         }
 
@@ -697,23 +422,365 @@ class ExamPage extends Component
         }
     }
 
-    private function completeExamSession(ExamSession $session, ?Carbon $finishedAt = null)
+    public function logActivity(string $action, ?string $message = null, string $severity = 'warning'): void
     {
-        $finishedAt = $finishedAt ?? now();
-        $totalScore = (int) $session->answers()->sum('score');
+        if (! $this->examSessionId) {
+            return;
+        }
 
-        $session->forceFill([
-            'status' => 'completed',
-            'finished_at' => $finishedAt,
-            'total_score' => $totalScore,
-        ])->save();
+        $messageMap = [
+            'tab_switch'    => 'Peserta berpindah tab atau meminimalkan browser.',
+            'window_blur'   => 'Peserta mengklik di luar jendela ujian.',
+            'copy_attempt'  => 'Percobaan menyalin teks soal (Copy).',
+            'paste_attempt' => 'Percobaan menempel teks (Paste).',
+            'right_click'   => 'Percobaan klik kanan (Context Menu).',
+        ];
 
-        if ($session->examParticipant) {
-            $session->examParticipant->update(['is_active' => false]);
+        $logMessage = $message ?? ($messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.');
+
+        if (in_array($severity, ['warning', 'danger', 'critical'], true)) {
+            $this->violationCount++;
+            $this->violationMessage   = $logMessage;
+            $this->showViolationModal = true;
+        }
+
+        ExamActivityLog::create([
+            'exam_session_id' => $this->examSessionId,
+            'action'          => $action,
+            'message'         => $logMessage,
+            'severity'        => $severity,
+        ]);
+    }
+
+    public function closeViolationModal(): void
+    {
+        $this->showViolationModal = false;
+    }
+
+    // =========================================================================
+    // COMPUTED PROPERTIES (PROPERTI KALKULASI)
+    // =========================================================================
+
+    public function getCurrentQuestionProperty(): ?Question
+    {
+        if (empty($this->questionIds) || ! isset($this->questionIds[$this->currentQuestionIndex])) {
+            return null;
+        }
+
+        return Question::find($this->questionIds[$this->currentQuestionIndex]);
+    }
+
+    // =========================================================================
+    // RENDER
+    // =========================================================================
+
+    public function render(): mixed
+    {
+        [$questionStatuses, $answeredCount, $doubtfulCount] = $this->buildQuestionStatuses();
+
+        return view('livewire.exam.exam-page', [
+            'questionStatuses' => $questionStatuses,
+            'answeredCount'    => $answeredCount,
+            'unansweredCount'  => max($this->totalQuestions - $answeredCount, 0),
+            'doubtfulCount'    => $doubtfulCount,
+        ])->layout('layouts.exam', [
+            'examTitle'           => $this->examTitle,
+            'candidateName'       => $this->candidateName,
+            'candidateIdentifier' => $this->candidateIdentifier,
+            'endTime'             => $this->endTime,
+            'answeredCount'       => $answeredCount,
+            'totalQuestions'      => $this->totalQuestions,
+            'hideTimer'           => $this->step === 'result',
+        ]);
+    }
+
+    // =========================================================================
+    // PRIVATE - PEMBANTU MOUNT
+    // =========================================================================
+
+    /**
+     * Cari ExamParticipant untuk pengguna yang sedang login.
+     * Prioritas: ID dari PHP session (diset saat login token) - jika tidak ada,
+     * ambil record aktif terbaru (fallback untuk admin/testing).
+     */
+    private function resolveParticipant(mixed $user): ?ExamParticipant
+    {
+        $participantId = session('exam_participant_id');
+
+        if ($participantId) {
+            return ExamParticipant::where('id', $participantId)
+                ->where('user_id', $user->id)
+                ->where('is_active', true)
+                ->first();
+        }
+
+        return ExamParticipant::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Tentukan tahap (step) mana yang harus ditampilkan berdasarkan status sesi peserta.
+     */
+    private function resolveSessionStep(ExamParticipant $participant): void
+    {
+        $session = ExamSession::where('exam_participant_id', $participant->id)
+            ->latest()
+            ->first();
+
+        // Kasus A: peserta sudah selesai ujian secara manual sebelumnya.
+        if ($session && $session->status === 'completed') {
+            $this->examSessionId = $session->id;
+            $this->questionIds   = $session->answers_meta ?? [];
+            $this->loadResults();
+            $this->step = 'result';
+            return;
+        }
+
+        // Kasus B: sesi sedang berjalan - cek apakah waktu ujian sudah habis.
+        if ($session && $session->status === 'ongoing') {
+            $expirationTime = $session->started_at->copy()->addMinutes($this->durationMinutes);
+
+            if (now()->greaterThan($expirationTime)) {
+                $this->examSessionId = $session->id;
+                $this->endTime       = $expirationTime->toIso8601String();
+                $this->questionIds   = $session->answers_meta ?? [];
+                $this->handleTimeExpiry();
+                return;
+            }
+
+            // Sesi masih valid dan belum kedaluwarsa - lanjutkan langsung ke tampilan soal.
+            $this->step = 'exam';
+            $this->initializeExamState($session);
+            return;
+        }
+
+        // Kasus C: belum ada sesi ujian - arahkan ke langkah verifikasi kamera.
+        $this->step = 'verification';
+    }
+
+    // =========================================================================
+    // PRIVATE - PEMBANTU INISIALISASI SESI UJIAN
+    // =========================================================================
+
+    /**
+     * Isi semua properti Livewire yang diperlukan untuk menampilkan sesi ujian yang aktif.
+     */
+    private function initializeExamState(ExamSession $session): void
+    {
+        $user = Auth::user();
+
+        $this->examSessionId        = $session->id;
+        $this->questionIds          = $session->answers_meta ?? [];
+        $this->totalQuestions       = count($this->questionIds);
+        $this->startedAt            = $session->started_at->toIso8601String();
+        $this->candidateName        = $user->name;
+        $this->candidateIdentifier  = $user->nip;
+        $this->endTime              = $session->started_at->copy()
+            ->addMinutes($this->durationMinutes)
+            ->toIso8601String();
+
+        // Pulihkan nomor soal terakhir dari PHP session (bertahan meski halaman di-refresh).
+        $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
+
+        $this->initializeClientData();
+
+        if (! empty($this->questionIds)) {
+            $this->loadCurrentAnswer();
         }
     }
 
-    protected function ensureSessionIsActive(): bool
+    /**
+     * Isi $questionsJson dan $initialAnswers untuk layer JavaScript, hanya dengan 2 query DB.
+     */
+    private function initializeClientData(): void
+    {
+        // Pengaman: reload answers_meta jika karena alasan tertentu masih kosong.
+        if (empty($this->questionIds) && $this->examSessionId) {
+            $session = ExamSession::find($this->examSessionId);
+            if ($session && ! empty($session->answers_meta)) {
+                $this->questionIds    = $session->answers_meta;
+                $this->totalQuestions = count($this->questionIds);
+            }
+        }
+
+        // Query 1: ambil semua soal untuk sesi ini sekaligus.
+        $questions = Question::whereIn('id', $this->questionIds)->get();
+
+        $this->questionsJson = collect($this->questionIds)
+            ->map(function (int $id) use ($questions): ?array {
+                $q = $questions->firstWhere('id', $id);
+
+                if (! $q) {
+                    return null;
+                }
+
+                $options = $q->options;
+
+                // Tangani kemungkinan JSON yang ter-encode dua kali saat disimpan ke DB.
+                if (is_string($options)) {
+                    $decoded = json_decode($options, true);
+                    if (is_array($decoded)) {
+                        $options = $decoded;
+                    }
+                }
+
+                return [
+                    'id'            => $q->id,
+                    'question_text' => (string) $q->question_text,
+                    'options'       => $options,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+
+        // Query 2: ambil semua jawaban yang sudah tersimpan untuk sesi ini.
+        $answers = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
+
+        $this->initialAnswers = [];
+        foreach ($this->questionIds as $qid) {
+            $ans = $answers->firstWhere('question_id', $qid);
+            $this->initialAnswers[$qid] = [
+                'answer'   => $ans ? (string) $ans->answer : null,
+                'doubtful' => $ans ? (bool) $ans->is_doubtful : false,
+                'answered' => $ans && $ans->answer !== null && $ans->answer !== '',
+            ];
+        }
+    }
+
+    private function loadCurrentAnswer(): void
+    {
+        $questionId = $this->questionIds[$this->currentQuestionIndex] ?? null;
+
+        if (! $questionId) {
+            return;
+        }
+
+        $answer = ExamAnswer::where('exam_session_id', $this->examSessionId)
+            ->where('question_id', $questionId)
+            ->first();
+
+        $this->currentAnswer   = $answer?->answer ?? '';
+        $this->currentDoubtful = (bool) ($answer?->is_doubtful ?? false);
+    }
+
+    // =========================================================================
+    // PRIVATE - PEMBANTU SIMPAN JAWABAN & SELESAIKAN UJIAN
+    // =========================================================================
+
+    /**
+     * Serahkan penyimpanan jawaban dan kalkulasi skor ke ExamSessionService.
+     * Satu sumber kebenaran - dipanggil oleh saveAnswer() maupun saveAnswerClient().
+     */
+    private function saveAnswerForQuestion(int $questionId, string $option): void
+    {
+        app(ExamSessionService::class)->saveAnswer(new SaveAnswerDTO(
+            examSessionId: $this->examSessionId,
+            questionId: $questionId,
+            answer: $option,
+            isDoubtful: false, // status ragu-ragu dikelola terpisah via toggleDoubtful*()
+        ));
+    }
+
+    /**
+     * Serahkan penyelesaian sesi ke ExamSessionService.
+     * RuntimeException ditangkap diam-diam jika sesi sudah selesai lebih dulu.
+     */
+    private function completeExamSession(ExamSession $session, ?Carbon $finishedAt = null): void
+    {
+        try {
+            app(ExamSessionService::class)->finish(new FinishExamDTO(
+                examSessionId: $session->id,
+                examParticipantId: $session->exam_participant_id,
+                finishedAt: $finishedAt ?? now(),
+            ));
+        } catch (\RuntimeException) {
+            // Sesi sudah selesai sebelumnya - abaikan exception.
+        }
+    }
+
+    private function loadResults(): void
+    {
+        if (! $this->examSessionId) {
+            return;
+        }
+
+        $answers        = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
+        $totalQuestions = count($this->questionIds);
+        $answeredCount  = $answers->count();
+        $totalScore     = $answers->sum('score');
+        $correctCount   = $answers->where('score', '>', 0)->count();
+
+        $this->resultStats = [
+            'total_questions' => $totalQuestions,
+            'answered'        => $answeredCount,
+            'unanswered'      => max($totalQuestions - $answeredCount, 0),
+            'correct'         => $correctCount,
+            'wrong'           => $answeredCount - $correctCount,
+            'total_score'     => $totalScore,
+        ];
+
+        // Sinkronkan total_score jika ada selisih (misal jawaban dihitung ulang setelah submit).
+        if ($session = ExamSession::find($this->examSessionId)) {
+            if ((int) $session->total_score !== (int) $totalScore) {
+                $session->forceFill(['total_score' => (int) $totalScore])->save();
+            }
+        }
+    }
+
+    // =========================================================================
+    // PRIVATE - PEMBANTU RENDER
+    // =========================================================================
+
+    /**
+     * Bangun array status soal beserta jumlah terjawab dan ragu-ragu untuk render().
+     * Hanya melakukan 1 query DB jika ada sesi yang aktif.
+     *
+     * @return array{0: list<array>, 1: int, 2: int}  [statuses, answeredCount, doubtfulCount]
+     */
+    private function buildQuestionStatuses(): array
+    {
+        $answersMap = $this->examSessionId
+            ? ExamAnswer::where('exam_session_id', $this->examSessionId)
+            ->get()
+            ->keyBy('question_id')
+            : collect();
+
+        $questionStatuses = collect($this->questionIds)
+            ->values()
+            ->map(function (int $questionId, int $index) use ($answersMap): array {
+                $answer = $answersMap[$questionId] ?? null;
+
+                return [
+                    'index'       => $index,
+                    'question_id' => $questionId,
+                    'number'      => $index + 1,
+                    'answered'    => $answer && $answer->answer !== null && $answer->answer !== '',
+                    'current'     => $index === $this->currentQuestionIndex,
+                    'answer'      => $answer?->answer,
+                    'doubtful'    => (bool) ($answer?->is_doubtful ?? false),
+                ];
+            })
+            ->all();
+
+        $answeredCount = $answersMap
+            ->filter(fn($a) => $a && $a->answer !== null && $a->answer !== '')
+            ->count();
+
+        $doubtfulCount = $answersMap
+            ->filter(fn($a) => $a && (bool) $a->is_doubtful)
+            ->count();
+
+        return [$questionStatuses, $answeredCount, $doubtfulCount];
+    }
+
+    // =========================================================================
+    // PRIVATE - PENJAGA STATUS SESI
+    // =========================================================================
+
+    private function ensureSessionIsActive(): bool
     {
         $session = ExamSession::find($this->examSessionId);
 
@@ -722,7 +789,6 @@ class ExamPage extends Component
 
             if (! $session->examParticipant?->examPackage?->is_active) {
                 $this->finalizeExternallyCompletedSession($session, 'Paket ujian sudah ditutup oleh panitia.');
-
                 return false;
             }
 
@@ -730,18 +796,24 @@ class ExamPage extends Component
         }
 
         $this->finalizeExternallyCompletedSession($session);
-
         return false;
     }
 
-    protected function finalizeExternallyCompletedSession(?ExamSession $session, string $message = 'Sesi ujian Anda telah diakhiri oleh pengawas.'): void
-    {
+    /**
+     * Dipanggil ketika sesi diakhiri oleh pihak luar (admin atau kedaluwarsa di sisi server).
+     * Menangani null session dengan aman (misalnya jika record sudah dihapus dari DB).
+     */
+    private function finalizeExternallyCompletedSession(
+        ?ExamSession $session,
+        string $message = 'Sesi ujian Anda telah diakhiri oleh pengawas.',
+    ): void {
         if ($this->showResults) {
             return;
         }
 
         if ($session) {
-            $this->endTime = optional($session->finished_at)->toIso8601String() ?? now()->toIso8601String();
+            $this->endTime = optional($session->finished_at)->toIso8601String()
+                ?? now()->toIso8601String();
 
             if ($session->total_score === null) {
                 $session->forceFill([
@@ -749,7 +821,7 @@ class ExamPage extends Component
                 ])->save();
             }
 
-            if ($session->examParticipant && $session->examParticipant->is_active) {
+            if ($session->examParticipant?->is_active) {
                 $session->examParticipant->update(['is_active' => false]);
             }
         } else {
@@ -762,25 +834,46 @@ class ExamPage extends Component
 
         $this->dispatch('exam-stopped', endTime: $this->endTime);
 
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->title('Ujian dihentikan')
             ->body($message)
             ->warning()
             ->send();
     }
 
-    public function finishAndLogout()
+    private function hasTimeExpired(): bool
+    {
+        if (! $this->endTime) {
+            return false;
+        }
+
+        // Tambah toleransi 5 detik untuk mengakomodasi latensi jaringan sebelum dinyatakan kedaluwarsa.
+        return now()->greaterThan(Carbon::parse($this->endTime)->addSeconds(5));
+    }
+
+    // =========================================================================
+    // PRIVATE - PEMBANTU NAVIGASI SOAL
+    // =========================================================================
+
+    /** Simpan jawaban soal saat ini sebelum berpindah ke soal lain, jika ada jawaban yang dipilih. */
+    private function persistCurrentAnswerIfSet(): void
+    {
+        if ($this->currentQuestion && $this->currentAnswer !== '') {
+            $this->saveAnswer($this->currentAnswer);
+        }
+    }
+
+    /** Simpan nomor soal aktif ke PHP session agar tidak hilang saat halaman di-refresh. */
+    private function persistNavigationIndex(): void
+    {
+        session(["exam_question_index_{$this->examSessionId}" => $this->currentQuestionIndex]);
+    }
+
+    /** Hancurkan sesi autentikasi secara bersih (logout + invalidate + regenerate token). */
+    private function performLogout(): void
     {
         Auth::logout();
         session()->invalidate();
         session()->regenerateToken();
-
-        \Filament\Notifications\Notification::make()
-            ->title('Ujian Selesai')
-            ->body('Terima kasih telah mengikuti ujian.')
-            ->success()
-            ->send();
-
-        return redirect()->route('filament.admin.auth.login');
     }
 }
