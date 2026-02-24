@@ -103,6 +103,56 @@ class QuestionForm
                                     'name'         => $data['name'],
                                     'is_active'    => true,
                                 ])->getKey();
+                            })
+                            ->createOptionAction(function ($action) {
+                                return $action
+                                    ->label('Tambah Unit Baru')
+                                    ->modalHeading('Buat Unit Baru')
+                                    ->modalSubmitActionLabel('Simpan Unit')
+                                    ->modalWidth('md')
+                                    ->icon('heroicon-o-plus')
+                                    ->color('primary');
+                            })
+                            ->editOptionForm([
+                                TextInput::make('name')
+                                    ->label('Nama Unit')
+                                    ->required()
+                                    ->maxLength(255),
+                                Toggle::make('is_active')
+                                    ->label('Aktif')
+                                    ->hidden()
+                                    ->default(true),
+                            ])
+                            ->editOptionAction(function ($action) {
+                                return $action
+                                    ->label('Edit Unit')
+                                    ->modalHeading('Ubah Data Unit')
+                                    ->modalSubmitActionLabel('Update')
+                                    ->modalWidth('md')
+                                    ->icon('heroicon-o-pencil')
+                                    ->color('warning');
+                            })
+                            ->fillEditOptionActionFormUsing(function (Select $component): ?array {
+                                $unit = QuestionUnit::find($component->getState());
+                                if (! $unit) {
+                                    return null;
+                                }
+                                return [
+                                    'name'      => $unit->name,
+                                    'is_active' => $unit->is_active,
+                                ];
+                            })
+                            ->updateOptionUsing(function (array $data, Select $component): void {
+                                QuestionUnit::findOrFail((int) $component->getState())->update([
+                                    'name'      => $data['name'],
+                                    'is_active' => $data['is_active'] ?? true,
+                                ]);
+                            })
+                            ->noOptionsMessage(function (Get $get): string {
+                                if (! filled($get('exam_type_id'))) {
+                                    return 'Pilih Tipe Soal terlebih dahulu';
+                                }
+                                return 'Tidak ada unit aktif untuk tipe soal ini. Silakan buat unit terlebih dahulu.';
                             }),
 
                         Select::make('question_sub_unit_id')
@@ -123,6 +173,15 @@ class QuestionForm
                                     ->required()
                                     ->maxLength(255),
                             ])
+                            ->createOptionAction(function ($action) {
+                                return $action
+                                    ->label('Tambah Sub Unit Baru')
+                                    ->modalHeading('Buat Sub Unit Baru')
+                                    ->modalSubmitActionLabel('Simpan Sub Unit')
+                                    ->modalWidth('md')
+                                    ->icon('heroicon-o-plus')
+                                    ->color('primary');
+                            })
                             ->createOptionUsing(function (array $data, Get $get): int {
                                 $questionUnitId = $get('question_unit_id');
 
@@ -134,6 +193,39 @@ class QuestionForm
                                     'question_unit_id' => $questionUnitId,
                                     'name'             => $data['name'],
                                 ])->getKey();
+                            })
+                            ->editOptionForm([
+                                TextInput::make('name')
+                                    ->label('Nama Sub Unit')
+                                    ->required()
+                                    ->maxLength(255),
+                            ])
+                            ->editOptionAction(function ($action) {
+                                return $action
+                                    ->label('Edit Sub Unit')
+                                    ->modalHeading('Ubah Data Sub Unit')
+                                    ->modalSubmitActionLabel('Update')
+                                    ->modalWidth('md')
+                                    ->icon('heroicon-o-pencil')
+                                    ->color('warning');
+                            })
+                            ->fillEditOptionActionFormUsing(function (Select $component): ?array {
+                                $sub = QuestionSubUnit::find($component->getState());
+                                if (! $sub) {
+                                    return null;
+                                }
+                                return ['name' => $sub->name];
+                            })
+                            ->updateOptionUsing(function (array $data, Select $component): void {
+                                QuestionSubUnit::findOrFail((int) $component->getState())->update([
+                                    'name' => $data['name'],
+                                ]);
+                            })
+                            ->noOptionsMessage(function (Get $get): string {
+                                if (! filled($get('question_unit_id'))) {
+                                    return 'Pilih Unit terlebih dahulu';
+                                }
+                                return 'Tidak ada sub unit untuk unit ini. Silakan buat sub unit terlebih dahulu.';
                             }),
 
                         // ── Conditional: Technical difficulty category ──────────
