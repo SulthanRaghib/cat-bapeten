@@ -25,18 +25,14 @@ class ExamPackagesTable
                     ->sortable()
                     ->weight('medium'),
 
-                TextColumn::make('type')
+                TextColumn::make('examType.name')
                     ->label('Tipe')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'technical' => 'Teknis (Benar/Salah)',
-                        'structural' => 'Struktural (Bobot Nilai)',
-                        default => $state,
-                    })
-                    ->colors([
-                        'info' => 'technical',
-                        'warning' => 'structural',
-                    ]),
+                    ->color(fn($record) => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted' => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('passing_grade')
                     ->label('Nilai Kelulusan')

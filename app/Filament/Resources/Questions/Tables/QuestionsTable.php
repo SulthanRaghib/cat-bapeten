@@ -20,13 +20,14 @@ class QuestionsTable
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('type')
+                TextColumn::make('examType.name')
                     ->label('Tipe')
                     ->badge()
-                    ->colors([
-                        'info' => 'technical',
-                        'warning' => 'structural',
-                    ]),
+                    ->color(fn($record) => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted' => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('question_text')
                     ->label('Soal')
@@ -50,12 +51,9 @@ class QuestionsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('type')
+                SelectFilter::make('exam_type_id')
                     ->label('Tipe Soal')
-                    ->options([
-                        'technical' => 'Technical (Benar/Salah)',
-                        'structural' => 'Structural (Bobot)',
-                    ]),
+                    ->relationship('examType', 'name'),
                 SelectFilter::make('category')
                     ->label('Kategori')
                     ->options([

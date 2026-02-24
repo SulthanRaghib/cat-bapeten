@@ -11,7 +11,7 @@ class ScoringConfigFormatter
      */
     public function formatScoringConfig(Question $question): string
     {
-        if ($question->type === 'structural') {
+        if ($question->examType?->isWeighted()) {
             $score = 0;
             $options = $question->options;
             if (is_array($options)) {

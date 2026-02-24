@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExamPackage extends Model
 {
@@ -13,6 +14,11 @@ class ExamPackage extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function examType(): BelongsTo
+    {
+        return $this->belongsTo(ExamType::class);
+    }
 
     public function participants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
