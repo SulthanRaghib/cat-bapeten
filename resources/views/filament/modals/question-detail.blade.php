@@ -27,8 +27,8 @@
     }
 
     $questionHtml = fixImageUrlsForDisplay($record->question_text);
-    $examPackage = $record->examPackage;
-    $tipe = $examPackage->type ?? 'technical';
+    $examType = $record->examType;
+    $evaluationMethod = $examType?->evaluation_method ?? 'correct_wrong';
     $kunciJawaban = $record->scoring_config['correct'] ?? null;
 @endphp
 
@@ -96,7 +96,7 @@
                         $isCorrect = false;
                         $bobot = null;
 
-                        if ($tipe === 'technical') {
+                        if ($evaluationMethod === 'correct_wrong') {
                             // Priority: Check 'is_correct' field in option data
                             if (is_array($optionData) && isset($optionData['is_correct'])) {
                                 $isCorrect = filter_var($optionData['is_correct'], FILTER_VALIDATE_BOOLEAN);
@@ -104,7 +104,7 @@
                                 // Fallback: Check global answer key
                                 $isCorrect = (string) $kunciJawaban === (string) $kode;
                             }
-                        } elseif ($tipe === 'structural') {
+                        } elseif ($evaluationMethod === 'weighted') {
                             // Trying to get score from option data first
                             if (is_array($optionData) && isset($optionData['score'])) {
                                 $bobot = $optionData['score'];
@@ -183,7 +183,7 @@
                 <div>
                     <h3 class="text-lg font-bold text-purple-900">Konfigurasi Penilaian</h3>
                     <p class="text-xs text-purple-600">Tipe:
-                        {{ $tipe === 'technical' ? 'Teknis (Benar/Salah)' : 'Struktural (Bobot)' }}</p>
+                        {{ $evaluationMethod === 'correct_wrong' ? 'Teknis (Benar/Salah)' : 'Berbobot (Bobot Nilai)' }}</p>
                 </div>
             </div>
         </div>
