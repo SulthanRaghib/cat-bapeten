@@ -1,33 +1,46 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources\Questions\Schemas;
 
 use App\Models\ExamType;
-use Filament\Forms\Components\Placeholder;
+use App\Models\QuestionSubUnit;
+use App\Models\QuestionUnit;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Str;
 
 class QuestionForm
 {
     /**
-     * Resolve evaluation method for the currently selected exam type.
+     * Cached map of exam-type evaluation methods to avoid N+1 queries.
+     *
+     * @var array<int, string|null>
+     */
+    private static array $evaluationMethodCache = [];
+
+    /**
+     * Resolve evaluation method for the currently selected exam type (cached).
      */
     private static function getEvaluationMethod(Get $get, string $prefix = ''): ?string
     {
         $examTypeId = $get($prefix . 'exam_type_id');
 
-        return $examTypeId
-            ? ExamType::find($examTypeId)?->evaluation_method
-            : null;
+        if (! $examTypeId) {
+            return null;
+        }
+
+        return self::$evaluationMethodCache[$examTypeId]
+            ??= ExamType::find($examTypeId)?->evaluation_method;
     }
 
     public static function configure(Schema $schema): Schema
@@ -40,53 +53,103 @@ class QuestionForm
                     ->schema([
                         Select::make('exam_type_id')
                             ->label('Tipe Soal')
-                            ->relationship('examType', 'name')
+                            ->options(fn() => ExamType::query()
+                                ->where('is_active', true)
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->searchable()
                             ->preload()
                             ->required()
                             ->columnSpan(4)
                             ->live()
-                            ->native(false),
+                            ->native(false)
+                            ->afterStateUpdated(function (Set $set): void {
+                                $set('question_unit_id', null);
+                                $set('question_sub_unit_id', null);
+                            }),
 
-                        // --- Conditional Fields for 'correct_wrong' evaluation ---
-                        Section::make('Data Teknis')
-                            ->schema([
-                                TextInput::make('unit')
-                                    ->label('Unit (Materi/Bab)')
-                                    ->placeholder('Misal: Proteksi Radiasi')
-                                    ->columnSpan(4),
-                                TextInput::make('sub_unit')
-                                    ->label('Sub Unit (Sub-Bab)')
-                                    ->placeholder('Misal: Efek Biologis')
-                                    ->columnSpan(4),
-                                Select::make('category')
-                                    ->label('Kategori')
-                                    ->options([
-                                        'easy' => 'Mudah',
-                                        'medium' => 'Sedang',
-                                        'hard' => 'Sulit',
-                                    ])
+                        // ── Dynamic Unit / Sub-Unit (master-data driven) ────────
+
+                        Select::make('question_unit_id')
+                            ->label('Unit (Materi/Bab)')
+                            ->options(fn(Get $get) => QuestionUnit::query()
+                                ->where('exam_type_id', $get('exam_type_id'))
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->columnSpan(4)
+                            ->native(false)
+                            ->visible(fn(Get $get): bool => filled($get('exam_type_id')))
+                            ->afterStateUpdated(fn(Set $set) => $set('question_sub_unit_id', null))
+                            ->createOptionForm([
+                                TextInput::make('name')
+                                    ->label('Nama Unit Baru')
                                     ->required()
-                                    ->columnSpan(4),
+                                    ->maxLength(255),
+                            ])
+                            ->createOptionUsing(function (array $data, Get $get): int {
+                                $examTypeId = $get('exam_type_id');
+
+                                if (! $examTypeId) {
+                                    throw new \RuntimeException('Pilih Tipe Soal terlebih dahulu sebelum membuat Unit baru.');
+                                }
+
+                                return QuestionUnit::create([
+                                    'exam_type_id' => $examTypeId,
+                                    'name'         => $data['name'],
+                                    'is_active'    => true,
+                                ])->getKey();
+                            }),
+
+                        Select::make('question_sub_unit_id')
+                            ->label('Sub Unit (Sub-Bab)')
+                            ->options(fn(Get $get) => QuestionSubUnit::query()
+                                ->where('question_unit_id', $get('question_unit_id'))
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->columnSpan(4)
+                            ->native(false)
+                            ->visible(fn(Get $get): bool => filled($get('question_unit_id')))
+                            ->createOptionForm([
+                                TextInput::make('name')
+                                    ->label('Nama Sub Unit Baru')
+                                    ->required()
+                                    ->maxLength(255),
+                            ])
+                            ->createOptionUsing(function (array $data, Get $get): int {
+                                $questionUnitId = $get('question_unit_id');
+
+                                if (! $questionUnitId) {
+                                    throw new \RuntimeException('Pilih Unit terlebih dahulu sebelum membuat Sub Unit baru.');
+                                }
+
+                                return QuestionSubUnit::create([
+                                    'question_unit_id' => $questionUnitId,
+                                    'name'             => $data['name'],
+                                ])->getKey();
+                            }),
+
+                        // ── Conditional: Technical difficulty category ──────────
+
+                        Select::make('category')
+                            ->label('Kategori Kesulitan')
+                            ->options([
+                                'easy'   => 'Mudah',
+                                'medium' => 'Sedang',
+                                'hard'   => 'Sulit',
                             ])
                             ->visible(fn(Get $get) => self::getEvaluationMethod($get) === 'correct_wrong')
-                            ->columns(12)
-                            ->columnSpan(12),
+                            ->required(fn(Get $get) => self::getEvaluationMethod($get) === 'correct_wrong')
+                            ->columnSpan(4)
+                            ->native(false),
 
-                        // --- Conditional Fields for 'weighted' evaluation ---
-                        Section::make('Data Mansoskul')
-                            ->schema([
-                                TextInput::make('competence_area')
-                                    ->label('Bidang Kompetensi')
-                                    ->placeholder('Misal: Manajerial')
-                                    ->columnSpan(6),
-                                TextInput::make('competence_sub_area')
-                                    ->label('Sub Bidang Kompetensi')
-                                    ->placeholder('Misal: Integritas')
-                                    ->columnSpan(6),
-                            ])
-                            ->visible(fn(Get $get) => self::getEvaluationMethod($get) === 'weighted')
-                            ->columns(12)
-                            ->columnSpan(12),
                     ]),
 
                 Section::make('Isi Soal & Pembahasan')

@@ -29,6 +29,11 @@ class ExamType extends Model
         return $this->hasMany(Question::class);
     }
 
+    public function questionUnits(): HasMany
+    {
+        return $this->hasMany(QuestionUnit::class);
+    }
+
     public function examPackages(): HasMany
     {
         return $this->hasMany(ExamPackage::class);
