@@ -12,6 +12,8 @@ class Question extends Model
 {
     protected $fillable = [
         'exam_type_id',
+        'question_unit_id',
+        'question_sub_unit_id',
         'question_text',
         'options',
         'scoring_config',
@@ -36,6 +38,16 @@ class Question extends Model
     public function examType(): BelongsTo
     {
         return $this->belongsTo(ExamType::class);
+    }
+
+    public function questionUnit(): BelongsTo
+    {
+        return $this->belongsTo(QuestionUnit::class);
+    }
+
+    public function questionSubUnit(): BelongsTo
+    {
+        return $this->belongsTo(QuestionSubUnit::class);
     }
 
     /**

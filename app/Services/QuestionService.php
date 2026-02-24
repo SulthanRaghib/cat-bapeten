@@ -89,6 +89,8 @@ final class QuestionService
     {
         return [
             'exam_type_id'         => $dto->examTypeId,
+            'question_unit_id'     => $dto->questionUnitId,
+            'question_sub_unit_id' => $dto->questionSubUnitId,
             'question_text'        => $dto->questionText,
             'explanation'          => $dto->explanation,
             'unit'                 => $dto->unit,

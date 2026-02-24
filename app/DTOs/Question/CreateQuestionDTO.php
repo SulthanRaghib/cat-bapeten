@@ -28,7 +28,12 @@ final readonly class CreateQuestionDTO
         /** Optional explanation shown after exam completion. */
         public string $explanation = '',
 
-        // ── Technical-question fields ──────────────────────────────────────
+        // ── Dynamic Unit fields (master-data driven) ───────────────────────
+
+        public ?int $questionUnitId    = null,
+        public ?int $questionSubUnitId = null,
+
+        // ── Technical-question fields (legacy) ─────────────────────────────
 
         public string $unit    = '',
         public string $subUnit = '',
@@ -36,7 +41,7 @@ final readonly class CreateQuestionDTO
         /** 'easy' | 'medium' | 'hard' */
         public string $category = '',
 
-        // ── Structural-question fields ─────────────────────────────────────
+        // ── Structural-question fields (legacy) ────────────────────────────
 
         public string $competenceArea    = '',
         public string $competenceSubArea = '',
@@ -60,6 +65,8 @@ final readonly class CreateQuestionDTO
             questionText: (string) ($data['question_text']       ?? ''),
             options: $options,
             explanation: (string) ($data['explanation']         ?? ''),
+            questionUnitId: isset($data['question_unit_id']) ? (int) $data['question_unit_id'] : null,
+            questionSubUnitId: isset($data['question_sub_unit_id']) ? (int) $data['question_sub_unit_id'] : null,
             unit: (string) ($data['unit']                ?? ''),
             subUnit: (string) ($data['sub_unit']            ?? ''),
             category: (string) ($data['category']            ?? ''),
