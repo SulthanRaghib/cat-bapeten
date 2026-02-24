@@ -83,6 +83,7 @@ class QuestionForm
                             ->live()
                             ->columnSpan(4)
                             ->native(false)
+                            ->required(fn(Get $get) => filled($get('exam_type_id')))
                             ->visible(fn(Get $get): bool => filled($get('exam_type_id')))
                             ->afterStateUpdated(fn(Set $set) => $set('question_sub_unit_id', null))
                             ->createOptionForm([
@@ -166,6 +167,7 @@ class QuestionForm
                             ->preload()
                             ->columnSpan(4)
                             ->native(false)
+                            ->required(fn(Get $get) => filled($get('question_unit_id')))
                             ->visible(fn(Get $get): bool => filled($get('question_unit_id')))
                             ->createOptionForm([
                                 TextInput::make('name')
@@ -231,7 +233,7 @@ class QuestionForm
                         // ── Conditional: Technical difficulty category ──────────
 
                         Select::make('category')
-                            ->label('Kategori Kesulitan')
+                            ->label('Tingkat Kesulitan')
                             ->options([
                                 'easy'   => 'Mudah',
                                 'medium' => 'Sedang',
@@ -297,7 +299,7 @@ class QuestionForm
                             ])
                             ->columns(1)
                             ->defaultItems(4)
-                            ->grid(2)
+                            // ->grid(2)
                             ->collapsible()
                             ->itemLabel(fn(array $state): ?string => strip_tags($state['answer_text'] ?? null))
                             ->reorderableWithButtons(),
