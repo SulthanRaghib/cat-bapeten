@@ -43,6 +43,7 @@ class ExamTypeForm
                             ->helperText('Menentukan bagaimana jawaban akan dinilai.'),
 
                         Toggle::make('is_active')
+                            ->hidden(true)
                             ->label('Aktif')
                             ->default(true)
                             ->helperText('Tipe ujian yang tidak aktif tidak akan muncul di pilihan.'),

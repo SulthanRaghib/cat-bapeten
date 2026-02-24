@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\ExamTypes\Tables;
 
 use App\Models\ExamType;
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -14,6 +15,7 @@ class ExamTypesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(null)
             ->columns([
                 TextColumn::make('name')
                     ->label('Nama Tipe')
@@ -63,6 +65,11 @@ class ExamTypesTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('name');
+            ->defaultSort('name')
+            ->recordActions([
+                EditAction::make()
+                    ->label('Edit Tipe Ujian')
+                    ->icon('heroicon-m-pencil-square'),
+            ]);
     }
 }
