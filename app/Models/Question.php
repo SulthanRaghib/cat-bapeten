@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Question extends Model
 {
     protected $fillable = [
-        'type',
+        'exam_type_id',
         'question_text',
         'options',
         'scoring_config',
@@ -31,6 +32,11 @@ class Question extends Model
         'options' => '[]',
         'scoring_config' => '[]',
     ];
+
+    public function examType(): BelongsTo
+    {
+        return $this->belongsTo(ExamType::class);
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany

@@ -88,7 +88,7 @@ final class QuestionService
     private function mapToAttributes(CreateQuestionDTO|UpdateQuestionDTO $dto): array
     {
         return [
-            'type'                 => $dto->type,
+            'exam_type_id'         => $dto->examTypeId,
             'question_text'        => $dto->questionText,
             'explanation'          => $dto->explanation,
             'unit'                 => $dto->unit,

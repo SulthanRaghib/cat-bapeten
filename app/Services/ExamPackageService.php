@@ -36,7 +36,7 @@ final class ExamPackageService
         return DB::transaction(static function () use ($dto): ExamPackage {
             return ExamPackage::create([
                 'title'            => $dto->title,
-                'type'             => $dto->type,
+                'exam_type_id'     => $dto->examTypeId,
                 'passing_grade'    => $dto->passingGrade,
                 'duration_minutes' => $dto->durationMinutes,
                 'is_active'        => $dto->isActive,
@@ -54,7 +54,7 @@ final class ExamPackageService
         return DB::transaction(static function () use ($package, $dto): ExamPackage {
             $package->update([
                 'title'            => $dto->title,
-                'type'             => $dto->type,
+                'exam_type_id'     => $dto->examTypeId,
                 'passing_grade'    => $dto->passingGrade,
                 'duration_minutes' => $dto->durationMinutes,
                 'is_active'        => $dto->isActive,
