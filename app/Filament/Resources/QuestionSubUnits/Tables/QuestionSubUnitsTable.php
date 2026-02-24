@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\QuestionSubUnits\Tables;
 
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -13,6 +14,7 @@ class QuestionSubUnitsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(null)
             ->columns([
                 TextColumn::make('name')
                     ->label('Nama Sub Unit')
@@ -22,13 +24,21 @@ class QuestionSubUnitsTable
                 TextColumn::make('questionUnit.name')
                     ->label('Unit Soal')
                     ->badge()
-                    ->color('info')
+                    ->color(fn($record) => match ($record->questionUnit?->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted' => 'warning',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 TextColumn::make('questionUnit.examType.name')
                     ->label('Tipe Ujian')
                     ->badge()
-                    ->color('primary')
+                    ->color(fn($record) => match ($record->questionUnit?->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted' => 'warning',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 TextColumn::make('questions_count')
@@ -48,6 +58,11 @@ class QuestionSubUnitsTable
                     ->relationship('questionUnit', 'name')
                     ->preload()
                     ->native(false),
+            ])
+            ->recordActions([
+                EditAction::make()
+                    ->label('Edit Sub Unit')
+                    ->icon('heroicon-m-pencil-square'),
             ])
             ->defaultSort('name');
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\QuestionUnits\Tables;
 
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -14,6 +15,7 @@ class QuestionUnitsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(null)
             ->columns([
                 TextColumn::make('name')
                     ->label('Nama Unit')
@@ -23,7 +25,11 @@ class QuestionUnitsTable
                 TextColumn::make('examType.name')
                     ->label('Tipe Ujian')
                     ->badge()
-                    ->color('primary')
+                    ->color(fn($record) => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted' => 'warning',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 TextColumn::make('sub_units_count')
@@ -53,6 +59,11 @@ class QuestionUnitsTable
                     ->relationship('examType', 'name')
                     ->preload()
                     ->native(false),
+            ])
+            ->recordActions([
+                EditAction::make()
+                    ->label('Edit Unit')
+                    ->icon('heroicon-m-pencil-square'),
             ])
             ->defaultSort('name');
     }
