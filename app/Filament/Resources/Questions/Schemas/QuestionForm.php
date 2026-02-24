@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Questions\Schemas;
 
+use App\Models\ExamType;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -17,6 +18,18 @@ use Illuminate\Support\Str;
 
 class QuestionForm
 {
+    /**
+     * Resolve evaluation method for the currently selected exam type.
+     */
+    private static function getEvaluationMethod(Get $get, string $prefix = ''): ?string
+    {
+        $examTypeId = $get($prefix . 'exam_type_id');
+
+        return $examTypeId
+            ? ExamType::find($examTypeId)?->evaluation_method
+            : null;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -25,17 +38,16 @@ class QuestionForm
                 Section::make('Detail Pertanyaan')
                     ->columns(12)
                     ->schema([
-                        Select::make('type')
+                        Select::make('exam_type_id')
                             ->label('Tipe Soal')
-                            ->options([
-                                'technical' => 'Teknis',
-                                'structural' => 'Struktural',
-                            ])
+                            ->relationship('examType', 'name')
+                            ->preload()
                             ->required()
                             ->columnSpan(4)
-                            ->live(), // Make reactive to show/hide sections
+                            ->live()
+                            ->native(false),
 
-                        // --- Conditional Fields for 'technical' ---
+                        // --- Conditional Fields for 'correct_wrong' evaluation ---
                         Section::make('Data Teknis')
                             ->schema([
                                 TextInput::make('unit')
@@ -56,12 +68,12 @@ class QuestionForm
                                     ->required()
                                     ->columnSpan(4),
                             ])
-                            ->visible(fn(Get $get) => $get('type') === 'technical')
+                            ->visible(fn(Get $get) => self::getEvaluationMethod($get) === 'correct_wrong')
                             ->columns(12)
                             ->columnSpan(12),
 
-                        // --- Conditional Fields for 'structural' ---
-                        Section::make('Data Struktural')
+                        // --- Conditional Fields for 'weighted' evaluation ---
+                        Section::make('Data Mansoskul')
                             ->schema([
                                 TextInput::make('competence_area')
                                     ->label('Bidang Kompetensi')
@@ -72,7 +84,7 @@ class QuestionForm
                                     ->placeholder('Misal: Integritas')
                                     ->columnSpan(6),
                             ])
-                            ->visible(fn(Get $get) => $get('type') === 'structural')
+                            ->visible(fn(Get $get) => self::getEvaluationMethod($get) === 'weighted')
                             ->columns(12)
                             ->columnSpan(12),
                     ]),
@@ -111,19 +123,19 @@ class QuestionForm
 
                                 View::make('filament.components.image-insert-widget'),
 
-                                // Technical: Correct/Incorrect (5 points implicity or via hidden logic)
+                                // correct_wrong: Correct/Incorrect toggle
                                 Toggle::make('is_correct')
                                     ->label('Kunci Jawaban (Benar = 5 Poin)')
                                     ->default(false)
-                                    ->visible(fn(Get $get) => $get('../../type') === 'technical')
+                                    ->visible(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'correct_wrong')
                                     ->reactive(),
 
-                                // Structural: Explicit Score
+                                // weighted: Explicit Score input
                                 TextInput::make('score')
                                     ->label('Bobot Nilai')
                                     ->numeric()
-                                    ->visible(fn(Get $get) => $get('../../type') === 'structural')
-                                    ->required(fn(Get $get) => $get('../../type') === 'structural'),
+                                    ->visible(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'weighted')
+                                    ->required(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'weighted'),
 
                                 Hidden::make('is_active')
                                     ->default(true),

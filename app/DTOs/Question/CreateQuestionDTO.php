@@ -16,8 +16,8 @@ final readonly class CreateQuestionDTO
      * @param  list<QuestionOptionData>  $options  Typed answer-option value objects.
      */
     public function __construct(
-        /** 'technical' | 'structural' */
-        public string $type,
+        /** Foreign key to exam_types table. */
+        public int $examTypeId,
 
         /** HTML body of the question (may contain images / LaTeX). */
         public string $questionText,
@@ -56,7 +56,7 @@ final readonly class CreateQuestionDTO
         );
 
         return new self(
-            type: (string) ($data['type']                ?? ''),
+            examTypeId: (int) ($data['exam_type_id']      ?? 0),
             questionText: (string) ($data['question_text']       ?? ''),
             options: $options,
             explanation: (string) ($data['explanation']         ?? ''),

@@ -15,7 +15,7 @@ final readonly class UpdateQuestionDTO
      * @param  list<QuestionOptionData>  $options
      */
     public function __construct(
-        public string $type,
+        public int $examTypeId,
         public string $questionText,
         public array  $options,
         public string $explanation      = '',
@@ -37,7 +37,7 @@ final readonly class UpdateQuestionDTO
         );
 
         return new self(
-            type: (string) ($data['type']                ?? ''),
+            examTypeId: (int) ($data['exam_type_id']      ?? 0),
             questionText: (string) ($data['question_text']       ?? ''),
             options: $options,
             explanation: (string) ($data['explanation']         ?? ''),

@@ -26,12 +26,10 @@ class ExamPackageForm
 
                         Grid::make(2)
                             ->schema([
-                                Select::make('type')
+                                Select::make('exam_type_id')
                                     ->label('Tipe Ujian')
-                                    ->options([
-                                        'technical' => 'Teknis (Benar/Salah)',
-                                        'structural' => 'Struktural (Bobot Nilai)',
-                                    ])
+                                    ->relationship('examType', 'name')
+                                    ->preload()
                                     ->required()
                                     ->native(false),
 

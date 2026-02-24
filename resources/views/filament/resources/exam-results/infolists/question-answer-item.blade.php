@@ -16,7 +16,8 @@
 
     // Determine Exam Type
     $examPackage = $examAnswer->examSession->examPackage ?? null;
-    $examType = $examPackage->type ?? 'technical';
+    $evaluationMethod = $examPackage?->examType?->evaluation_method ?? 'correct_wrong';
+    $isWeighted = $evaluationMethod === 'weighted';
 @endphp
 
 <div
@@ -36,7 +37,7 @@
                     </svg>
                     Tidak Dijawab
                 </span>
-            @elseif ($examType === 'structural')
+            @elseif ($isWeighted)
                 {{-- Structural: Show Points Only --}}
                 <span
                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
@@ -98,16 +99,16 @@
                 $statusTextColor = 'text-gray-500';
 
                 if ($isUnanswered) {
-                    // UNANSWERED: only highlight correct answer for technical
-                    if ($examType !== 'structural' && $isCorrectOption) {
+                    // UNANSWERED: only highlight correct answer for correct_wrong types
+                    if (!$isWeighted && $isCorrectOption) {
                         $borderColor = 'border-green-400 ring-1 ring-green-400';
                         $bgColor = 'bg-green-50 dark:bg-green-900/20';
                         $icon = 'heroicon-m-check-circle';
                         $statusTextColor = 'text-green-600 dark:text-green-400';
                         $statusText = 'Jawaban Benar';
                     }
-                } elseif ($examType === 'structural') {
-                    // STRUCTURAL LOGIC
+                } elseif ($isWeighted) {
+                    // WEIGHTED/STRUCTURAL LOGIC
                     if ($isUserSelected) {
                         $borderColor = 'border-blue-500 ring-1 ring-blue-500';
                         $bgColor = 'bg-blue-50 dark:bg-blue-900/20';
@@ -143,7 +144,7 @@
                 class="relative flex items-start p-4 rounded-lg border {{ $borderColor }} {{ $bgColor }} transition-colors">
                 <div class="flex items-center h-5">
                     <div
-                        class="flex items-center justify-center h-5 w-5 rounded-full border {{ $isUserSelected ? ($examType === 'structural' ? 'border-primary-600 bg-primary-600' : 'border-primary-600 bg-primary-600') : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800' }}">
+                        class="flex items-center justify-center h-5 w-5 rounded-full border {{ $isUserSelected ? 'border-primary-600 bg-primary-600' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800' }}">
                         @if ($isUserSelected)
                             <div class="h-2.5 w-2.5 rounded-full bg-white"></div>
                         @else
@@ -162,7 +163,7 @@
                 @if ($icon)
                     <div class="ml-3 flex-shrink-0">
                         <x-filament::icon :icon="$icon"
-                            class="h-5 w-5 {{ $examType === 'structural' ? 'text-blue-500' : ($isCorrectOption ? 'text-green-500' : 'text-red-500') }}" />
+                            class="h-5 w-5 {{ $isWeighted ? 'text-blue-500' : ($isCorrectOption ? 'text-green-500' : 'text-red-500') }}" />
                     </div>
                 @endif
             </div>

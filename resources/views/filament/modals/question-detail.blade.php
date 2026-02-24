@@ -27,8 +27,12 @@
     }
 
     $questionHtml = fixImageUrlsForDisplay($record->question_text);
-    // tipe ada di Question itu sendiri — bukan di ExamPackage
-    $tipe = $record->type ?? 'technical';
+    
+    // Resolved conflict: Use ExamType relationship (dev-frontend) but mapped to new naming convention
+    $examType = $record->examType;
+    $evaluationMethod = $examType?->evaluation_method ?? 'correct_wrong';
+    $tipe = $evaluationMethod === 'weighted' ? 'mansoskul' : 'technical';
+    
     $kunciJawaban = $record->scoring_config['correct'] ?? null;
 @endphp
 
@@ -75,10 +79,10 @@
             </div>
         </div>
         <div class="p-6">
-            {{-- show explanatory banner when structural design applies --}}
-            @if ($tipe === 'structural')
+            {{-- show explanatory banner when mansoskul (weighted) design applies --}}
+            @if ($evaluationMethod === 'weighted')
                 <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded">
-                    <strong>Soal struktural:</strong> setiap opsi memiliki bobot poin
+                    <strong>Soal Mansoskul:</strong> setiap opsi memiliki bobot poin
                     masing‑masing. Tidak ada jawaban "benar" tunggal;
                     peserta akan mendapatkan poin sesuai bobot opsi yang dipilih.
                 </div>
@@ -105,7 +109,7 @@
                         $isCorrect = false;
                         $bobot = null;
 
-                        if ($tipe === 'technical') {
+                        if ($evaluationMethod === 'correct_wrong') {
                             // Priority: Check 'is_correct' field in option data
                             if (is_array($optionData) && isset($optionData['is_correct'])) {
                                 $isCorrect = filter_var($optionData['is_correct'], FILTER_VALIDATE_BOOLEAN);
@@ -113,8 +117,8 @@
                                 // Fallback: Check global answer key
                                 $isCorrect = (string) $kunciJawaban === (string) $kode;
                             }
-                        } elseif ($tipe === 'structural') {
-                            // Coba ambil score dari data opsi langsung
+                        } elseif ($evaluationMethod === 'weighted') {
+                            // Trying to get score from option data first (Mansoskul)
                             if (is_array($optionData) && isset($optionData['score'])) {
                                 $bobot = $optionData['score'];
                             } else {
@@ -133,7 +137,7 @@
                         // choose card color depending on type
                         $cardClass = $isCorrect
                             ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-400 shadow-green-100 shadow-md'
-                            : ($tipe === 'structural'
+                            : ($evaluationMethod === 'weighted'
                                 ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
                                 : 'bg-gray-50 border-gray-200 hover:border-gray-300');
 
@@ -210,7 +214,7 @@
                 <div>
                     <h3 class="text-lg font-bold text-purple-900">Konfigurasi Penilaian</h3>
                     <p class="text-xs text-purple-600">Tipe:
-                        {{ $tipe === 'technical' ? 'Teknis (Benar/Salah)' : 'Struktural (Bobot)' }}</p>
+                        {{ $evaluationMethod === 'correct_wrong' ? 'Teknis (Benar/Salah)' : 'Mansoskul (Bobot Nilai)' }}</p>
                 </div>
             </div>
         </div>
@@ -227,7 +231,7 @@
                 </div>
                 <div class="text-sm font-medium text-purple-900">
                     @php
-                        if ($tipe === 'structural') {
+                        if ($evaluationMethod === 'weighted') {
                             $scoringHtml = '<strong>Ringkasan Bobot:</strong><ul class="list-disc pl-5 mt-1">';
                             foreach ($record->options as $idx => $opt) {
                                 $lbl = chr(65 + $idx);

@@ -2,6 +2,7 @@
     $options = $getState();
     $record = $getRecord();
     $examPackage = $record->examPackage;
+    $evaluationMethod = $examPackage?->examType?->evaluation_method ?? 'correct_wrong';
 @endphp
 
 <div class="options-detail-content" x-data="{
@@ -21,10 +22,10 @@
         @foreach ($options as $kode => $option)
             @php
                 $isCorrect = false;
-                if ($examPackage->type === 'technical') {
+                if ($evaluationMethod === 'correct_wrong') {
                     $isCorrect = $record->scoring_config['kunci'] ?? null === $kode;
                 }
-                $bobot = $examPackage->type === 'structural' ? $record->scoring_config['bobot'][$kode] ?? 0 : null;
+                $bobot = $evaluationMethod === 'weighted' ? $record->scoring_config['bobot'][$kode] ?? 0 : null;
             @endphp
 
             <div

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\ExamType;
 use App\Models\Question;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
@@ -13,6 +14,15 @@ class QuestionSeeder extends Seeder
      */
     public function run(): void
     {
+        // Resolve exam types by code (seeded via migration)
+        $tekType = ExamType::where('code', 'TEK')->first();
+        $strType = ExamType::where('code', 'MAN')->first();
+
+        if (! $tekType || ! $strType) {
+            $this->command->warn('ExamType TEK/MAN not found. Run migrations first.');
+            return;
+        }
+
         // ---------------------------------------------------------
         // 1. Generate 100 Soal TEKNIKAL
         // Format Option: [{"answer_text":"...","is_correct":true,"is_active":true}, ...]
@@ -39,7 +49,7 @@ class QuestionSeeder extends Seeder
             }
 
             $technicalQuestions[] = [
-                'type' => 'technical',
+                'exam_type_id' => $tekType->id,
                 'category' => $difficulty,
                 'question_text' => "<p><strong>[Teknis - {$difficulty}]</strong> Ini adalah contoh pertanyaan dummy nomor $i. Pilihlah jawaban yang benar.</p>",
                 'options' => json_encode($options),
@@ -55,7 +65,7 @@ class QuestionSeeder extends Seeder
         }
 
         // ---------------------------------------------------------
-        // 2. Generate 100 Soal STRUKTURAL
+        // 2. Generate 100 Soal MANSOSKUL
         // Format Option: [{"answer_text":"...","score":5,"is_active":true}, ...]
         // ---------------------------------------------------------
         $structuralQuestions = [];
@@ -74,16 +84,16 @@ class QuestionSeeder extends Seeder
 
             foreach ($choices as $choice) {
                 $options[] = [
-                    'answer_text' => "<p>{$choice['text']} (Soal Struktural $i)</p>",
+                    'answer_text' => "<p>{$choice['text']} (Soal Mansoskul $i)</p>",
                     'score' => $choice['val'],
                     'is_active' => true,
                 ];
             }
 
             $structuralQuestions[] = [
-                'type' => 'structural',
-                'category' => null, // Struktural biasanya tidak punya kategori difficulty
-                'question_text' => "<p><strong>[Struktural]</strong> Ini adalah studi kasus nomor $i. Bagaimana sikap Anda dalam situasi ini?</p>",
+                'exam_type_id' => $strType->id,
+                'category' => null, // Mansoskul biasanya tidak punya kategori difficulty
+                'question_text' => "<p><strong>[Mansoskul]</strong> Ini adalah studi kasus nomor $i. Bagaimana sikap Anda dalam situasi ini?</p>",
                 'options' => json_encode($options),
                 'scoring_config' => '[]', // Scoring config dikosongkan sesuai request
                 'created_at' => now(),
@@ -91,7 +101,7 @@ class QuestionSeeder extends Seeder
             ];
         }
 
-        // Insert batch Structural
+        // Insert batch Mansoskul
         foreach (array_chunk($structuralQuestions, 50) as $chunk) {
             Question::insert($chunk);
         }

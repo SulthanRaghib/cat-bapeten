@@ -55,10 +55,7 @@
 
     <span wire:poll.keep-alive.5s="monitorSessionStatus" style="display: none;" id="exam-session-status"></span>
 
-    @if ($step === 'verification')
-        @include('livewire.exam.steps.verification')
-
-    @elseif($step === 'rules')
+    @if ($step === 'rules')
         @include('livewire.exam.steps.rules')
 
     @elseif($step === 'exam')

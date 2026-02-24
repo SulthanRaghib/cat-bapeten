@@ -12,7 +12,7 @@ class ScoringConfigFormatter
     public function formatScoringConfig(Question $question): string
     {
         if ($question->type === 'structural') {
-            $html = '<strong>Bobot per opsi:</strong><ul class="ml-5 list-disc">';
+            $score = 0;
             $options = $question->options;
             if (is_array($options)) {
                 foreach ($options as $idx => $opt) {
