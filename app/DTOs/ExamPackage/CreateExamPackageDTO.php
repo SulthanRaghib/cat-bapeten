@@ -11,7 +11,7 @@ final readonly class CreateExamPackageDTO
 {
     public function __construct(
         public string $title,
-        public string $type,
+        public int    $examTypeId,
         public int    $passingGrade,
         public int    $durationMinutes,
         public bool   $isActive = true,
@@ -24,7 +24,7 @@ final readonly class CreateExamPackageDTO
     {
         return new self(
             title: (string) ($data['title']            ?? ''),
-            type: (string) ($data['type']             ?? 'technical'),
+            examTypeId: (int)    ($data['exam_type_id']    ?? 0),
             passingGrade: (int)    ($data['passing_grade']    ?? 0),
             durationMinutes: (int)    ($data['duration_minutes'] ?? 60),
             isActive: (bool)   ($data['is_active']        ?? true),

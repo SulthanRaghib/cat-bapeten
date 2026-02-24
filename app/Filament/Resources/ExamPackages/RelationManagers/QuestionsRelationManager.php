@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\ExamPackages\RelationManagers;
 
 use App\Filament\Resources\Questions\QuestionResource;
+use App\Models\ExamPackage;
 use App\Models\Question;
 use Filament\Actions\Action;
 use Filament\Actions\DetachAction;
@@ -35,13 +36,14 @@ class QuestionsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('question_text')
             ->columns([
-                TextColumn::make('type')
+                TextColumn::make('examType.name')
                     ->label('Tipe')
                     ->badge()
-                    ->colors([
-                        'primary' => 'technical',
-                        'warning' => 'structural',
-                    ]),
+                    ->color(fn($record) => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted' => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('question_text')
                     ->label('Soal')
@@ -59,19 +61,23 @@ class QuestionsRelationManager extends RelationManager
                     ->icon('heroicon-o-arrow-path-rounded-square')
                     ->color('primary')
                     ->form(function () {
-                        /** @var \App\Models\ExamPackage $examPackage */
+                        /** @var ExamPackage $examPackage */
                         $examPackage = $this->getOwnerRecord();
-                        $type = $examPackage->type;
+                        $examType = $examPackage->examType;
+
+                        if (! $examType) {
+                            return [];
+                        }
 
                         // IDs yang sudah ada di paket ini, supaya tidak dipilih lagi
                         $existingIds = $examPackage->questions()->pluck('questions.id')->toArray();
 
                         // Base Query: Tipe sama, belum ada di paket ini
                         $queryBase = Question::query()
-                            ->where('type', $type)
+                            ->where('exam_type_id', $examType->id)
                             ->whereNotIn('id', $existingIds);
 
-                        if ($type === 'structural') {
+                        if ($examType->isWeighted()) {
                             $available = $queryBase->count();
                             return [
                                 \Filament\Forms\Components\TextInput::make('total_count')
@@ -85,7 +91,7 @@ class QuestionsRelationManager extends RelationManager
                             ];
                         }
 
-                        if ($type === 'technical') {
+                        if ($examType->isCorrectWrong()) {
                             // Hitung ketersediaan per kategori
                             $countEasy = (clone $queryBase)->where('category', 'easy')->count();
                             $countMedium = (clone $queryBase)->where('category', 'medium')->count();
@@ -122,24 +128,24 @@ class QuestionsRelationManager extends RelationManager
                         return [];
                     })
                     ->action(function (array $data) {
-                        /** @var \App\Models\ExamPackage $examPackage */
+                        /** @var ExamPackage $examPackage */
                         $examPackage = $this->getOwnerRecord();
-                        $type = $examPackage->type;
+                        $examType = $examPackage->examType;
                         $existingIds = $examPackage->questions()->pluck('questions.id')->toArray();
 
                         $idsToAttach = collect();
 
                         $queryBase = Question::query()
-                            ->where('type', $type)
+                            ->where('exam_type_id', $examType->id)
                             ->whereNotIn('id', $existingIds);
 
-                        if ($type === 'structural') {
+                        if ($examType->isWeighted()) {
                             $count = (int) ($data['total_count'] ?? 0);
                             if ($count > 0) {
                                 $ids = $queryBase->inRandomOrder()->limit($count)->pluck('id');
                                 $idsToAttach = $idsToAttach->merge($ids);
                             }
-                        } elseif ($type === 'technical') {
+                        } elseif ($examType->isCorrectWrong()) {
                             // Easy
                             $easy = (int) ($data['easy_count'] ?? 0);
                             if ($easy > 0) {
