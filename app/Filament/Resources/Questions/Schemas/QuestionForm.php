@@ -168,7 +168,9 @@ class QuestionForm
                             ->columnSpan(4)
                             ->native(false)
                             ->required(fn(Get $get) => filled($get('question_unit_id')))
-                            ->visible(fn(Get $get): bool => filled($get('question_unit_id')))
+                            ->visible(fn(Get $get): bool => filled($get('exam_type_id')))
+                            ->disabled(fn(Get $get): bool => ! filled($get('question_unit_id')))
+                            ->helperText(fn(Get $get): ?string => ! filled($get('question_unit_id')) ? 'Pilih Unit terlebih dahulu' : null)
                             ->createOptionForm([
                                 TextInput::make('name')
                                     ->label('Nama Sub Unit Baru')
