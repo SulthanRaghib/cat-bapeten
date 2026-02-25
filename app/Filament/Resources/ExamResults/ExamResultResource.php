@@ -9,7 +9,6 @@ use App\Filament\Resources\ExamResults\Schemas\ExamResultForm;
 use App\Filament\Resources\ExamResults\Tables\ExamResultsTable;
 use App\Models\ExamSession;
 use BackedEnum;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Resources\Resource;
@@ -128,20 +127,52 @@ class ExamResultResource extends Resource
                                         }
                                         return "{$s} detik";
                                     }),
+
+                                TextEntry::make('jawaban_benar')
+                                    ->label('Jawaban Benar')
+                                    ->icon('heroicon-m-check-circle')
+                                    ->iconColor('success')
+                                    ->color('success')
+                                    ->weight('bold')
+                                    ->state(fn(ExamSession $record): int =>
+                                    $record->answers()->where('score', '>', 0)
+                                        ->whereNotNull('answer')->where('answer', '!=', '')->count()),
+
+                                TextEntry::make('jawaban_salah')
+                                    ->label('Jawaban Salah')
+                                    ->icon('heroicon-m-x-circle')
+                                    ->iconColor('danger')
+                                    ->color('danger')
+                                    ->weight('bold')
+                                    ->state(fn(ExamSession $record): int =>
+                                    $record->answers()->where('score', '<=', 0)
+                                        ->whereNotNull('answer')->where('answer', '!=', '')->count()),
+
+                                TextEntry::make('tidak_dijawab')
+                                    ->label('Tidak Dijawab')
+                                    ->icon('heroicon-m-minus-circle')
+                                    ->iconColor('warning')
+                                    ->color('warning')
+                                    ->weight('bold')
+                                    ->state(function (ExamSession $record): int {
+                                        // Total questions from shuffled meta (covers all questions in the exam)
+                                        $totalQ = count($record->answers_meta ?? []);
+                                        if ($totalQ === 0) {
+                                            // Fallback: count via exam package questions
+                                            $totalQ = $record->examPackage?->questions()->count() ?? 0;
+                                        }
+                                        $answered = $record->answers()
+                                            ->whereNotNull('answer')->where('answer', '!=', '')->count();
+                                        return max(0, $totalQ - $answered);
+                                    }),
                             ]),
 
                         Section::make('Detail Soal & Jawaban')
+                            ->icon('heroicon-o-list-bullet')
                             ->schema([
-                                RepeatableEntry::make('answers')
+                                ViewEntry::make('answer_summary')
                                     ->label('')
-                                    ->contained(false)
-                                    ->schema([
-                                        ViewEntry::make('detail')
-                                            ->view('filament.resources.exam-results.infolists.question-answer-item'),
-                                    ]),
-                            ])
-                            ->extraAttributes([
-                                'class' => 'max-h-[600px] overflow-y-auto',
+                                    ->view('filament.resources.exam-results.infolists.answer-summary-grid'),
                             ]),
                     ])
                         ->columnSpan(2),
