@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Questions\Tables;
 
+use App\Filament\Actions\ExportQuestionsBulkAction;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -86,6 +87,7 @@ class QuestionsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    ExportQuestionsBulkAction::make(),
                     DeleteBulkAction::make()
                         ->label('Hapus Soal Terpilih')
                         ->modalHeading('Hapus Soal Terpilih')

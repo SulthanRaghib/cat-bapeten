@@ -35,6 +35,83 @@ class Question extends Model
         'scoring_config' => '[]',
     ];
 
+    // ── UTF-8 sanitization ────────────────────────────────────────────────────
+    // Word-pasted content embeds Windows-1252 bytes that break json_encode().
+    // Two layers of defence:
+    //   1. retrieved event  — sanitizes attributes immediately after DB hydration
+    //   2. toArray() override — final safety net before any JSON serialization
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::retrieved(function (self $model): void {
+            // Sanitize plain-text / HTML string columns
+            foreach (['question_text', 'explanation', 'competence_area', 'competence_sub_area', 'unit', 'sub_unit'] as $col) {
+                $model->{$col} = self::sanitizeUtf8($model->{$col});
+            }
+
+            // Sanitize every string inside the JSON-cast arrays
+            if (is_array($model->options)) {
+                $model->options = self::sanitizeArrayStrings($model->options);
+            }
+            if (is_array($model->scoring_config)) {
+                $model->scoring_config = self::sanitizeArrayStrings($model->scoring_config);
+            }
+
+            // Reset dirty state so the model still appears "clean"
+            $model->syncOriginal();
+        });
+    }
+
+    /**
+     * Final safety net: sanitize every string value before JSON serialization.
+     * Covers Livewire dehydration, Filament table data, API responses, etc.
+     */
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+        array_walk_recursive($array, function (&$v): void {
+            if (is_string($v) && !mb_check_encoding($v, 'UTF-8')) {
+                $v = self::sanitizeUtf8($v);
+            }
+        });
+        return $array;
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Recursively sanitize all string values in an array.
+     */
+    private static function sanitizeArrayStrings(array $data): array
+    {
+        array_walk_recursive($data, function (&$v): void {
+            if (is_string($v)) {
+                $v = self::sanitizeUtf8($v);
+            }
+        });
+        return $data;
+    }
+
+    /**
+     * Convert non-UTF-8 bytes to valid UTF-8 (Windows-1252 fallback).
+     */
+    private static function sanitizeUtf8(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+        $converted = @mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
+        if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+            return $converted;
+        }
+        return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+    }
+
     public function examType(): BelongsTo
     {
         return $this->belongsTo(ExamType::class);

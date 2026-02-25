@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Questions\Pages;
 
+use App\Filament\Actions\ExportQuestionsHeaderAction;
 use App\Filament\Resources\Questions\QuestionResource;
 use App\Filament\Resources\Questions\Widgets\QuestionStatsOverview;
 use Filament\Actions\CreateAction;
@@ -16,6 +17,7 @@ class ListQuestions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            ExportQuestionsHeaderAction::make(),
             CreateAction::make()
                 ->label('Tambah Soal'),
         ];
