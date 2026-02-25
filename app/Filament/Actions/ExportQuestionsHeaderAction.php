@@ -52,6 +52,7 @@ class ExportQuestionsHeaderAction
                                 $set('filter_question_unit_id', null);
                                 $set('filter_question_sub_unit_id', null);
                             })
+                            ->noOptionsMessage('Tidak ada tipe soal aktif')
                             ->native(false),
 
                         Select::make('filter_question_unit_id')
@@ -72,6 +73,7 @@ class ExportQuestionsHeaderAction
                             ->searchable()
                             ->live()
                             ->afterStateUpdated(fn(Set $set) => $set('filter_question_sub_unit_id', null))
+                            ->noOptionsMessage('Tidak ada unit untuk tipe soal ini')
                             ->native(false),
 
                         Select::make('filter_question_sub_unit_id')
@@ -85,16 +87,27 @@ class ExportQuestionsHeaderAction
                             })
                             ->placeholder('Semua Sub Unit')
                             ->searchable()
+                            ->noOptionsMessage('Tidak ada sub unit untuk unit ini')
                             ->native(false),
 
+                        // buat tingkat kesulitan ini muncul berdasarkan tipe soal yang dipilih, karena tidak semua tipe soal punya kategori
                         Select::make('filter_category')
-                            ->label('Kategori Kesulitan')
+                            ->label('Tingkat Kesulitan')
                             ->options([
-                                'easy'   => 'Mudah',
+                                'easy' => 'Mudah',
                                 'medium' => 'Sedang',
-                                'hard'   => 'Sulit',
+                                'hard' => 'Sulit',
                             ])
                             ->placeholder('Semua Kategori')
+                            ->searchable()
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                // Jika kategori dipilih, pastikan tipe soal juga dipilih karena kategori terkait dengan tipe soal
+                                if ($get('filter_category') && ! $get('filter_exam_type_id')) {
+                                    $set('filter_exam_type_id', Question::where('category', $get('filter_category'))->value('exam_type_id'));
+                                }
+                            })
+                            ->visible(fn(Get $get) => ! empty(Question::where('exam_type_id', $get('filter_exam_type_id'))->whereNotNull('category')->first()))
                             ->native(false),
                     ])
                     ->columns(2),

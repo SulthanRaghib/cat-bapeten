@@ -6,7 +6,8 @@ namespace App\Services;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Response;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Generates a printable PDF from Question models.
@@ -23,7 +24,7 @@ class QuestionPdfExportService
         Collection $questions,
         bool $includeAnswerKey = true,
         array $filterMeta = [],
-    ): Response {
+    ): StreamedResponse {
         $questions->loadMissing(['examType', 'questionUnit', 'questionSubUnit']);
 
         // Clone models so Livewire state is never mutated.
@@ -62,7 +63,30 @@ class QuestionPdfExportService
             ->setOption('defaultFont', 'sans-serif')
             ->setOption('dpi', 96);
 
-        return $pdf->download('bank-soal-' . now()->format('Y-m-d') . '.pdf');
+        $filename = 'bank-soal' . $this->buildFilenameSlug($filterMeta) . '_' . now()->format('Ymd-His') . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, $filename);
+    }
+
+    /**
+     * Build a slug suffix from filter meta for use in the filename.
+     * e.g. filterMeta = ['Tipe Soal' => 'Teknis', 'Unit' => 'Unit A'] → '_teknis_unit-a'
+     */
+    private function buildFilenameSlug(array $filterMeta): string
+    {
+        if (empty($filterMeta)) {
+            return '';
+        }
+        $parts = [];
+        foreach ($filterMeta as $value) {
+            $slug = Str::slug((string) $value, '-');
+            if ($slug !== '') {
+                $parts[] = $slug;
+            }
+        }
+        return $parts !== [] ? '_' . implode('_', $parts) : '';
     }
 
     /**
@@ -103,11 +127,11 @@ class QuestionPdfExportService
         return [
             'total'       => $questions->count(),
             'by_type'     => $questions->groupBy(fn($q) => $q->examType?->name ?? 'Tidak Ada Tipe')->map->count()->toArray(),
-            'by_category' => $questions->groupBy(fn($q) => match ($q->category) {
+            'by_difficulty' => $questions->groupBy(fn($q) => match ($q->category) {
                 'easy'   => 'Mudah',
                 'medium' => 'Sedang',
                 'hard'   => 'Sulit',
-                default  => 'Tidak Ada Kategori',
+                default  => 'Tidak Ditentukan',
             })->map->count()->toArray(),
             'by_unit'     => $questions->groupBy(fn($q) => $q->questionUnit?->name ?? 'Tidak Ada Unit')->map->count()->toArray(),
         ];

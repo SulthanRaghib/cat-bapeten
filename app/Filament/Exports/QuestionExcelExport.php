@@ -6,6 +6,10 @@ namespace App\Filament\Exports;
 
 use pxlrbt\FilamentExcel\Columns\Column;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Models\ExamType;
+use App\Models\QuestionUnit;
+use App\Models\QuestionSubUnit;
+use Illuminate\Support\Str;
 
 /**
  * Excel export for Bank Soal.
@@ -35,7 +39,36 @@ class QuestionExcelExport extends ExcelExport
 
     public function setUp(): void
     {
-        $this->withFilename('bank-soal-' . now()->format('Y-m-d'));
+        // Build a filter-aware filename
+        $parts = ['bank-soal'];
+        if ($v = $this->filterData['filter_exam_type_id'] ?? null) {
+            $name = ExamType::find($v)?->name ?? '';
+            if ($name !== '') {
+                $parts[] = Str::slug($name, '-');
+            }
+        }
+        if ($v = $this->filterData['filter_question_unit_id'] ?? null) {
+            $name = QuestionUnit::find($v)?->name ?? '';
+            if ($name !== '') {
+                $parts[] = Str::slug($name, '-');
+            }
+        }
+        if ($v = $this->filterData['filter_question_sub_unit_id'] ?? null) {
+            $name = QuestionSubUnit::find($v)?->name ?? '';
+            if ($name !== '') {
+                $parts[] = Str::slug($name, '-');
+            }
+        }
+        if ($v = $this->filterData['filter_category'] ?? null) {
+            $parts[] = match ($v) {
+                'easy'   => 'mudah',
+                'medium' => 'sedang',
+                'hard'   => 'sulit',
+                default  => Str::slug($v, '-'),
+            };
+        }
+        $parts[] = now()->format('Ymd');
+        $this->withFilename(implode('_', $parts));
 
         $this->modifyQueryUsing(function ($query) {
             $query->with(['examType', 'questionUnit', 'questionSubUnit']);
@@ -75,7 +108,7 @@ class QuestionExcelExport extends ExcelExport
                 ->getStateUsing(fn($record) => $record->questionSubUnit?->name ?? '-'),
 
             Column::make('category')
-                ->heading('Kategori')
+                ->heading('Tingkat Kesulitan')
                 ->formatStateUsing(fn($state) => match ($state) {
                     'easy'   => 'Mudah',
                     'medium' => 'Sedang',
