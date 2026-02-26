@@ -122,7 +122,24 @@ class ExamResultsTable
                     ->alignCenter()
                     ->toggleable(),
 
-                // ── 8. Nilai Akhir ───────────────────────────────────────
+                // ── 8. Pelanggaran ───────────────────────────────────────
+                TextColumn::make('pelanggaran')
+                    ->label('Pelanggaran')
+                    ->icon('heroicon-m-exclamation-triangle')
+                    ->state(fn(ExamSession $record): int =>
+                        $record->activityLogs()
+                            ->whereIn('severity', ['warning', 'danger', 'critical'])
+                            ->count()
+                    )
+                    ->color(fn(ExamSession $record): string =>
+                        $record->activityLogs()
+                            ->whereIn('severity', ['warning', 'danger', 'critical'])
+                            ->count() > 0 ? 'danger' : 'gray'
+                    )
+                    ->alignCenter()
+                    ->toggleable(),
+
+                // ── 9. Nilai Akhir ───────────────────────────────────────
                 TextColumn::make('total_score')
                     ->label('Nilai')
                     ->badge()
@@ -141,7 +158,7 @@ class ExamResultsTable
                     ->sortable()
                     ->alignCenter(),
 
-                // ── 9. Status Kelulusan ──────────────────────────────────
+                // ── 10. Status Kelulusan ──────────────────────────────────
                 TextColumn::make('kelulusan')
                     ->label('Status')
                     ->badge()

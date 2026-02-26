@@ -23,7 +23,7 @@ class ExamResultsPdfExportService
         bool $includeStatistics = true,
         array $filterMeta = [],
     ): StreamedResponse {
-        $sessions->loadMissing(['user', 'examPackage', 'examParticipant', 'answers']);
+        $sessions->loadMissing(['user', 'examPackage', 'examParticipant', 'answers', 'activityLogs']);
 
         // Build stats for the report
         $processed = $sessions->map(function (ExamSession $session) use ($includeStatistics) {
@@ -45,6 +45,10 @@ class ExamResultsPdfExportService
             $passingGrade = $session->examPackage->passing_grade ?? 0;
             $isLulus = ($session->total_score ?? 0) >= $passingGrade;
 
+            $violationCount = $session->activityLogs
+                ->whereIn('severity', ['warning', 'danger', 'critical'])
+                ->count();
+
             return [
                 'nama'           => $session->user?->name ?? '-',
                 'nip'            => (string) ($session->user?->nip ?? '-'),
@@ -57,6 +61,7 @@ class ExamResultsPdfExportService
                 'salah'          => $wrongCount,
                 'tidak_dijawab'  => $unansweredCount,
                 'total_soal'     => $totalQ,
+                'pelanggaran'    => $violationCount,
                 'nilai'          => $session->total_score ?? 0,
                 'kkm'            => $passingGrade,
                 'status'         => $isLulus ? 'LULUS' : 'TIDAK LULUS',

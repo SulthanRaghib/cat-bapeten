@@ -73,6 +73,14 @@ class ExportExamResultsHeaderAction
         return max(0, $totalQ - $answered);
     }
 
+    /** Hitung total pelanggaran */
+    private static function countViolations(ExamSession $record): int
+    {
+        return $record->activityLogs()
+            ->whereIn('severity', ['warning', 'danger', 'critical'])
+            ->count();
+    }
+
     public static function make(): Action
     {
         return Action::make('exportExamResults')
@@ -154,7 +162,7 @@ class ExportExamResultsHeaderAction
         /** @var Builder $query */
         $query = ExamSession::query()
             ->where('status', 'completed')
-            ->with(['user', 'examPackage', 'examParticipant', 'answers']);
+            ->with(['user', 'examPackage', 'examParticipant', 'answers', 'activityLogs']);
 
         if ($packageId = $data['filter_exam_package_id'] ?? null) {
             $query->whereHas('examParticipant', function (Builder $sub) use ($packageId) {
@@ -275,6 +283,11 @@ class ExportExamResultsHeaderAction
                 ->heading('Tidak Dijawab')
                 ->getStateUsing(fn(ExamSession $record): int => self::countUnanswered($record));
         }
+
+        // Kolom pelanggaran
+        $columns[] = Column::make('pelanggaran')
+            ->heading('Pelanggaran')
+            ->getStateUsing(fn (ExamSession $record): int => self::countViolations($record));
 
         // Kolom nilai dan status
         $columns[] = Column::make('total_score')

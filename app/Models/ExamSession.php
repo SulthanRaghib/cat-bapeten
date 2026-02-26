@@ -152,6 +152,14 @@ class ExamSession extends Model
         return $this->hasMany(ExamAnswer::class);
     }
 
+    /**
+     * Get all activity logs for this exam session.
+     */
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ExamActivityLog::class);
+    }
+
     // ==================== HELPER METHODS ====================
 
     /**

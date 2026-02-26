@@ -58,10 +58,10 @@ class ExamResultResource extends Resource
                 ->columnSpanFull()
                 ->schema([
                     // KIRI (1/3)
-                    Section::make('Informasi Ujian')
-                        ->icon('heroicon-o-information-circle')
-                        ->columnSpan(1)
-                        ->schema([
+                    Group::make([
+                        Section::make('Informasi Ujian')
+                            ->icon('heroicon-o-information-circle')
+                            ->schema([
                             TextEntry::make('examPackage.title')
                                 ->label('Nama Paket Ujian')
                                 ->weight('bold')
@@ -90,6 +90,16 @@ class ExamResultResource extends Resource
                                 ->label('Waktu Selesai')
                                 ->dateTime('d M Y, H:i'),
                         ]),
+
+                    Section::make('Pelanggaran Peserta')
+                        ->icon('heroicon-o-shield-exclamation')
+                        ->schema([
+                            ViewEntry::make('violation_detail')
+                                ->label('')
+                                ->view('filament.resources.exam-results.infolists.violation-detail'),
+                        ]),
+                    ])
+                        ->columnSpan(1),
 
                     // KANAN (2/3)
                     Group::make([

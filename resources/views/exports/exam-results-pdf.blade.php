@@ -238,6 +238,7 @@
                     <th>Salah</th>
                     <th>Kosong</th>
                 @endif
+                <th>Pelanggaran</th>
                 <th>Nilai</th>
                 <th>KKM</th>
                 <th>Status</th>
@@ -259,6 +260,7 @@
                         <td class="text-center stat-wrong">{{ $row['salah'] }}</td>
                         <td class="text-center stat-unanswered">{{ $row['tidak_dijawab'] }}</td>
                     @endif
+                    <td class="text-center" style="{{ $row['pelanggaran'] > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">{{ $row['pelanggaran'] }}</td>
                     <td class="text-center" style="font-weight: bold;">{{ $row['nilai'] }}</td>
                     <td class="text-center">{{ $row['kkm'] }}</td>
                     <td class="text-center">
@@ -269,7 +271,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ $includeStatistics ? 14 : 11 }}" class="text-center" style="padding: 20px; color: #999;">
+                    <td colspan="{{ $includeStatistics ? 15 : 12 }}" class="text-center" style="padding: 20px; color: #999;">
                         Tidak ada data hasil ujian yang ditemukan.
                     </td>
                 </tr>

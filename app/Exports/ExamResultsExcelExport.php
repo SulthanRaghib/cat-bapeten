@@ -46,7 +46,7 @@ class ExamResultsExcelExport extends ExcelExport
     {
         $this->modifyQueryUsing(function ($query) {
             // Always eager-load relationships needed by columns
-            $query->with(['user', 'examPackage', 'examParticipant', 'answers']);
+            $query->with(['user', 'examPackage', 'examParticipant', 'answers', 'activityLogs']);
 
             // Only completed sessions
             $query->where('status', 'completed');
@@ -88,12 +88,12 @@ class ExamResultsExcelExport extends ExcelExport
 
     /**
      * Number of data columns.
-     * With statistics: A – M = 13.
-     * Without statistics: A – J = 10.
+     * With statistics: A–N = 14 (added Pelanggaran).
+     * Without statistics: A–K = 11.
      */
     private function getColumnCount(): int
     {
-        return $this->includeStatistics ? 13 : 10;
+        return $this->includeStatistics ? 14 : 11;
     }
 
     /**
@@ -201,11 +201,12 @@ class ExamResultsExcelExport extends ExcelExport
 
                     // ── 7. Numeric columns: integer / decimal formats ──────────
                     // Column indices shift based on include_statistics toggle
-                    // With stats: H=Benar,I=Salah,J=TdkDijawab, K=Nilai, L=KKM, M=Keterangan
-                    // Without stats: H=Nilai, I=KKM, J=Keterangan
-                    $nilaiCol      = $includeStats ? 'K' : 'H';
-                    $kkmCol        = $includeStats ? 'L' : 'I';
-                    $keteranganCol = $includeStats ? 'M' : 'J';
+                    // With stats: H=Benar,I=Salah,J=TdkDijawab, K=Pelanggaran, L=Nilai, M=KKM, N=Keterangan
+                    // Without stats: H=Pelanggaran, I=Nilai, J=KKM, K=Keterangan
+                    $pelanggaranCol = $includeStats ? 'K' : 'H';
+                    $nilaiCol       = $includeStats ? 'L' : 'I';
+                    $kkmCol         = $includeStats ? 'M' : 'J';
+                    $keteranganCol  = $includeStats ? 'N' : 'K';
 
                     // Statistik columns (only when included): center align
                     if ($includeStats) {
@@ -232,6 +233,23 @@ class ExamResultsExcelExport extends ExcelExport
                             // Tidak Dijawab (J) → orange
                             $sheet->getStyle("J{$row}")->applyFromArray([
                                 'font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true],
+                            ]);
+                        }
+                    }
+
+                    // Pelanggaran column: center + conditional red
+                    $pelanggaranRange = "{$pelanggaranCol}2:{$pelanggaranCol}{$lastRow}";
+                    $sheet->getStyle($pelanggaranRange)
+                        ->getNumberFormat()
+                        ->setFormatCode('0');
+                    $sheet->getStyle($pelanggaranRange)
+                        ->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    for ($row = 2; $row <= $lastRow; $row++) {
+                        $val = (int) $sheet->getCell("{$pelanggaranCol}{$row}")->getValue();
+                        if ($val > 0) {
+                            $sheet->getStyle("{$pelanggaranCol}{$row}")->applyFromArray([
+                                'font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true],
                             ]);
                         }
                     }
