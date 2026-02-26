@@ -22,11 +22,79 @@ use pxlrbt\FilamentExcel\Exports\ExcelExport;
  */
 class ExamResultsExcelExport extends ExcelExport
 {
+    protected array $filterData = [];
+    protected bool $includeStatistics = true;
+
+    public function setFilterData(array $data): static
+    {
+        $this->filterData = $data;
+        return $this;
+    }
+
+    public function setIncludeStatistics(bool $value): static
+    {
+        $this->includeStatistics = $value;
+        return $this;
+    }
+
     /**
-     * Number of data columns (A – J = 10).
-     * Update this constant if columns are added / removed.
+     * Apply filter data to the underlying Eloquent query.
+     *
+     * Called automatically by pxlrbt/filament-excel before fetching rows.
      */
-    private const COLUMN_COUNT = 10;
+    public function setUp(): void
+    {
+        $this->modifyQueryUsing(function ($query) {
+            // Always eager-load relationships needed by columns
+            $query->with(['user', 'examPackage', 'examParticipant', 'answers']);
+
+            // Only completed sessions
+            $query->where('status', 'completed');
+
+            // Filter: Paket Ujian
+            if ($packageId = $this->filterData['filter_exam_package_id'] ?? null) {
+                $query->whereHas('examParticipant', function ($sub) use ($packageId) {
+                    $sub->where('exam_package_id', $packageId);
+                });
+            }
+
+            // Filter: Dari Tanggal
+            if ($date = $this->filterData['filter_dari_tanggal'] ?? null) {
+                $query->whereDate('started_at', '>=', $date);
+            }
+
+            // Filter: Sampai Tanggal
+            if ($date = $this->filterData['filter_sampai_tanggal'] ?? null) {
+                $query->whereDate('started_at', '<=', $date);
+            }
+
+            // Filter: Status Kelulusan
+            if ($status = $this->filterData['filter_status_kelulusan'] ?? null) {
+                $operator = $status === 'lulus' ? '>=' : '<';
+                $query->whereRaw("total_score {$operator} (
+                    SELECT ep.passing_grade
+                    FROM exam_packages ep
+                    JOIN exam_participants part ON part.exam_package_id = ep.id
+                    WHERE part.id = exam_sessions.exam_participant_id
+                    LIMIT 1
+                )");
+            }
+
+            $query->orderBy('finished_at', 'desc');
+
+            return $query;
+        });
+    }
+
+    /**
+     * Number of data columns.
+     * With statistics: A – M = 13.
+     * Without statistics: A – J = 10.
+     */
+    private function getColumnCount(): int
+    {
+        return $this->includeStatistics ? 13 : 10;
+    }
 
     /**
      * Column letter index of NIP (2nd column = B).
@@ -35,11 +103,15 @@ class ExamResultsExcelExport extends ExcelExport
 
     public function registerEvents(): array
     {
+        $includeStats = $this->includeStatistics;
+        $filterData = $this->filterData;
+
         // Merge any parent events (e.g. RTL BeforeSheet)
         return array_merge(parent::registerEvents(), [
-            AfterSheet::class => function (AfterSheet $event): void {
+            AfterSheet::class => function (AfterSheet $event) use ($includeStats): void {
                 $sheet      = $event->sheet->getDelegate();
-                $lastCol    = Coordinate::stringFromColumnIndex(self::COLUMN_COUNT);  // 'J'
+                $colCount   = $this->getColumnCount();
+                $lastCol    = Coordinate::stringFromColumnIndex($colCount);
                 $lastRow    = $sheet->getHighestRow();
                 $headerRange = "A1:{$lastCol}1";
                 $dataRange   = "A1:{$lastCol}{$lastRow}";
@@ -128,8 +200,44 @@ class ExamResultsExcelExport extends ExcelExport
                         ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
                     // ── 7. Numeric columns: integer / decimal formats ──────────
-                    // Nilai Akhir (column H = 8): show up to 2 decimal places
-                    $nilaiRange = "H2:H{$lastRow}";
+                    // Column indices shift based on include_statistics toggle
+                    // With stats: H=Benar,I=Salah,J=TdkDijawab, K=Nilai, L=KKM, M=Keterangan
+                    // Without stats: H=Nilai, I=KKM, J=Keterangan
+                    $nilaiCol      = $includeStats ? 'K' : 'H';
+                    $kkmCol        = $includeStats ? 'L' : 'I';
+                    $keteranganCol = $includeStats ? 'M' : 'J';
+
+                    // Statistik columns (only when included): center align
+                    if ($includeStats) {
+                        foreach (['H', 'I', 'J'] as $statCol) {
+                            $statRange = "{$statCol}2:{$statCol}{$lastRow}";
+                            $sheet->getStyle($statRange)
+                                ->getNumberFormat()
+                                ->setFormatCode('0');
+                            $sheet->getStyle($statRange)
+                                ->getAlignment()
+                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        }
+
+                        // Color the stat columns
+                        for ($row = 2; $row <= $lastRow; $row++) {
+                            // Benar (H) → green
+                            $sheet->getStyle("H{$row}")->applyFromArray([
+                                'font' => ['color' => ['rgb' => '1A6B3C'], 'bold' => true],
+                            ]);
+                            // Salah (I) → red
+                            $sheet->getStyle("I{$row}")->applyFromArray([
+                                'font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true],
+                            ]);
+                            // Tidak Dijawab (J) → orange
+                            $sheet->getStyle("J{$row}")->applyFromArray([
+                                'font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true],
+                            ]);
+                        }
+                    }
+
+                    // Nilai Akhir: show up to 2 decimal places
+                    $nilaiRange = "{$nilaiCol}2:{$nilaiCol}{$lastRow}";
                     $sheet->getStyle($nilaiRange)
                         ->getNumberFormat()
                         ->setFormatCode('0.00');
@@ -137,8 +245,8 @@ class ExamResultsExcelExport extends ExcelExport
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                    // KKM (column I = 9): whole number
-                    $kkmRange = "I2:I{$lastRow}";
+                    // KKM: whole number
+                    $kkmRange = "{$kkmCol}2:{$kkmCol}{$lastRow}";
                     $sheet->getStyle($kkmRange)
                         ->getNumberFormat()
                         ->setFormatCode('0');
@@ -146,11 +254,11 @@ class ExamResultsExcelExport extends ExcelExport
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                    // Keterangan (column J = 10): bold + conditional colour
+                    // Keterangan: bold + conditional colour
                     for ($row = 2; $row <= $lastRow; $row++) {
-                        $cellVal = $sheet->getCell("J{$row}")->getValue();
+                        $cellVal = $sheet->getCell("{$keteranganCol}{$row}")->getValue();
                         $color   = $cellVal === 'LULUS' ? '1A6B3C' : 'C0392B';
-                        $sheet->getStyle("J{$row}")->applyFromArray([
+                        $sheet->getStyle("{$keteranganCol}{$row}")->applyFromArray([
                             'font'      => ['bold' => true, 'color' => ['rgb' => $color]],
                             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                         ]);

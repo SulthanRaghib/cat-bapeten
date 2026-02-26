@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ExamResults\Tables;
 
+use App\Filament\Actions\ExportExamResultsHeaderAction;
 use App\Models\ExamSession;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -12,9 +13,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
-use App\Exports\ExamResultsExcelExport;
-use pxlrbt\FilamentExcel\Actions\ExportAction;
-use pxlrbt\FilamentExcel\Columns\Column;
 
 class ExamResultsTable
 {
@@ -81,7 +79,50 @@ class ExamResultsTable
                     ->state(fn(ExamSession $record): string => self::formatDuration($record))
                     ->color('gray'),
 
-                // ── 5. Nilai Akhir ───────────────────────────────────────
+                // ── 5. Statistik Jawaban: Benar ──────────────────────────
+                TextColumn::make('jawaban_benar')
+                    ->label('Benar')
+                    ->icon('heroicon-m-check-circle')
+                    ->state(
+                        fn(ExamSession $record): int =>
+                        $record->answers()->where('score', '>', 0)
+                            ->whereNotNull('answer')->where('answer', '!=', '')->count()
+                    )
+                    ->color('success')
+                    ->alignCenter()
+                    ->toggleable(),
+
+                // ── 6. Statistik Jawaban: Salah ──────────────────────────
+                TextColumn::make('jawaban_salah')
+                    ->label('Salah')
+                    ->icon('heroicon-m-x-circle')
+                    ->state(
+                        fn(ExamSession $record): int =>
+                        $record->answers()->where('score', '<=', 0)
+                            ->whereNotNull('answer')->where('answer', '!=', '')->count()
+                    )
+                    ->color('danger')
+                    ->alignCenter()
+                    ->toggleable(),
+
+                // ── 7. Statistik Jawaban: Tidak Dijawab ──────────────────
+                TextColumn::make('tidak_dijawab')
+                    ->label('Kosong')
+                    ->icon('heroicon-m-minus-circle')
+                    ->state(function (ExamSession $record): int {
+                        $totalQ = count($record->answers_meta ?? []);
+                        if ($totalQ === 0) {
+                            $totalQ = $record->examPackage?->questions()->count() ?? 0;
+                        }
+                        $answered = $record->answers()
+                            ->whereNotNull('answer')->where('answer', '!=', '')->count();
+                        return max(0, $totalQ - $answered);
+                    })
+                    ->color('warning')
+                    ->alignCenter()
+                    ->toggleable(),
+
+                // ── 8. Nilai Akhir ───────────────────────────────────────
                 TextColumn::make('total_score')
                     ->label('Nilai')
                     ->badge()
@@ -100,7 +141,7 @@ class ExamResultsTable
                     ->sortable()
                     ->alignCenter(),
 
-                // ── 6. Status Kelulusan ──────────────────────────────────
+                // ── 9. Status Kelulusan ──────────────────────────────────
                 TextColumn::make('kelulusan')
                     ->label('Status')
                     ->badge()
@@ -184,100 +225,7 @@ class ExamResultsTable
 
             ])
             ->headerActions([
-                ExportAction::make()
-                    ->label('Unduh Laporan Excel')
-                    ->icon('heroicon-m-arrow-down-tray')
-                    ->color('success')
-                    ->exports([
-                        ExamResultsExcelExport::make()
-                            ->withFilename(
-                                'Laporan_Hasil_Ujian_BAPETEN_' . date('d-m-Y')
-                            )
-                            ->withColumns([
-
-                                // 1. Nama Lengkap
-                                Column::make('nama')
-                                    ->heading('Nama Lengkap')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        $record->user?->name ?? '-'
-                                    ),
-
-                                // 2. NIP — format teks (@) mencegah notasi ilmiah;
-                                //    pemformatan nomor bulat & rata kanan diatur di AfterSheet.
-                                Column::make('nip')
-                                    ->heading('NIP')
-                                    ->format('@')   // text cell → angka penuh tanpa desimal
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        (string) ($record->user?->nip ?? '-')
-                                    ),
-
-                                // 3. Paket Ujian
-                                Column::make('examPackage.title')
-                                    ->heading('Nama Ujian / Paket'),
-
-                                // 4. Tanggal Pelaksanaan
-                                Column::make('tgl_ujian')
-                                    ->heading('Tanggal Pelaksanaan')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        $record->started_at
-                                            ? $record->started_at->format('d/m/Y')
-                                            : '-'
-                                    ),
-
-                                // 5. Waktu Mulai
-                                Column::make('waktu_mulai')
-                                    ->heading('Waktu Mulai')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        $record->started_at
-                                            ? $record->started_at->format('H:i') . ' WIB'
-                                            : '-'
-                                    ),
-
-                                // 6. Waktu Selesai
-                                Column::make('waktu_selesai')
-                                    ->heading('Waktu Selesai')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        $record->finished_at
-                                            ? $record->finished_at->format('H:i') . ' WIB'
-                                            : '-'
-                                    ),
-
-                                // 7. Durasi
-                                Column::make('durasi_ujian')
-                                    ->heading('Durasi Ujian')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        self::formatDuration($record)
-                                    ),
-
-                                // 8. Nilai Akhir
-                                Column::make('total_score')
-                                    ->heading('Nilai Akhir'),
-
-                                // 9. Nilai Kelulusan (KKM)
-                                Column::make('kkm')
-                                    ->heading('Nilai Kelulusan (KKM)')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): int|string =>
-                                        $record->examPackage->passing_grade ?? '-'
-                                    ),
-
-                                // 10. Status Kelulusan
-                                Column::make('status_kelulusan')
-                                    ->heading('Keterangan')
-                                    ->getStateUsing(
-                                        fn(ExamSession $record): string =>
-                                        self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS'
-                                    ),
-
-                            ]),
-                    ]),
-
+                ExportExamResultsHeaderAction::make(),
             ])
             ->recordActions([
                 ViewAction::make()
