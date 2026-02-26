@@ -24,6 +24,11 @@ Route::post('/logout', function () {
     return redirect('/');
 })->name('logout');
 
+// Admin: unduh BAP (Berita Acara Pelaksanaan) — token dari cache one-time
+Route::get('/admin/bap/download', [\App\Http\Controllers\BapController::class, 'download'])
+    ->middleware('auth')
+    ->name('bap.download');
+
 Route::get('/debug-user-exam/{nip}', function ($nip) {
     $user = \App\Models\User::where('nip', $nip)->first();
     if (!$user) return "User with NIP $nip not found";

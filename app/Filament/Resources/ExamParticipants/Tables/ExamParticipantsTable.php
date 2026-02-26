@@ -96,7 +96,7 @@ class ExamParticipantsTable
                     ->label('Status Active'),
 
                 Tables\Filters\Filter::make('finished_at')
-                    ->form([
+                    ->schema([
                         DatePicker::make('finished_from'),
                         DatePicker::make('finished_until'),
                     ])

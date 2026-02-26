@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ExamResults\Tables;
 
+use App\Filament\Actions\DownloadBapAction;
 use App\Filament\Actions\ExportExamResultsHeaderAction;
 use App\Models\ExamSession;
 use Filament\Actions\BulkActionGroup;
@@ -187,7 +188,7 @@ class ExamResultsTable
 
                 Filter::make('rentang_waktu')
                     ->label('Rentang Tanggal Ujian')
-                    ->form([
+                    ->schema([
                         DatePicker::make('dari_tanggal')->label('Dari Tanggal'),
                         DatePicker::make('sampai_tanggal')->label('Sampai Tanggal'),
                     ])
@@ -215,7 +216,7 @@ class ExamResultsTable
 
                 Filter::make('status_kelulusan')
                     ->label('Status Kelulusan')
-                    ->form([
+                    ->schema([
                         \Filament\Forms\Components\Select::make('status')
                             ->label('Filter Status')
                             ->placeholder('Semua Status')
@@ -244,6 +245,7 @@ class ExamResultsTable
 
             ])
             ->headerActions([
+                DownloadBapAction::make(),
                 ExportExamResultsHeaderAction::make(),
             ])
             ->recordActions([
