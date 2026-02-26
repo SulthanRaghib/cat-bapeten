@@ -126,12 +126,14 @@ class ExamResultsTable
                 TextColumn::make('pelanggaran')
                     ->label('Pelanggaran')
                     ->icon('heroicon-m-exclamation-triangle')
-                    ->state(fn(ExamSession $record): int =>
+                    ->state(
+                        fn(ExamSession $record): int =>
                         $record->activityLogs()
                             ->whereIn('severity', ['warning', 'danger', 'critical'])
                             ->count()
                     )
-                    ->color(fn(ExamSession $record): string =>
+                    ->color(
+                        fn(ExamSession $record): string =>
                         $record->activityLogs()
                             ->whereIn('severity', ['warning', 'danger', 'critical'])
                             ->count() > 0 ? 'danger' : 'gray'

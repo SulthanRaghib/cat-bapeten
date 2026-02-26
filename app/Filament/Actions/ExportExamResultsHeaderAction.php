@@ -287,7 +287,7 @@ class ExportExamResultsHeaderAction
         // Kolom pelanggaran
         $columns[] = Column::make('pelanggaran')
             ->heading('Pelanggaran')
-            ->getStateUsing(fn (ExamSession $record): int => self::countViolations($record));
+            ->getStateUsing(fn(ExamSession $record): int => self::countViolations($record));
 
         // Kolom nilai dan status
         $columns[] = Column::make('total_score')

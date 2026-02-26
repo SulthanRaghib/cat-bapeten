@@ -62,42 +62,42 @@ class ExamResultResource extends Resource
                         Section::make('Informasi Ujian')
                             ->icon('heroicon-o-information-circle')
                             ->schema([
-                            TextEntry::make('examPackage.title')
-                                ->label('Nama Paket Ujian')
-                                ->weight('bold')
-                                ->size('lg'),
+                                TextEntry::make('examPackage.title')
+                                    ->label('Nama Paket Ujian')
+                                    ->weight('bold')
+                                    ->size('lg'),
 
-                            TextEntry::make('examPackage.type')
-                                ->label('Tipe Ujian')
-                                ->badge(),
+                                TextEntry::make('examPackage.type')
+                                    ->label('Tipe Ujian')
+                                    ->badge(),
 
-                            TextEntry::make('examPackage.passing_grade')
-                                ->label('Passing Grade')
-                                ->badge()
-                                ->color('success'),
+                                TextEntry::make('examPackage.passing_grade')
+                                    ->label('Passing Grade')
+                                    ->badge()
+                                    ->color('success'),
 
-                            TextEntry::make('user.name')
-                                ->label('Nama Peserta'),
+                                TextEntry::make('user.name')
+                                    ->label('Nama Peserta'),
 
-                            TextEntry::make('user.nip')
-                                ->label('NIP'),
+                                TextEntry::make('user.nip')
+                                    ->label('NIP'),
 
-                            TextEntry::make('started_at')
-                                ->label('Waktu Mulai')
-                                ->dateTime('d M Y, H:i'),
+                                TextEntry::make('started_at')
+                                    ->label('Waktu Mulai')
+                                    ->dateTime('d M Y, H:i'),
 
-                            TextEntry::make('finished_at')
-                                ->label('Waktu Selesai')
-                                ->dateTime('d M Y, H:i'),
-                        ]),
+                                TextEntry::make('finished_at')
+                                    ->label('Waktu Selesai')
+                                    ->dateTime('d M Y, H:i'),
+                            ]),
 
-                    Section::make('Pelanggaran Peserta')
-                        ->icon('heroicon-o-shield-exclamation')
-                        ->schema([
-                            ViewEntry::make('violation_detail')
-                                ->label('')
-                                ->view('filament.resources.exam-results.infolists.violation-detail'),
-                        ]),
+                        Section::make('Pelanggaran Peserta')
+                            ->icon('heroicon-o-shield-exclamation')
+                            ->schema([
+                                ViewEntry::make('violation_detail')
+                                    ->label('')
+                                    ->view('filament.resources.exam-results.infolists.violation-detail'),
+                            ]),
                     ])
                         ->columnSpan(1),
 
