@@ -136,27 +136,47 @@
                 <div class="medt-compose">
 
                     {{-- Input LaTeX --}}
+                    {{-- Toolbar: label + aksi --}}
                     <div class="medt-compose-row">
-                        <label class="medt-label">✏️ Kode LaTeX <span class="medt-label-sub">(bisa diketik atau diklik
-                                dari panel kiri)</span></label>
-                        <button type="button" class="medt-btn-clear" @click.prevent="clearInput()" title="Bersihkan">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round">
-                                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                            </svg>
-                            Hapus
-                        </button>
+                        <label class="medt-label" style="margin:0">✏️ Kode LaTeX <span class="medt-label-sub">ketik atau
+                                klik simbol</span></label>
+                        <div class="medt-toolbar-actions">
+                            {{-- Undo --}}
+                            <button type="button" class="medt-btn-icon" @click.prevent="undo()" :disabled="!canUndo"
+                                title="Undo (Ctrl+Z)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 7v6h6" />
+                                    <path d="M3 13A9 9 0 1 0 6 6.7" />
+                                </svg>
+                            </button>
+                            {{-- Redo --}}
+                            <button type="button" class="medt-btn-icon" @click.prevent="redo()" :disabled="!canRedo"
+                                title="Redo (Ctrl+Y)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 7v6h-6" />
+                                    <path d="M21 13A9 9 0 1 1 18 6.7" />
+                                </svg>
+                            </button>
+                            {{-- Hapus --}}
+                            <button type="button" class="medt-btn-clear" @click.prevent="clearInput()"
+                                title="Hapus semua">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round">
+                                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                                </svg>
+                                Hapus
+                            </button>
+                        </div>
                     </div>
 
-                    <textarea x-ref="latexInput" x-model="latexInput" @input.debounce.80ms="updatePreview()" @keydown.tab.prevent="onTab()"
-                        class="medt-textarea" placeholder="Contoh: \frac{a}{b} atau klik simbol di kiri…" spellcheck="false"
-                        autocomplete="off" rows="3">
+                    <textarea x-ref="latexInput" x-model="latexInput" @input="onInput()" @keydown.tab.prevent="onTab()"
+                        @keydown.ctrl.z.prevent="undo()" @keydown.ctrl.y.prevent="redo()" x-init="$nextTick(() => autoResize())" class="medt-textarea"
+                        placeholder="Contoh: \frac{a}{b} atau klik simbol di kiri…" spellcheck="false" autocomplete="off">
                     </textarea>
-
-                    <p class="medt-input-hint">
-                        💡 <strong>Tips:</strong>
-                        Klik simbol di kiri untuk menyisipkan di posisi kursor.
-                        Tab = indentasi. Kursor tetap di posisi setelah menyisipkan.
+                    <p class="medt-input-hint">Tab = indentasi &nbsp;·&nbsp; <kbd>Ctrl+Z</kbd> Undo &nbsp;·&nbsp;
+                        <kbd>Ctrl+Y</kbd> Redo
                     </p>
 
                     {{-- Pratinjau visual (KaTeX render sesungguhnya) --}}
@@ -213,15 +233,11 @@
                         <span x-text="copyLabel"></span>
                     </button>
 
-                    {{-- Panduan langkah --}}
+                    {{-- Panduan compact --}}
                     <div class="medt-steps">
-                        <p class="medt-steps-title">📋 Cara menggunakan:</p>
-                        <ol class="medt-steps-list">
-                            <li>Klik simbol/template di panel kiri, atau ketik LaTeX langsung.</li>
-                            <li>Lihat pratinjau — pastikan rumus tampil dengan benar.</li>
-                            <li>Klik <strong>Salin Rumus</strong>.</li>
-                            <li>Klik di dalam editor teks soal, lalu tekan <kbd>Ctrl+V</kbd>.</li>
-                        </ol>
+                        <span class="medt-steps-title">📋 Cara pakai:</span>
+                        <span class="medt-steps-inline">Pilih simbol kiri → cek pratinjau → <strong>Salin
+                                Rumus</strong> → <kbd>Ctrl+V</kbd> di editor.</span>
                     </div>
 
                 </div>{{-- /medt-compose --}}
@@ -249,6 +265,11 @@
             /* 'inline' | 'display' */
             activeTab: 'operators',
             copyLabel: '📋 Salin Rumus',
+
+            /* ── undo / redo history ── */
+            _history: [''],
+            _historyIndex: 0,
+            _historyTimer: null,
 
             /* ────────────────────────────────────────────────
                CHIP CEPAT (panel kompak)
@@ -322,6 +343,16 @@
                     id: 'nuclear',
                     label: '⚛ Nuklir',
                     note: 'Rumus fisika dan keselamatan radiasi untuk konteks BAPETEN.'
+                },
+                {
+                    id: 'atom',
+                    label: '⚗ Atom',
+                    note: 'Notasi nuklida & simbol unsur — format ᴬ_Z El. Klik untuk menyisipkan.'
+                },
+                {
+                    id: 'molecule',
+                    label: '🧪 Molekul',
+                    note: 'Rumus molekul & senyawa kimia — gas, cairan, asam, basa, dan radiofarmaka. Klik untuk menyisipkan.'
                 },
             ],
 
@@ -978,6 +1009,903 @@
                         desc: 'Energi foton setelah hamburan Compton'
                     },
                 ],
+
+                atom: [
+                    /* ── Partikel dasar ── */
+                    {
+                        id: 'nuclide_tpl',
+                        name: 'Nuklida Umum',
+                        isTemplate: true,
+                        latex: '{}_{Z}^{A}\\text{El}',
+                        display: '{}_{Z}^{A}\\text{El}',
+                        desc: 'Template notasi nuklida umum'
+                    },
+                    {
+                        id: 'proton',
+                        name: 'Proton p',
+                        isTemplate: true,
+                        latex: '{}_{1}^{1}\\text{p}',
+                        display: '{}_{1}^{1}\\text{p}',
+                        desc: 'Proton'
+                    },
+                    {
+                        id: 'neutron',
+                        name: 'Neutron n',
+                        isTemplate: true,
+                        latex: '{}_{0}^{1}\\text{n}',
+                        display: '{}_{0}^{1}\\text{n}',
+                        desc: 'Neutron'
+                    },
+                    {
+                        id: 'electron',
+                        name: 'Elektron e⁻',
+                        isTemplate: true,
+                        latex: '{}_{-1}^{\\;0}\\text{e}',
+                        display: '{}_{-1}^{\\;0}\\text{e}',
+                        desc: 'Elektron'
+                    },
+                    {
+                        id: 'positron',
+                        name: 'Positron e⁺',
+                        isTemplate: true,
+                        latex: '{}_{+1}^{\\;0}\\text{e}',
+                        display: '{}_{+1}^{\\;0}\\text{e}',
+                        desc: 'Positron'
+                    },
+                    {
+                        id: 'alpha_p',
+                        name: 'α Partikel',
+                        isTemplate: true,
+                        latex: '{}_{2}^{4}\\text{He}',
+                        display: '{}_{2}^{4}\\text{He}',
+                        desc: 'Partikel alfa'
+                    },
+                    {
+                        id: 'beta_m',
+                        name: 'β⁻ Partikel',
+                        isTemplate: true,
+                        latex: '{}_{-1}^{\\;0}\\beta^{-}',
+                        display: '\\beta^{-}',
+                        desc: 'Beta minus'
+                    },
+                    {
+                        id: 'beta_p',
+                        name: 'β⁺ Positron',
+                        isTemplate: true,
+                        latex: '{}_{+1}^{\\;0}\\beta^{+}',
+                        display: '\\beta^{+}',
+                        desc: 'Beta plus'
+                    },
+                    {
+                        id: 'gamma_q',
+                        name: 'γ Foton',
+                        isTemplate: true,
+                        latex: '{}_{0}^{0}\\gamma',
+                        display: '\\gamma',
+                        desc: 'Foton gamma'
+                    },
+                    {
+                        id: 'neutrino',
+                        name: 'Anti-ν Neutrino',
+                        isTemplate: true,
+                        latex: '\\bar{\\nu}_{e}',
+                        display: '\\bar{\\nu}_{e}',
+                        desc: 'Anti-neutrino elektron'
+                    },
+                    /* ── Isotop ringan ── */
+                    {
+                        id: 'H1',
+                        name: '¹H Protium',
+                        isTemplate: true,
+                        latex: '{}_{1}^{1}\\text{H}',
+                        display: '{}_{1}^{1}\\text{H}',
+                        desc: 'Protium'
+                    },
+                    {
+                        id: 'H2',
+                        name: '²H Deuterium',
+                        isTemplate: true,
+                        latex: '{}_{1}^{2}\\text{H}',
+                        display: '{}_{1}^{2}\\text{H}',
+                        desc: 'Deuterium (D)'
+                    },
+                    {
+                        id: 'H3',
+                        name: '³H Tritium',
+                        isTemplate: true,
+                        latex: '{}_{1}^{3}\\text{H}',
+                        display: '{}_{1}^{3}\\text{H}',
+                        desc: 'Tritium (T)'
+                    },
+                    {
+                        id: 'He3',
+                        name: '³He',
+                        isTemplate: true,
+                        latex: '{}_{2}^{3}\\text{He}',
+                        display: '{}_{2}^{3}\\text{He}',
+                        desc: 'Helium-3'
+                    },
+                    {
+                        id: 'He4',
+                        name: '⁴He',
+                        isTemplate: true,
+                        latex: '{}_{2}^{4}\\text{He}',
+                        display: '{}_{2}^{4}\\text{He}',
+                        desc: 'Helium-4'
+                    },
+                    {
+                        id: 'C12',
+                        name: '¹²C',
+                        isTemplate: true,
+                        latex: '{}_{6}^{12}\\text{C}',
+                        display: '{}_{6}^{12}\\text{C}',
+                        desc: 'Karbon-12'
+                    },
+                    {
+                        id: 'C13',
+                        name: '¹³C',
+                        isTemplate: true,
+                        latex: '{}_{6}^{13}\\text{C}',
+                        display: '{}_{6}^{13}\\text{C}',
+                        desc: 'Karbon-13'
+                    },
+                    {
+                        id: 'C14',
+                        name: '¹⁴C',
+                        isTemplate: true,
+                        latex: '{}_{6}^{14}\\text{C}',
+                        display: '{}_{6}^{14}\\text{C}',
+                        desc: 'Karbon-14 (radioaktif)'
+                    },
+                    {
+                        id: 'N14',
+                        name: '¹⁴N',
+                        isTemplate: true,
+                        latex: '{}_{7}^{14}\\text{N}',
+                        display: '{}_{7}^{14}\\text{N}',
+                        desc: 'Nitrogen-14'
+                    },
+                    {
+                        id: 'O16',
+                        name: '¹⁶O',
+                        isTemplate: true,
+                        latex: '{}_{8}^{16}\\text{O}',
+                        display: '{}_{8}^{16}\\text{O}',
+                        desc: 'Oksigen-16'
+                    },
+                    {
+                        id: 'O18',
+                        name: '¹⁸O',
+                        isTemplate: true,
+                        latex: '{}_{8}^{18}\\text{O}',
+                        display: '{}_{8}^{18}\\text{O}',
+                        desc: 'Oksigen-18'
+                    },
+                    {
+                        id: 'Na23',
+                        name: '²³Na',
+                        isTemplate: true,
+                        latex: '{}_{11}^{23}\\text{Na}',
+                        display: '{}_{11}^{23}\\text{Na}',
+                        desc: 'Natrium-23'
+                    },
+                    {
+                        id: 'Co60',
+                        name: '⁶⁰Co',
+                        isTemplate: true,
+                        latex: '{}_{27}^{60}\\text{Co}',
+                        display: '{}_{27}^{60}\\text{Co}',
+                        desc: 'Kobalt-60'
+                    },
+                    {
+                        id: 'Sr90',
+                        name: '⁹⁰Sr',
+                        isTemplate: true,
+                        latex: '{}_{38}^{90}\\text{Sr}',
+                        display: '{}_{38}^{90}\\text{Sr}',
+                        desc: 'Strontium-90'
+                    },
+                    {
+                        id: 'Y90',
+                        name: '⁹⁰Y',
+                        isTemplate: true,
+                        latex: '{}_{39}^{90}\\text{Y}',
+                        display: '{}_{39}^{90}\\text{Y}',
+                        desc: 'Yttrium-90'
+                    },
+                    {
+                        id: 'Tc99m',
+                        name: '⁹⁹ᵐTc',
+                        isTemplate: true,
+                        latex: '{}_{43}^{99m}\\text{Tc}',
+                        display: '{}_{43}^{99m}\\text{Tc}',
+                        desc: 'Teknesium-99m'
+                    },
+                    {
+                        id: 'I131',
+                        name: '¹³¹I',
+                        isTemplate: true,
+                        latex: '{}_{53}^{131}\\text{I}',
+                        display: '{}_{53}^{131}\\text{I}',
+                        desc: 'Iodium-131'
+                    },
+                    {
+                        id: 'I125',
+                        name: '¹²⁵I',
+                        isTemplate: true,
+                        latex: '{}_{53}^{125}\\text{I}',
+                        display: '{}_{53}^{125}\\text{I}',
+                        desc: 'Iodium-125'
+                    },
+                    {
+                        id: 'Cs137',
+                        name: '¹³⁷Cs',
+                        isTemplate: true,
+                        latex: '{}_{55}^{137}\\text{Cs}',
+                        display: '{}_{55}^{137}\\text{Cs}',
+                        desc: 'Sesium-137'
+                    },
+                    {
+                        id: 'Ba137',
+                        name: '¹³⁷Ba',
+                        isTemplate: true,
+                        latex: '{}_{56}^{137}\\text{Ba}',
+                        display: '{}_{56}^{137}\\text{Ba}',
+                        desc: 'Barium-137'
+                    },
+                    {
+                        id: 'Au198',
+                        name: '¹⁹⁸Au',
+                        isTemplate: true,
+                        latex: '{}_{79}^{198}\\text{Au}',
+                        display: '{}_{79}^{198}\\text{Au}',
+                        desc: 'Emas-198'
+                    },
+                    {
+                        id: 'Pb208',
+                        name: '²⁰⁸Pb',
+                        isTemplate: true,
+                        latex: '{}_{82}^{208}\\text{Pb}',
+                        display: '{}_{82}^{208}\\text{Pb}',
+                        desc: 'Timbal-208'
+                    },
+                    {
+                        id: 'Po210',
+                        name: '²¹⁰Po',
+                        isTemplate: true,
+                        latex: '{}_{84}^{210}\\text{Po}',
+                        display: '{}_{84}^{210}\\text{Po}',
+                        desc: 'Polonium-210'
+                    },
+                    {
+                        id: 'Rn222',
+                        name: '²²²Rn',
+                        isTemplate: true,
+                        latex: '{}_{86}^{222}\\text{Rn}',
+                        display: '{}_{86}^{222}\\text{Rn}',
+                        desc: 'Radon-222'
+                    },
+                    {
+                        id: 'Ra226',
+                        name: '²²⁶Ra',
+                        isTemplate: true,
+                        latex: '{}_{88}^{226}\\text{Ra}',
+                        display: '{}_{88}^{226}\\text{Ra}',
+                        desc: 'Radium-226'
+                    },
+                    {
+                        id: 'Th232',
+                        name: '²³²Th',
+                        isTemplate: true,
+                        latex: '{}_{90}^{232}\\text{Th}',
+                        display: '{}_{90}^{232}\\text{Th}',
+                        desc: 'Torium-232'
+                    },
+                    {
+                        id: 'U235',
+                        name: '²³⁵U',
+                        isTemplate: true,
+                        latex: '{}_{92}^{235}\\text{U}',
+                        display: '{}_{92}^{235}\\text{U}',
+                        desc: 'Uranium-235'
+                    },
+                    {
+                        id: 'U238',
+                        name: '²³⁸U',
+                        isTemplate: true,
+                        latex: '{}_{92}^{238}\\text{U}',
+                        display: '{}_{92}^{238}\\text{U}',
+                        desc: 'Uranium-238'
+                    },
+                    {
+                        id: 'Pu239',
+                        name: '²³⁹Pu',
+                        isTemplate: true,
+                        latex: '{}_{94}^{239}\\text{Pu}',
+                        display: '{}_{94}^{239}\\text{Pu}',
+                        desc: 'Plutonium-239'
+                    },
+                    {
+                        id: 'Am241',
+                        name: '²⁴¹Am',
+                        isTemplate: true,
+                        latex: '{}_{95}^{241}\\text{Am}',
+                        display: '{}_{95}^{241}\\text{Am}',
+                        desc: 'Amerisium-241'
+                    },
+                    /* ── Reaksi nuklir ── */
+                    {
+                        id: 'decay_alpha',
+                        name: 'Peluruhan α',
+                        isTemplate: true,
+                        latex: '{}_{Z}^{A}\\text{X} \\rightarrow {}_{Z-2}^{A-4}\\text{Y} + {}_{2}^{4}\\text{He}',
+                        display: '\\text{X}\\rightarrow\\text{Y}+\\alpha',
+                        desc: 'Reaksi peluruhan alfa'
+                    },
+                    {
+                        id: 'decay_beta',
+                        name: 'Peluruhan β⁻',
+                        isTemplate: true,
+                        latex: '{}_{Z}^{A}\\text{X} \\rightarrow {}_{Z+1}^{A}\\text{Y} + {}_{-1}^{\\;0}\\beta^{-} + \\bar{\\nu}_{e}',
+                        display: '\\text{X}\\rightarrow\\text{Y}+\\beta^{-}',
+                        desc: 'Reaksi peluruhan beta minus'
+                    },
+                    {
+                        id: 'decay_betap',
+                        name: 'Peluruhan β⁺',
+                        isTemplate: true,
+                        latex: '{}_{Z}^{A}\\text{X} \\rightarrow {}_{Z-1}^{A}\\text{Y} + {}_{+1}^{\\;0}\\beta^{+} + \\nu_{e}',
+                        display: '\\text{X}\\rightarrow\\text{Y}+\\beta^{+}',
+                        desc: 'Reaksi peluruhan beta plus'
+                    },
+                    {
+                        id: 'fission',
+                        name: 'Fisi U-235',
+                        isTemplate: true,
+                        latex: '{}_{92}^{235}\\text{U} + {}_{0}^{1}\\text{n} \\rightarrow {}_{56}^{141}\\text{Ba} + {}_{36}^{92}\\text{Kr} + 3\\,{}_{0}^{1}\\text{n}',
+                        display: '\\text{U}+\\text{n}\\rightarrow\\text{fisi}',
+                        desc: 'Contoh reaksi fisi U-235'
+                    },
+                    {
+                        id: 'fusion',
+                        name: 'Fusi D-T',
+                        isTemplate: true,
+                        latex: '{}_{1}^{2}\\text{H} + {}_{1}^{3}\\text{H} \\rightarrow {}_{2}^{4}\\text{He} + {}_{0}^{1}\\text{n}',
+                        display: '\\text{D}+\\text{T}\\rightarrow\\text{He}+\\text{n}',
+                        desc: 'Reaksi fusi deuterium-tritium'
+                    },
+                ],
+
+                molecule: [
+                    /* ── Gas & Molekul Umum ── */
+                    {
+                        id: 'm_h2',
+                        name: 'H\u2082',
+                        isTemplate: true,
+                        latex: '\\text{H}_2',
+                        display: '\\text{H}_2',
+                        desc: 'Gas hidrogen'
+                    },
+                    {
+                        id: 'm_o2',
+                        name: 'O\u2082',
+                        isTemplate: true,
+                        latex: '\\text{O}_2',
+                        display: '\\text{O}_2',
+                        desc: 'Gas oksigen'
+                    },
+                    {
+                        id: 'm_n2',
+                        name: 'N\u2082',
+                        isTemplate: true,
+                        latex: '\\text{N}_2',
+                        display: '\\text{N}_2',
+                        desc: 'Gas nitrogen'
+                    },
+                    {
+                        id: 'm_o3',
+                        name: 'O\u2083 Ozon',
+                        isTemplate: true,
+                        latex: '\\text{O}_3',
+                        display: '\\text{O}_3',
+                        desc: 'Ozon'
+                    },
+                    {
+                        id: 'm_co2',
+                        name: 'CO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{CO}_2',
+                        display: '\\text{CO}_2',
+                        desc: 'Karbon dioksida'
+                    },
+                    {
+                        id: 'm_co',
+                        name: 'CO',
+                        isTemplate: true,
+                        latex: '\\text{CO}',
+                        display: '\\text{CO}',
+                        desc: 'Karbon monoksida'
+                    },
+                    {
+                        id: 'm_h2o',
+                        name: 'H\u2082O Air',
+                        isTemplate: true,
+                        latex: '\\text{H}_2\\text{O}',
+                        display: '\\text{H}_2\\text{O}',
+                        desc: 'Air'
+                    },
+                    {
+                        id: 'm_h2o2',
+                        name: 'H\u2082O\u2082',
+                        isTemplate: true,
+                        latex: '\\text{H}_2\\text{O}_2',
+                        display: '\\text{H}_2\\text{O}_2',
+                        desc: 'Hidrogen peroksida'
+                    },
+                    {
+                        id: 'm_nh3',
+                        name: 'NH\u2083 Amonia',
+                        isTemplate: true,
+                        latex: '\\text{NH}_3',
+                        display: '\\text{NH}_3',
+                        desc: 'Amonia'
+                    },
+                    {
+                        id: 'm_ch4',
+                        name: 'CH\u2084 Metana',
+                        isTemplate: true,
+                        latex: '\\text{CH}_4',
+                        display: '\\text{CH}_4',
+                        desc: 'Gas metana'
+                    },
+                    {
+                        id: 'm_no2',
+                        name: 'NO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{NO}_2',
+                        display: '\\text{NO}_2',
+                        desc: 'Nitrogen dioksida'
+                    },
+                    {
+                        id: 'm_so2',
+                        name: 'SO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{SO}_2',
+                        display: '\\text{SO}_2',
+                        desc: 'Sulfur dioksida'
+                    },
+                    {
+                        id: 'm_so3',
+                        name: 'SO\u2083',
+                        isTemplate: true,
+                        latex: '\\text{SO}_3',
+                        display: '\\text{SO}_3',
+                        desc: 'Sulfur trioksida'
+                    },
+                    {
+                        id: 'm_h2s',
+                        name: 'H\u2082S',
+                        isTemplate: true,
+                        latex: '\\text{H}_2\\text{S}',
+                        display: '\\text{H}_2\\text{S}',
+                        desc: 'Hidrogen sulfida'
+                    },
+                    {
+                        id: 'm_cl2',
+                        name: 'Cl\u2082',
+                        isTemplate: true,
+                        latex: '\\text{Cl}_2',
+                        display: '\\text{Cl}_2',
+                        desc: 'Gas klorin'
+                    },
+                    {
+                        id: 'm_f2',
+                        name: 'F\u2082',
+                        isTemplate: true,
+                        latex: '\\text{F}_2',
+                        display: '\\text{F}_2',
+                        desc: 'Gas fluor'
+                    },
+                    /* ── Asam ── */
+                    {
+                        id: 'm_hcl',
+                        name: 'HCl',
+                        isTemplate: true,
+                        latex: '\\text{HCl}',
+                        display: '\\text{HCl}',
+                        desc: 'Asam klorida'
+                    },
+                    {
+                        id: 'm_hf',
+                        name: 'HF',
+                        isTemplate: true,
+                        latex: '\\text{HF}',
+                        display: '\\text{HF}',
+                        desc: 'Asam fluorida'
+                    },
+                    {
+                        id: 'm_hbr',
+                        name: 'HBr',
+                        isTemplate: true,
+                        latex: '\\text{HBr}',
+                        display: '\\text{HBr}',
+                        desc: 'Asam bromida'
+                    },
+                    {
+                        id: 'm_hi',
+                        name: 'HI',
+                        isTemplate: true,
+                        latex: '\\text{HI}',
+                        display: '\\text{HI}',
+                        desc: 'Asam iodida'
+                    },
+                    {
+                        id: 'm_hno3',
+                        name: 'HNO\u2083',
+                        isTemplate: true,
+                        latex: '\\text{HNO}_3',
+                        display: '\\text{HNO}_3',
+                        desc: 'Asam nitrat'
+                    },
+                    {
+                        id: 'm_h2so4',
+                        name: 'H\u2082SO\u2084',
+                        isTemplate: true,
+                        latex: '\\text{H}_2\\text{SO}_4',
+                        display: '\\text{H}_2\\text{SO}_4',
+                        desc: 'Asam sulfat'
+                    },
+                    {
+                        id: 'm_h3po4',
+                        name: 'H\u2083PO\u2084',
+                        isTemplate: true,
+                        latex: '\\text{H}_3\\text{PO}_4',
+                        display: '\\text{H}_3\\text{PO}_4',
+                        desc: 'Asam fosfat'
+                    },
+                    {
+                        id: 'm_hcooh',
+                        name: 'HCOOH',
+                        isTemplate: true,
+                        latex: '\\text{HCOOH}',
+                        display: '\\text{HCOOH}',
+                        desc: 'Asam formiat'
+                    },
+                    {
+                        id: 'm_acetic',
+                        name: 'CH\u2083COOH',
+                        isTemplate: true,
+                        latex: '\\text{CH}_3\\text{COOH}',
+                        display: '\\text{CH}_3\\text{COOH}',
+                        desc: 'Asam asetat'
+                    },
+                    /* ── Basa ── */
+                    {
+                        id: 'm_naoh',
+                        name: 'NaOH',
+                        isTemplate: true,
+                        latex: '\\text{NaOH}',
+                        display: '\\text{NaOH}',
+                        desc: 'Natrium hidroksida'
+                    },
+                    {
+                        id: 'm_koh',
+                        name: 'KOH',
+                        isTemplate: true,
+                        latex: '\\text{KOH}',
+                        display: '\\text{KOH}',
+                        desc: 'Kalium hidroksida'
+                    },
+                    {
+                        id: 'm_caoh2',
+                        name: 'Ca(OH)\u2082',
+                        isTemplate: true,
+                        latex: '\\text{Ca(OH)}_2',
+                        display: '\\text{Ca(OH)}_2',
+                        desc: 'Kalsium hidroksida'
+                    },
+                    {
+                        id: 'm_nh4oh',
+                        name: 'NH\u2084OH',
+                        isTemplate: true,
+                        latex: '\\text{NH}_4\\text{OH}',
+                        display: '\\text{NH}_4\\text{OH}',
+                        desc: 'Amonium hidroksida'
+                    },
+                    /* ── Garam & Oksida ── */
+                    {
+                        id: 'm_nacl',
+                        name: 'NaCl Garam',
+                        isTemplate: true,
+                        latex: '\\text{NaCl}',
+                        display: '\\text{NaCl}',
+                        desc: 'Natrium klorida'
+                    },
+                    {
+                        id: 'm_kcl',
+                        name: 'KCl',
+                        isTemplate: true,
+                        latex: '\\text{KCl}',
+                        display: '\\text{KCl}',
+                        desc: 'Kalium klorida'
+                    },
+                    {
+                        id: 'm_caco3',
+                        name: 'CaCO\u2083',
+                        isTemplate: true,
+                        latex: '\\text{CaCO}_3',
+                        display: '\\text{CaCO}_3',
+                        desc: 'Kalsium karbonat'
+                    },
+                    {
+                        id: 'm_caso4',
+                        name: 'CaSO\u2084',
+                        isTemplate: true,
+                        latex: '\\text{CaSO}_4',
+                        display: '\\text{CaSO}_4',
+                        desc: 'Kalsium sulfat'
+                    },
+                    {
+                        id: 'm_na2co3',
+                        name: 'Na\u2082CO\u2083',
+                        isTemplate: true,
+                        latex: '\\text{Na}_2\\text{CO}_3',
+                        display: '\\text{Na}_2\\text{CO}_3',
+                        desc: 'Natrium karbonat / soda abu'
+                    },
+                    {
+                        id: 'm_nahco3',
+                        name: 'NaHCO\u2083',
+                        isTemplate: true,
+                        latex: '\\text{NaHCO}_3',
+                        display: '\\text{NaHCO}_3',
+                        desc: 'Natrium bikarbonat / soda kue'
+                    },
+                    {
+                        id: 'm_fecl3',
+                        name: 'FeCl\u2083',
+                        isTemplate: true,
+                        latex: '\\text{FeCl}_3',
+                        display: '\\text{FeCl}_3',
+                        desc: 'Besi(III) klorida'
+                    },
+                    {
+                        id: 'm_al2o3',
+                        name: 'Al\u2082O\u2083',
+                        isTemplate: true,
+                        latex: '\\text{Al}_2\\text{O}_3',
+                        display: '\\text{Al}_2\\text{O}_3',
+                        desc: 'Aluminium oksida'
+                    },
+                    {
+                        id: 'm_fe2o3',
+                        name: 'Fe\u2082O\u2083 Karat',
+                        isTemplate: true,
+                        latex: '\\text{Fe}_2\\text{O}_3',
+                        display: '\\text{Fe}_2\\text{O}_3',
+                        desc: 'Besi(III) oksida'
+                    },
+                    {
+                        id: 'm_mno2',
+                        name: 'MnO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{MnO}_2',
+                        display: '\\text{MnO}_2',
+                        desc: 'Mangan(IV) oksida'
+                    },
+                    {
+                        id: 'm_sio2',
+                        name: 'SiO\u2082 Silika',
+                        isTemplate: true,
+                        latex: '\\text{SiO}_2',
+                        display: '\\text{SiO}_2',
+                        desc: 'Silikon dioksida'
+                    },
+                    {
+                        id: 'm_tio2',
+                        name: 'TiO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{TiO}_2',
+                        display: '\\text{TiO}_2',
+                        desc: 'Titanium dioksida'
+                    },
+                    /* ── Senyawa Nuklir & Radioaktif ── */
+                    {
+                        id: 'm_uo2',
+                        name: 'UO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{UO}_2',
+                        display: '\\text{UO}_2',
+                        desc: 'Uranium dioksida (bahan bakar nuklir)'
+                    },
+                    {
+                        id: 'm_u3o8',
+                        name: 'U\u2083O\u2088 Yellowcake',
+                        isTemplate: true,
+                        latex: '\\text{U}_3\\text{O}_8',
+                        display: '\\text{U}_3\\text{O}_8',
+                        desc: 'Triuranium oktoksida / yellowcake'
+                    },
+                    {
+                        id: 'm_uf6',
+                        name: 'UF\u2086 Pengayaan',
+                        isTemplate: true,
+                        latex: '\\text{UF}_6',
+                        display: '\\text{UF}_6',
+                        desc: 'Uranium heksafluorida (pengayaan)'
+                    },
+                    {
+                        id: 'm_puo2',
+                        name: 'PuO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{PuO}_2',
+                        display: '\\text{PuO}_2',
+                        desc: 'Plutonium dioksida'
+                    },
+                    {
+                        id: 'm_tho2',
+                        name: 'ThO\u2082',
+                        isTemplate: true,
+                        latex: '\\text{ThO}_2',
+                        display: '\\text{ThO}_2',
+                        desc: 'Torium dioksida'
+                    },
+                    /* ── Radiofarmaka & Proteksi ── */
+                    {
+                        id: 'm_ki',
+                        name: 'KI Tiroid',
+                        isTemplate: true,
+                        latex: '\\text{KI}',
+                        display: '\\text{KI}',
+                        desc: 'Kalium iodida (proteksi tiroid)'
+                    },
+                    {
+                        id: 'm_kio3',
+                        name: 'KIO\u2083',
+                        isTemplate: true,
+                        latex: '\\text{KIO}_3',
+                        display: '\\text{KIO}_3',
+                        desc: 'Kalium iodat (proteksi tiroid)'
+                    },
+                    {
+                        id: 'm_dtpa',
+                        name: 'Na-DTPA',
+                        isTemplate: true,
+                        latex: '\\text{Na}_5[\\text{DTPA}]',
+                        display: '\\text{Na}_5[\\text{DTPA}]',
+                        desc: 'Natrium DTPA (dekontaminasi internal)'
+                    },
+                    {
+                        id: 'm_edta',
+                        name: 'Na\u2082-EDTA',
+                        isTemplate: true,
+                        latex: '\\text{Na}_2[\\text{EDTA}]',
+                        display: '\\text{Na}_2[\\text{EDTA}]',
+                        desc: 'Dinatrium EDTA (chelating agent)'
+                    },
+                    {
+                        id: 'm_fdg',
+                        name: '\u00b9\u2078F-FDG',
+                        isTemplate: true,
+                        latex: '[^{18}\\text{F}]\\text{FDG}',
+                        display: '[{}^{18}\\text{F}]\\text{FDG}',
+                        desc: 'Fluorodeoksiglukosa (PET scan)'
+                    },
+                    {
+                        id: 'm_glucose',
+                        name: 'C\u2086H\u2081\u2082O\u2086',
+                        isTemplate: true,
+                        latex: '\\text{C}_6\\text{H}_{12}\\text{O}_6',
+                        display: '\\text{C}_6\\text{H}_{12}\\text{O}_6',
+                        desc: 'Glukosa'
+                    },
+                    /* ── Ion Penting ── */
+                    {
+                        id: 'm_hplus',
+                        name: 'H\u207a Ion',
+                        isTemplate: true,
+                        latex: '\\text{H}^{+}',
+                        display: '\\text{H}^{+}',
+                        desc: 'Ion hidrogen'
+                    },
+                    {
+                        id: 'm_ohminus',
+                        name: 'OH\u207b Ion',
+                        isTemplate: true,
+                        latex: '\\text{OH}^{-}',
+                        display: '\\text{OH}^{-}',
+                        desc: 'Ion hidroksida'
+                    },
+                    {
+                        id: 'm_naplus',
+                        name: 'Na\u207a',
+                        isTemplate: true,
+                        latex: '\\text{Na}^{+}',
+                        display: '\\text{Na}^{+}',
+                        desc: 'Ion natrium'
+                    },
+                    {
+                        id: 'm_clminus',
+                        name: 'Cl\u207b',
+                        isTemplate: true,
+                        latex: '\\text{Cl}^{-}',
+                        display: '\\text{Cl}^{-}',
+                        desc: 'Ion klorida'
+                    },
+                    {
+                        id: 'm_ca2p',
+                        name: 'Ca\u00b2\u207a',
+                        isTemplate: true,
+                        latex: '\\text{Ca}^{2+}',
+                        display: '\\text{Ca}^{2+}',
+                        desc: 'Ion kalsium'
+                    },
+                    {
+                        id: 'm_fe3p',
+                        name: 'Fe\u00b3\u207a',
+                        isTemplate: true,
+                        latex: '\\text{Fe}^{3+}',
+                        display: '\\text{Fe}^{3+}',
+                        desc: 'Ion besi(III)'
+                    },
+                    {
+                        id: 'm_uo2ion',
+                        name: 'UO\u2082\u00b2\u207a Uranil',
+                        isTemplate: true,
+                        latex: '\\text{UO}_2^{2+}',
+                        display: '\\text{UO}_2^{2+}',
+                        desc: 'Ion uranil'
+                    },
+                    {
+                        id: 'm_ion_tpl',
+                        name: 'X\u207f\u00b1 Ion Umum',
+                        isTemplate: true,
+                        latex: '\\text{X}^{n\\pm}',
+                        display: '\\text{X}^{n\\pm}',
+                        desc: 'Template ion umum'
+                    },
+                    /* ── Reaksi Kimia ── */
+                    {
+                        id: 'm_rxn',
+                        name: 'Reaksi Umum',
+                        isTemplate: true,
+                        latex: '\\text{A} + \\text{B} \\rightarrow \\text{C} + \\text{D}',
+                        display: '\\text{A}+\\text{B}\\rightarrow\\text{C}',
+                        desc: 'Template reaksi kimia umum'
+                    },
+                    {
+                        id: 'm_equil',
+                        name: 'Kesetimbangan',
+                        isTemplate: true,
+                        latex: '\\text{A} + \\text{B} \\rightleftharpoons \\text{C} + \\text{D}',
+                        display: '\\text{A}\\rightleftharpoons\\text{C}',
+                        desc: 'Reaksi reversibel / kesetimbangan'
+                    },
+                    {
+                        id: 'm_neutr',
+                        name: 'Netralisasi',
+                        isTemplate: true,
+                        latex: '\\text{HCl} + \\text{NaOH} \\rightarrow \\text{NaCl} + \\text{H}_2\\text{O}',
+                        display: '\\text{HCl}+\\text{NaOH}\\rightarrow\\text{NaCl}',
+                        desc: 'Reaksi netralisasi asam-basa'
+                    },
+                    {
+                        id: 'm_elec',
+                        name: 'Elektrolisis Air',
+                        isTemplate: true,
+                        latex: '2\\,\\text{H}_2\\text{O} \\xrightarrow{\\text{elektrolisis}} 2\\,\\text{H}_2 + \\text{O}_2',
+                        display: '2\\text{H}_2\\text{O}\\rightarrow2\\text{H}_2+\\text{O}_2',
+                        desc: 'Elektrolisis air'
+                    },
+                    {
+                        id: 'm_combust',
+                        name: 'Pembakaran C',
+                        isTemplate: true,
+                        latex: '\\text{C} + \\text{O}_2 \\rightarrow \\text{CO}_2',
+                        display: '\\text{C}+\\text{O}_2\\rightarrow\\text{CO}_2',
+                        desc: 'Pembakaran karbon sempurna'
+                    },
+                ],
             },
 
             /* ────────────────────────────────────────────────
@@ -1091,8 +2019,75 @@
             /**
              * Sisipkan string `text` di posisi kursor textarea.
              */
+            /* ── undo / redo helpers ── */
+            get canUndo() {
+                return this._historyIndex > 0;
+            },
+            get canRedo() {
+                return this._historyIndex < this._history.length - 1;
+            },
+
+            pushHistory() {
+                /* truncate redo branch */
+                this._history = this._history.slice(0, this._historyIndex + 1);
+                /* avoid duplicate consecutive entries */
+                if (this._history[this._historyIndex] === this.latexInput) return;
+                this._history.push(this.latexInput);
+                if (this._history.length > 120) {
+                    this._history.shift();
+                } else {
+                    this._historyIndex++;
+                }
+            },
+
+            undo() {
+                if (this._historyIndex > 0) {
+                    /* save current state if it's a new unsaved change */
+                    if (this._history[this._historyIndex] !== this.latexInput) {
+                        this.pushHistory();
+                    }
+                    this._historyIndex--;
+                    this.latexInput = this._history[this._historyIndex];
+                    this.$nextTick(() => {
+                        this.updatePreview();
+                        this.autoResize();
+                    });
+                }
+            },
+
+            redo() {
+                if (this._historyIndex < this._history.length - 1) {
+                    this._historyIndex++;
+                    this.latexInput = this._history[this._historyIndex];
+                    this.$nextTick(() => {
+                        this.updatePreview();
+                        this.autoResize();
+                    });
+                }
+            },
+
+            /* ── textarea auto-resize ── */
+            autoResize() {
+                const el = this.$refs.latexInput;
+                if (!el) return;
+                el.style.height = 'auto';
+                const max = 220;
+                el.style.height = Math.min(el.scrollHeight, max) + 'px';
+                el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+            },
+
+            /* ── handler @input textarea ── */
+            onInput() {
+                this.updatePreview();
+                this.autoResize();
+                /* debounced history push after typing pauses */
+                clearTimeout(this._historyTimer);
+                this._historyTimer = setTimeout(() => this.pushHistory(), 600);
+            },
+
             insertAt(text) {
                 const el = this.$refs.latexInput;
+                this.pushHistory(); /* snapshot sebelum insert */
                 if (!el) {
                     this.latexInput += text;
                     this.updatePreview();
@@ -1108,6 +2103,7 @@
                     el.setSelectionRange(pos, pos);
                     el.focus();
                     this.updatePreview();
+                    this.autoResize();
                 });
             },
 
@@ -1120,10 +2116,14 @@
             },
 
             clearInput() {
+                this.pushHistory(); /* snapshot sebelum clear */
                 this.latexInput = '';
                 this.previewHtml = '';
                 this.previewError = '';
-                this.$nextTick(() => this.$refs.latexInput && this.$refs.latexInput.focus());
+                this.$nextTick(() => {
+                    this.$refs.latexInput && this.$refs.latexInput.focus();
+                    this.autoResize();
+                });
             },
 
             setMode(mode) {
@@ -1665,6 +2665,44 @@
         border-color: #fca5a5;
     }
 
+    /* ── Toolbar actions (undo/redo/hapus group) ── */
+    .medt-toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .medt-btn-icon {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 7px;
+        color: #374151;
+        cursor: pointer;
+        transition: all .15s;
+        flex-shrink: 0;
+    }
+
+    .medt-btn-icon svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .medt-btn-icon:hover:not(:disabled) {
+        background: #eef2ff;
+        border-color: #4f46e5;
+        color: #4f46e5;
+    }
+
+    .medt-btn-icon:disabled {
+        opacity: .35;
+        cursor: not-allowed;
+    }
+
     .medt-textarea {
         width: 100%;
         padding: 10px 12px;
@@ -1675,8 +2713,11 @@
         background: #f9fafb;
         border: 2px solid #d1d5db;
         border-radius: 10px;
-        resize: vertical;
-        transition: border-color .15s;
+        resize: none;
+        min-height: 68px;
+        max-height: 220px;
+        overflow-y: hidden;
+        transition: border-color .15s, box-shadow .15s;
         box-sizing: border-box;
     }
 
@@ -1699,6 +2740,16 @@
         padding: 1px 4px;
         border-radius: 3px;
         font-size: 10.5px;
+        color: #374151;
+    }
+
+    .medt-input-hint kbd {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        padding: 0 4px;
+        font-size: 10px;
+        font-family: monospace;
         color: #374151;
     }
 
@@ -1760,7 +2811,9 @@
         padding: 16px 20px;
         display: flex;
         align-items: center;
-        justify-content: center;
+        /* Catatan: JANGAN pakai justify-content:center di sini.
+           Flex + overflow-x:auto + justify-content:center menyebabkan
+           konten yang meluap ke kanan tidak bisa di-scroll ke kiri. */
         min-height: 96px;
         /* Scrollbar tipis & elegan */
         scrollbar-width: thin;
@@ -1790,6 +2843,9 @@
         color: #1e1b4b;
         flex-shrink: 0;
         /* jangan kompres formula */
+        white-space: nowrap;
+        margin: 0 auto;
+        /* center ketika muat; auto collapse saat overflow → bisa scroll kiri */
         text-align: center;
     }
 
@@ -1915,36 +2971,38 @@
         cursor: not-allowed;
     }
 
-    .medt-steps {
-        margin-top: 14px;
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        border-radius: 10px;
-        padding: 12px 14px;
-    }
-
     .medt-steps-title {
-        margin: 0 0 6px;
-        font-size: 12px;
+        font-size: 11.5px;
         font-weight: 700;
         color: #166534;
+        margin-right: 6px;
     }
 
-    .medt-steps-list {
-        margin: 0;
-        padding-left: 18px;
+    .medt-steps-inline {
         font-size: 11.5px;
         color: #15803d;
-        line-height: 1.8;
+        line-height: 1.6;
     }
 
-    .medt-steps-list kbd {
+    .medt-steps-inline kbd {
         background: #dcfce7;
         border: 1px solid #86efac;
         border-radius: 4px;
         padding: 1px 5px;
         font-size: 10.5px;
         font-family: monospace;
+    }
+
+    .medt-steps {
+        margin-top: 12px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 2px;
     }
 
     /* ════════════════════════════════════════
