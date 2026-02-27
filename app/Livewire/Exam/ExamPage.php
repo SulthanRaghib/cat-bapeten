@@ -701,11 +701,16 @@ class ExamPage extends Component
             return;
         }
 
+        $session = ExamSession::find($this->examSessionId);
+
         $answers        = ExamAnswer::where('exam_session_id', $this->examSessionId)->get();
         $totalQuestions = count($this->questionIds);
         $answeredCount  = $answers->count();
         $totalScore     = $answers->sum('score');
         $correctCount   = $answers->where('score', '>', 0)->count();
+
+        // Hitung total pelanggaran
+        $violationCount = ExamActivityLog::where('exam_session_id', $this->examSessionId)->count();
 
         $this->resultStats = [
             'total_questions' => $totalQuestions,
@@ -714,10 +719,13 @@ class ExamPage extends Component
             'correct'         => $correctCount,
             'wrong'           => $answeredCount - $correctCount,
             'total_score'     => $totalScore,
+            'violation_count' => $violationCount,
+            'start_time'      => $session?->started_at,
+            'end_time'        => $session?->finished_at ?? now(),
         ];
 
         // Sinkronkan total_score jika ada selisih (misal jawaban dihitung ulang setelah submit).
-        if ($session = ExamSession::find($this->examSessionId)) {
+        if ($session) {
             if ((int) $session->total_score !== (int) $totalScore) {
                 $session->forceFill(['total_score' => (int) $totalScore])->save();
             }
