@@ -46,7 +46,9 @@ class QuestionUnitResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            RelationManagers\IndicatorsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

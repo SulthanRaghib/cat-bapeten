@@ -56,7 +56,7 @@ class QuestionsTable
                     ->label('Tipe Soal')
                     ->relationship('examType', 'name'),
                 SelectFilter::make('category')
-                    ->label('Kategori')
+                    ->label('TK. Kesulitan')
                     ->options([
                         'easy' => 'Mudah',
                         'medium' => 'Sedang',

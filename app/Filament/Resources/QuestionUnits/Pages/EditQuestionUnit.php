@@ -12,10 +12,23 @@ class EditQuestionUnit extends EditRecord
 {
     protected static string $resource = QuestionUnitResource::class;
 
+    protected static ?string $title = 'Edit Unit Soal';
+
     protected function getHeaderActions(): array
     {
         return [
-            // DeleteAction::make(),
+            DeleteAction::make(),
         ];
+    }
+
+    // Combine form + relation managers (Indicators) as sibling tabs
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
+
+    public function getContentTabLabel(): ?string
+    {
+        return 'Detail Unit';
     }
 }
