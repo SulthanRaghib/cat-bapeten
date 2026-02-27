@@ -73,10 +73,15 @@ class ExamPackagesTable
                         ->icon('heroicon-m-rectangle-stack')
                         ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=0")),
 
+                    Action::make('edit_konfigurasi_nab_dan_kelulusan')
+                        ->label('Edit Konfigurasi NAB & Kelulusan')
+                        ->icon('heroicon-m-cog-6-tooth')
+                        ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=1")),
+
                     Action::make('edit_participants')
                         ->label('Edit Peserta Ujian')
                         ->icon('heroicon-m-users')
-                        ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=1")),
+                        ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=2")),
 
                     Action::make('activate')
                         ->label('Aktifkan Paket')

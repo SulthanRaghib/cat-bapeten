@@ -44,6 +44,7 @@ class ExamPackageResource extends Resource
     {
         return [
             RelationManagers\QuestionsRelationManager::class,
+            RelationManagers\NabConfigurationRelationManager::class,
             RelationManagers\ParticipantsRelationManager::class,
         ];
     }

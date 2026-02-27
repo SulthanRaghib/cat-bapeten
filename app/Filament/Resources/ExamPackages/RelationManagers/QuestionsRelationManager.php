@@ -38,6 +38,26 @@ class QuestionsRelationManager extends RelationManager
     protected static ?string $title = 'Soal Ujian';
     protected static ?string $modelLabel = 'Soal';
 
+    // ── Helpers to detect exam type of the parent package ──
+
+    protected function getPackageExamType(): ?ExamType
+    {
+        /** @var ExamPackage $pkg */
+        $pkg = $this->getOwnerRecord();
+
+        return $pkg->examType;
+    }
+
+    protected function isTeknis(): bool
+    {
+        return $this->getPackageExamType()?->isCorrectWrong() ?? false;
+    }
+
+    protected function isMansoskul(): bool
+    {
+        return $this->getPackageExamType()?->isWeighted() ?? false;
+    }
+
     public function form(Schema $form): Schema
     {
         return QuestionResource::form($form);
@@ -48,15 +68,6 @@ class QuestionsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('question_text')
             ->columns([
-                TextColumn::make('examType.name')
-                    ->label('Tipe')
-                    ->badge()
-                    ->color(fn($record) => match ($record->examType?->evaluation_method) {
-                        'correct_wrong' => 'info',
-                        'weighted'      => 'warning',
-                        default         => 'gray',
-                    }),
-
                 TextColumn::make('questionUnit.name')
                     ->label('Unit')
                     ->placeholder('-')
@@ -67,8 +78,9 @@ class QuestionsRelationManager extends RelationManager
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                // TK. Kesulitan — hanya tampil untuk Teknis (correct_wrong)
                 TextColumn::make('category')
-                    ->label('Kategori')
+                    ->label('TK. Kesulitan')
                     ->badge()
                     ->formatStateUsing(fn($state) => match ($state) {
                         'easy'   => 'Mudah',
@@ -82,6 +94,7 @@ class QuestionsRelationManager extends RelationManager
                         'hard'   => 'danger',
                         default  => 'gray',
                     })
+                    ->visible(fn(): bool => $this->isTeknis())
                     ->toggleable(),
 
                 TextColumn::make('question_text')
@@ -90,14 +103,48 @@ class QuestionsRelationManager extends RelationManager
                     ->formatStateUsing(fn($state) => Str::limit(strip_tags((string) $state), 80)),
             ])
             ->filters([
+                // Unit filter — hanya tampilkan unit yang terkait dengan tipe ujian paket ini
                 SelectFilter::make('question_unit_id')
                     ->label('Unit')
-                    ->options(fn() => QuestionUnit::where('is_active', true)->pluck('name', 'id'))
+                    ->options(function (): array {
+                        $examTypeId = $this->getPackageExamType()?->id;
+
+                        if (! $examTypeId) {
+                            return QuestionUnit::where('is_active', true)->pluck('name', 'id')->toArray();
+                        }
+
+                        return QuestionUnit::where('is_active', true)
+                            ->where('exam_type_id', $examTypeId)
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
                     ->placeholder('Semua Unit'),
+
+                // Sub-unit filter
+                SelectFilter::make('question_sub_unit_id')
+                    ->label('Sub Unit')
+                    ->options(function (): array {
+                        $examTypeId = $this->getPackageExamType()?->id;
+
+                        if (! $examTypeId) {
+                            return [];
+                        }
+
+                        return QuestionSubUnit::query()
+                            ->whereHas('questionUnit', fn(Builder $q) => $q->where('exam_type_id', $examTypeId))
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->placeholder('Semua Sub Unit'),
+
+                // TK. Kesulitan — hanya tampil untuk Teknis
                 SelectFilter::make('category')
-                    ->label('Kategori')
+                    ->label('TK. Kesulitan')
                     ->options(['easy' => 'Mudah', 'medium' => 'Sedang', 'hard' => 'Sulit'])
-                    ->placeholder('Semua'),
+                    ->placeholder('Semua')
+                    ->visible(fn(): bool => $this->isTeknis()),
             ])
             ->headerActions([
                 $this->makeGenerateRandomAction(),
@@ -219,7 +266,7 @@ class QuestionsRelationManager extends RelationManager
             // Teknis: per category
             $catCounts = $this->getCategoryCounts($examType->id, $existingIds);
 
-            $components[] = Section::make('Jumlah per Kategori')
+            $components[] = Section::make('Jumlah per TK. Kesulitan')
                 ->description('Mode sederhana — tentukan jumlah per tingkat kesulitan.')
                 ->visible(fn(Get $get): bool => ! $get('use_unit_distribution'))
                 ->schema([
