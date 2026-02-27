@@ -38,4 +38,13 @@ class QuestionUnit extends Model
     {
         return $this->hasMany(Question::class);
     }
+
+    /**
+     * Default/template indicator levels for this unit.
+     * Used as the source of truth when syncing into ExamPackage JSON snapshots.
+     */
+    public function indicators(): HasMany
+    {
+        return $this->hasMany(QuestionUnitIndicator::class)->orderBy('sort_order');
+    }
 }

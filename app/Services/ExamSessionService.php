@@ -8,8 +8,10 @@ use App\DTOs\ExamSession\FinishExamDTO;
 use App\DTOs\ExamSession\SaveAnswerDTO;
 use App\DTOs\ExamSession\StartExamDTO;
 use App\Models\ExamAnswer;
+use App\Models\ExamPackage;
 use App\Models\ExamParticipant;
 use App\Models\ExamSession;
+use App\Models\Question;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -145,5 +147,80 @@ final class ExamSessionService
 
             return $session->fresh();
         });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // WEIGHTED / NAB SCORING
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Calculate the per-unit weighted result for a completed session.
+     *
+     * Uses the JSON snapshot stored in `exam_packages.unit_scoring_configs`
+     * so the scoring rules are frozen at the moment of package configuration
+     * and never hit the `question_unit_indicators` table at evaluation time.
+     *
+     * @return array<int, array{
+     *     question_unit_id: int,
+     *     unit_name: string,
+     *     total_score: int,
+     *     achieved_indicator: string|null,
+     *     is_passing: bool,
+     * }>
+     */
+    public function calculateWeightedResult(ExamSession $session): array
+    {
+        // 1. Resolve the ExamPackage via participant
+        $participant = $session->examParticipant;
+        /** @var ExamPackage $package */
+        $package = ExamPackage::findOrFail($participant->exam_package_id);
+
+        $configs = $package->unit_scoring_configs ?? [];
+
+        if (empty($configs)) {
+            return [];
+        }
+
+        // 2. Sum scores per question_unit_id — single query, no N+1
+        $scoresByUnit = ExamAnswer::where('exam_session_id', $session->id)
+            ->join('questions', 'questions.id', '=', 'exam_answers.question_id')
+            ->selectRaw('questions.question_unit_id, SUM(exam_answers.score) as unit_total')
+            ->groupBy('questions.question_unit_id')
+            ->pluck('unit_total', 'question_unit_id')   // [unit_id => total]
+            ->toArray();
+
+        // 3. Walk through the JSON config and determine indicator + pass/fail
+        $results = [];
+
+        foreach ($configs as $unitConfig) {
+            $unitId     = (int) ($unitConfig['question_unit_id'] ?? 0);
+            $unitName   = $unitConfig['unit_name'] ?? '';
+            $indicators = $unitConfig['indicators'] ?? [];
+            $unitScore  = (int) ($scoresByUnit[$unitId] ?? 0);
+
+            $achievedIndicator = null;
+            $isPassing         = false;
+
+            foreach ($indicators as $indicator) {
+                $min = (int) ($indicator['min_score'] ?? 0);
+                $max = (int) ($indicator['max_score'] ?? 0);
+
+                if ($unitScore >= $min && $unitScore <= $max) {
+                    $achievedIndicator = $indicator['name'] ?? null;
+                    $isPassing         = (bool) ($indicator['is_passing'] ?? false);
+                    break; // first match wins (ranges should be non-overlapping)
+                }
+            }
+
+            $results[] = [
+                'question_unit_id'   => $unitId,
+                'unit_name'          => $unitName,
+                'total_score'        => $unitScore,
+                'achieved_indicator' => $achievedIndicator,
+                'is_passing'         => $isPassing,
+            ];
+        }
+
+        return $results;
     }
 }
