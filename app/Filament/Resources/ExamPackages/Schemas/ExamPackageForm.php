@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ExamPackages\Schemas;
 
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -47,6 +48,22 @@ class ExamPackageForm
                             ->suffix('Menit')
                             ->numeric()
                             ->required(),
+
+                        Grid::make(2)
+                            ->schema([
+                                DateTimePicker::make('start_time')
+                                    ->label('Waktu Mulai')
+                                    ->seconds(false)
+                                    ->helperText('Kapan ujian ini mulai bisa diakses.')
+                                    ->columnSpan(1),
+
+                                DateTimePicker::make('end_time')
+                                    ->label('Waktu Selesai')
+                                    ->seconds(false)
+                                    ->helperText('Batas akhir akses ujian.')
+                                    ->after('start_time')
+                                    ->columnSpan(1),
+                            ]),
 
                         Select::make('is_active')
                             ->label('Status Ketersediaan')

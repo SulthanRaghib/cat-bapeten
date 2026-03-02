@@ -43,7 +43,7 @@ class EditExamPackage extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('index');
+        return \Filament\Pages\Dashboard::getUrl();
     }
 
     // UX Improvement: Menggabungkan Form dan Relation Manager dalam Tab Sejajar

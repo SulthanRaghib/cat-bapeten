@@ -43,6 +43,13 @@ class ExamPackagesTable
                     ->formatStateUsing(fn(int $state): string => "{$state} Menit")
                     ->sortable(),
 
+                TextColumn::make('start_time')
+                    ->label('Mulai')
+                    ->dateTime('d M Y H:i')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+
                 TextColumn::make('is_active')
                     ->label('Status')
                     ->formatStateUsing(

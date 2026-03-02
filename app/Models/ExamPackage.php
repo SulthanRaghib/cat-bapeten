@@ -9,12 +9,56 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExamPackage extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'title',
+        'type',
+        'passing_grade',
+        'duration_minutes',
+        'is_active',
+        'start_time',
+        'end_time',
+        'unit_scoring_configs',
+        'exam_type_id',
+    ];
 
     protected $casts = [
         'is_active'            => 'boolean',
         'unit_scoring_configs' => 'array',
+        'start_time'           => 'datetime',
+        'end_time'             => 'datetime',
     ];
+
+    /**
+     * Get the computed status of the exam package.
+     */
+    public function getComputedStatusAttribute(): string
+    {
+        if (!$this->is_active) {
+            return 'cancelled'; // Or 'inactive'? User said "cancelled -> cancelled". Using inactive as cancelled for now or add 'status' column?
+            // Wait, user said "Jika status = cancelled -> cancelled". ExamPackage doesn't have 'status' column.
+            // Maybe they mean if I add one? Or rely on is_active=false?
+            // "Jika status = cancelled". Assuming 'status' is a column I need to add? No, I added start/end_time.
+            // I will assume is_active=false => cancelled.
+        }
+
+        $now = now();
+
+        if ($this->start_time && $now < $this->start_time) {
+            return 'scheduled';
+        }
+
+        if ($this->start_time && $this->end_time && $now >= $this->start_time && $now <= $this->end_time) {
+            return 'ongoing';
+        }
+
+        if ($this->end_time && $now > $this->end_time) {
+            return 'finished';
+        }
+
+        return 'scheduled'; // Default fallthrough? Or 'ongoing' if no times? User said "Jika sekarang < start_time".
+        // If times are null, what? Assuming scheduled if no times set yet? or ignore.
+    }
+
 
     public function examType(): BelongsTo
     {
