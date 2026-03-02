@@ -38,7 +38,8 @@ class ExamResultResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where('status', 'completed')
-            ->orderBy('finished_at', 'desc');
+            ->orderBy('finished_at', 'desc')
+            ->with(['examPackage.examType']); // Eager-load for exam-type detection in table & infolist
     }
 
     public static function form(Schema $schema): Schema
@@ -57,7 +58,7 @@ class ExamResultResource extends Resource
             Grid::make(['default' => 1, 'lg' => 3])
                 ->columnSpanFull()
                 ->schema([
-                    // KIRI (1/3)
+                    // ── KIRI (1/3) ──────────────────────────────────────────────
                     Group::make([
                         Section::make('Informasi Ujian')
                             ->icon('heroicon-o-information-circle')
@@ -67,12 +68,27 @@ class ExamResultResource extends Resource
                                     ->weight('bold')
                                     ->size('lg'),
 
-                                TextEntry::make('examPackage.type')
+                                TextEntry::make('examPackage.examType.name')
                                     ->label('Tipe Ujian')
-                                    ->badge(),
+                                    ->badge()
+                                    ->color(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
+                                        'weighted'     => 'primary',
+                                        'correct_wrong' => 'info',
+                                        default        => 'gray',
+                                    }),
+
+                                TextEntry::make('exam_method_label')
+                                    ->label('Metode Penilaian')
+                                    ->badge()
+                                    ->state(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
+                                        'weighted'     => 'Pembobotan Nilai (Mansoskul)',
+                                        'correct_wrong' => 'Benar / Salah (Teknis)',
+                                        default        => '-',
+                                    })
+                                    ->color(fn(string $state): string => str_contains($state, 'Mansoskul') ? 'primary' : 'info'),
 
                                 TextEntry::make('examPackage.passing_grade')
-                                    ->label('Passing Grade')
+                                    ->label('NAB (Nilai Ambang Batas)')
                                     ->badge()
                                     ->color('success'),
 
@@ -101,11 +117,12 @@ class ExamResultResource extends Resource
                     ])
                         ->columnSpan(1),
 
-                    // KANAN (2/3)
+                    // ── KANAN (2/3) ──────────────────────────────────────────────
                     Group::make([
                         Section::make('Statistik Hasil')
                             ->columns(3)
                             ->schema([
+                                // ── Selalu tampil ──
                                 TextEntry::make('total_score')
                                     ->label('Total Nilai')
                                     ->size('xl')
@@ -138,6 +155,7 @@ class ExamResultResource extends Resource
                                         return "{$s} detik";
                                     }),
 
+                                // ── Hanya Teknis ──────────────────────────────
                                 TextEntry::make('jawaban_benar')
                                     ->label('Jawaban Benar')
                                     ->icon('heroicon-m-check-circle')
@@ -146,7 +164,9 @@ class ExamResultResource extends Resource
                                     ->weight('bold')
                                     ->state(fn(ExamSession $record): int =>
                                     $record->answers()->where('score', '>', 0)
-                                        ->whereNotNull('answer')->where('answer', '!=', '')->count()),
+                                        ->whereNotNull('answer')->where('answer', '!=', '')->count())
+                                    ->hidden(fn(ExamSession $record): bool =>
+                                    $record->examPackage?->examType?->evaluation_method === 'weighted'),
 
                                 TextEntry::make('jawaban_salah')
                                     ->label('Jawaban Salah')
@@ -156,7 +176,9 @@ class ExamResultResource extends Resource
                                     ->weight('bold')
                                     ->state(fn(ExamSession $record): int =>
                                     $record->answers()->where('score', '<=', 0)
-                                        ->whereNotNull('answer')->where('answer', '!=', '')->count()),
+                                        ->whereNotNull('answer')->where('answer', '!=', '')->count())
+                                    ->hidden(fn(ExamSession $record): bool =>
+                                    $record->examPackage?->examType?->evaluation_method === 'weighted'),
 
                                 TextEntry::make('tidak_dijawab')
                                     ->label('Tidak Dijawab')
@@ -165,16 +187,24 @@ class ExamResultResource extends Resource
                                     ->color('warning')
                                     ->weight('bold')
                                     ->state(function (ExamSession $record): int {
-                                        // Total questions from shuffled meta (covers all questions in the exam)
                                         $totalQ = count($record->answers_meta ?? []);
                                         if ($totalQ === 0) {
-                                            // Fallback: count via exam package questions
                                             $totalQ = $record->examPackage?->questions()->count() ?? 0;
                                         }
                                         $answered = $record->answers()
                                             ->whereNotNull('answer')->where('answer', '!=', '')->count();
                                         return max(0, $totalQ - $answered);
-                                    }),
+                                    })
+                                    ->hidden(fn(ExamSession $record): bool =>
+                                    $record->examPackage?->examType?->evaluation_method === 'weighted'),
+
+                                // ── Hanya Mansoskul: rincian per unit ──────────
+                                ViewEntry::make('mansoskul_unit_results')
+                                    ->label('')
+                                    ->view('filament.resources.exam-results.infolists.mansoskul-unit-results')
+                                    ->columnSpanFull()
+                                    ->hidden(fn(ExamSession $record): bool =>
+                                    $record->examPackage?->examType?->evaluation_method !== 'weighted'),
                             ]),
 
                         Section::make('Detail Soal & Jawaban')

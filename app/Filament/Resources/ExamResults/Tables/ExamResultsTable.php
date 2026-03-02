@@ -57,6 +57,11 @@ class ExamResultsTable
                 // ── 2. Paket Ujian ───────────────────────────────────────
                 TextColumn::make('examPackage.title')
                     ->label('Paket Ujian')
+                    ->description(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
+                        'weighted'      => '📊 Mansoskul (Pembobotan)',
+                        'correct_wrong' => '✅ Teknis (Benar/Salah)',
+                        default         => '—',
+                    })
                     ->sortable()
                     ->searchable()
                     ->wrap(),
@@ -83,43 +88,59 @@ class ExamResultsTable
                 // ── 5. Statistik Jawaban: Benar ──────────────────────────
                 TextColumn::make('jawaban_benar')
                     ->label('Benar')
-                    ->icon('heroicon-m-check-circle')
-                    ->state(
-                        fn(ExamSession $record): int =>
-                        $record->answers()->where('score', '>', 0)
-                            ->whereNotNull('answer')->where('answer', '!=', '')->count()
-                    )
-                    ->color('success')
+                    ->icon(fn(ExamSession $record): string =>
+                    $record->examPackage?->examType?->evaluation_method === 'weighted'
+                        ? 'heroicon-m-minus-circle'
+                        : 'heroicon-m-check-circle')
+                    ->state(function (ExamSession $record): string {
+                        if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
+                            return '—';
+                        }
+                        return (string) $record->answers()->where('score', '>', 0)
+                            ->whereNotNull('answer')->where('answer', '!=', '')->count();
+                    })
+                    ->color(fn(string $state): string => $state === '—' ? 'gray' : 'success')
                     ->alignCenter()
                     ->toggleable(),
 
                 // ── 6. Statistik Jawaban: Salah ──────────────────────────
                 TextColumn::make('jawaban_salah')
                     ->label('Salah')
-                    ->icon('heroicon-m-x-circle')
-                    ->state(
-                        fn(ExamSession $record): int =>
-                        $record->answers()->where('score', '<=', 0)
-                            ->whereNotNull('answer')->where('answer', '!=', '')->count()
-                    )
-                    ->color('danger')
+                    ->icon(fn(ExamSession $record): string =>
+                    $record->examPackage?->examType?->evaluation_method === 'weighted'
+                        ? 'heroicon-m-minus-circle'
+                        : 'heroicon-m-x-circle')
+                    ->state(function (ExamSession $record): string {
+                        if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
+                            return '—';
+                        }
+                        return (string) $record->answers()->where('score', '<=', 0)
+                            ->whereNotNull('answer')->where('answer', '!=', '')->count();
+                    })
+                    ->color(fn(string $state): string => $state === '—' ? 'gray' : 'danger')
                     ->alignCenter()
                     ->toggleable(),
 
                 // ── 7. Statistik Jawaban: Tidak Dijawab ──────────────────
                 TextColumn::make('tidak_dijawab')
                     ->label('Kosong')
-                    ->icon('heroicon-m-minus-circle')
-                    ->state(function (ExamSession $record): int {
+                    ->icon(fn(ExamSession $record): string =>
+                    $record->examPackage?->examType?->evaluation_method === 'weighted'
+                        ? 'heroicon-m-minus-circle'
+                        : 'heroicon-m-minus-circle')
+                    ->state(function (ExamSession $record): string {
+                        if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
+                            return '—';
+                        }
                         $totalQ = count($record->answers_meta ?? []);
                         if ($totalQ === 0) {
                             $totalQ = $record->examPackage?->questions()->count() ?? 0;
                         }
                         $answered = $record->answers()
                             ->whereNotNull('answer')->where('answer', '!=', '')->count();
-                        return max(0, $totalQ - $answered);
+                        return (string) max(0, $totalQ - $answered);
                     })
-                    ->color('warning')
+                    ->color(fn(string $state): string => $state === '—' ? 'gray' : 'warning')
                     ->alignCenter()
                     ->toggleable(),
 
@@ -154,10 +175,16 @@ class ExamResultsTable
                         fn(ExamSession $record): string =>
                         self::isLulus($record) ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle'
                     )
-                    ->description(
-                        fn(ExamSession $record): string =>
-                        'KKM: ' . ($record->examPackage->passing_grade ?? '-')
-                    )
+                    ->description(function (ExamSession $record): string {
+                        $nab = 'NAB: ' . ($record->examPackage->passing_grade ?? '-');
+                        if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
+                            $unitCount = is_array($record->examPackage?->unit_scoring_configs)
+                                ? count($record->examPackage->unit_scoring_configs)
+                                : 0;
+                            return $nab . ' · ' . $unitCount . ' unit';
+                        }
+                        return $nab;
+                    })
                     ->sortable()
                     ->alignCenter(),
 
