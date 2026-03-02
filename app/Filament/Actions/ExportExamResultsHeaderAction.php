@@ -8,6 +8,7 @@ use App\Exports\ExamResultsExcelExport;
 use App\Models\ExamPackage;
 use App\Models\ExamSession;
 use App\Services\ExamResultsPdfExportService;
+use App\Services\ExamSessionService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -227,18 +228,26 @@ class ExportExamResultsHeaderAction
         $export->setFilterData($data);
         $export->setIncludeStatistics($includeStatistics);
 
+        // Detect exam type for the selected package
+        $packageId    = $data['filter_exam_package_id'] ?? null;
+        $package      = $packageId ? ExamPackage::with('examType')->find($packageId) : null;
+        $isMansoskul  = $package?->examType?->evaluation_method === 'weighted';
+
         // Build filename
         $parts = ['Laporan_Hasil_Ujian_BAPETEN'];
-        if ($id = $data['filter_exam_package_id'] ?? null) {
-            $name = ExamPackage::find($id)?->title ?? '';
-            if ($name !== '') {
-                $parts[] = \Illuminate\Support\Str::slug($name, '_');
+        if ($package) {
+            $slug = \Illuminate\Support\Str::slug($package->title, '_');
+            if ($slug !== '') {
+                $parts[] = $slug;
             }
+        }
+        if ($isMansoskul) {
+            $parts[] = 'MANSOSKUL';
         }
         $parts[] = date('d-m-Y');
         $export->withFilename(implode('_', $parts));
 
-        // Define columns
+        // ── Base columns (same for all exam types) ──────────────────────
         $columns = [
             Column::make('nama')
                 ->heading('Nama Lengkap')
@@ -254,52 +263,127 @@ class ExportExamResultsHeaderAction
 
             Column::make('tgl_ujian')
                 ->heading('Tanggal Pelaksanaan')
-                ->getStateUsing(fn(ExamSession $record): string => $record->started_at ? $record->started_at->format('d/m/Y') : '-'),
+                ->getStateUsing(fn(ExamSession $record): string =>
+                $record->started_at ? $record->started_at->format('d/m/Y') : '-'),
 
             Column::make('waktu_mulai')
                 ->heading('Waktu Mulai')
-                ->getStateUsing(fn(ExamSession $record): string => $record->started_at ? $record->started_at->format('H:i') . ' WIB' : '-'),
+                ->getStateUsing(fn(ExamSession $record): string =>
+                $record->started_at ? $record->started_at->format('H:i') . ' WIB' : '-'),
 
             Column::make('waktu_selesai')
                 ->heading('Waktu Selesai')
-                ->getStateUsing(fn(ExamSession $record): string => $record->finished_at ? $record->finished_at->format('H:i') . ' WIB' : '-'),
+                ->getStateUsing(fn(ExamSession $record): string =>
+                $record->finished_at ? $record->finished_at->format('H:i') . ' WIB' : '-'),
 
             Column::make('durasi_ujian')
                 ->heading('Durasi Ujian')
                 ->getStateUsing(fn(ExamSession $record): string => self::formatDuration($record)),
         ];
 
-        // Statistik jawaban (opsional)
-        if ($includeStatistics) {
-            $columns[] = Column::make('jawaban_benar')
-                ->heading('Benar')
-                ->getStateUsing(fn(ExamSession $record): int => self::countCorrect($record));
+        if ($isMansoskul) {
+            // ── MANSOSKUL: per-unit dynamic columns ──────────────────────
+            $examSessionService = app(ExamSessionService::class);
 
-            $columns[] = Column::make('jawaban_salah')
-                ->heading('Salah')
-                ->getStateUsing(fn(ExamSession $record): int => self::countWrong($record));
+            // Discover unit names from package config
+            $unitNames = [];
+            if ($package && is_array($package->unit_scoring_configs)) {
+                foreach ($package->unit_scoring_configs as $unitConfig) {
+                    $unitNames[] = $unitConfig['unit_name'] ?? ('Unit ' . (count($unitNames) + 1));
+                }
+            }
 
-            $columns[] = Column::make('tidak_dijawab')
-                ->heading('Tidak Dijawab')
-                ->getStateUsing(fn(ExamSession $record): int => self::countUnanswered($record));
+            // Build per-unit columns dynamically
+            foreach ($unitNames as $unitIndex => $unitName) {
+                $idx = $unitIndex; // capture for closure
+
+                $columns[] = Column::make('unit_skor_' . $idx)
+                    ->heading('Skor ' . $unitName)
+                    ->getStateUsing(function (ExamSession $record) use ($examSessionService, $idx): string {
+                        $units = $examSessionService->calculateWeightedResult($record);
+                        $unit  = $units[$idx] ?? null;
+                        return $unit ? number_format((float) ($unit['total_score'] ?? 0), 2, '.', '') : '0.00';
+                    });
+
+                $columns[] = Column::make('unit_indikator_' . $idx)
+                    ->heading('Indikator ' . $unitName)
+                    ->getStateUsing(function (ExamSession $record) use ($examSessionService, $idx): string {
+                        $units = $examSessionService->calculateWeightedResult($record);
+                        $unit  = $units[$idx] ?? null;
+                        if (! $unit) {
+                            return '—';
+                        }
+                        return ($unit['achieved_indicator'] ?: '—')
+                            . ' ['
+                            . ($unit['is_passing'] ? 'KOMPETEN' : 'BELUM KOMPETEN')
+                            . ']';
+                    });
+            }
+
+            // Summary columns for Mansoskul
+            $columns[] = Column::make('unit_kompeten_summary')
+                ->heading('Unit Kompeten')
+                ->getStateUsing(function (ExamSession $record) use ($examSessionService): string {
+                    $units       = $examSessionService->calculateWeightedResult($record);
+                    $lulusCount  = collect($units)->filter(fn($u) => $u['is_passing'])->count();
+                    $totalCount  = count($units);
+                    return "{$lulusCount}/{$totalCount}";
+                });
+
+            $columns[] = Column::make('pelanggaran')
+                ->heading('Pelanggaran')
+                ->getStateUsing(fn(ExamSession $record): int => self::countViolations($record));
+
+            $columns[] = Column::make('total_score')
+                ->heading('Nilai Total Tertimbang');
+
+            $columns[] = Column::make('nab')
+                ->heading('NAB')
+                ->getStateUsing(fn(ExamSession $record): int|string =>
+                $record->examPackage->passing_grade ?? '-');
+
+            $columns[] = Column::make('status_kelulusan')
+                ->heading('Keterangan')
+                ->getStateUsing(fn(ExamSession $record): string =>
+                self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS');
+        } else {
+            // ── TEKNIS (correct_wrong): standard columns ──────────────────
+            if ($includeStatistics) {
+                $columns[] = Column::make('jawaban_benar')
+                    ->heading('Benar')
+                    ->getStateUsing(fn(ExamSession $record): int => self::countCorrect($record));
+
+                $columns[] = Column::make('jawaban_salah')
+                    ->heading('Salah')
+                    ->getStateUsing(fn(ExamSession $record): int => self::countWrong($record));
+
+                $columns[] = Column::make('tidak_dijawab')
+                    ->heading('Tidak Dijawab')
+                    ->getStateUsing(fn(ExamSession $record): int => self::countUnanswered($record));
+            }
+
+            $columns[] = Column::make('pelanggaran')
+                ->heading('Pelanggaran')
+                ->getStateUsing(fn(ExamSession $record): int => self::countViolations($record));
+
+            $columns[] = Column::make('total_score')
+                ->heading('Nilai Akhir');
+
+            $columns[] = Column::make('nab')
+                ->heading('Nilai Ambang Batas (NAB)')
+                ->getStateUsing(fn(ExamSession $record): int|string =>
+                $record->examPackage->passing_grade ?? '-');
+
+            $columns[] = Column::make('status_kelulusan')
+                ->heading('Keterangan')
+                ->getStateUsing(fn(ExamSession $record): string =>
+                self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS');
         }
 
-        // Kolom pelanggaran
-        $columns[] = Column::make('pelanggaran')
-            ->heading('Pelanggaran')
-            ->getStateUsing(fn(ExamSession $record): int => self::countViolations($record));
-
-        // Kolom nilai dan status
-        $columns[] = Column::make('total_score')
-            ->heading('Nilai Akhir');
-
-        $columns[] = Column::make('kkm')
-            ->heading('Nilai Kelulusan (KKM)')
-            ->getStateUsing(fn(ExamSession $record): int|string => $record->examPackage->passing_grade ?? '-');
-
-        $columns[] = Column::make('status_kelulusan')
-            ->heading('Keterangan')
-            ->getStateUsing(fn(ExamSession $record): string => self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS');
+        $export->setIsMansoskul($isMansoskul);
+        if ($isMansoskul) {
+            $export->setUnitCount(count($unitNames));
+        }
 
         $export->withColumns($columns);
 

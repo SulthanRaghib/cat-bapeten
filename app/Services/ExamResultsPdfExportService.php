@@ -12,9 +12,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Generates a printable PDF report from ExamSession (completed) records.
+ * Supports both Teknis (correct_wrong) and Mansoskul (weighted) exam types.
  */
 class ExamResultsPdfExportService
 {
+    public function __construct(
+        private readonly ExamSessionService $examSessionService,
+    ) {}
+
     /**
      * Build and stream a PDF download.
      */
@@ -23,33 +28,70 @@ class ExamResultsPdfExportService
         bool $includeStatistics = true,
         array $filterMeta = [],
     ): StreamedResponse {
-        $sessions->loadMissing(['user', 'examPackage', 'examParticipant', 'answers', 'activityLogs']);
+        $sessions->loadMissing([
+            'user',
+            'examPackage.examType',
+            'examParticipant',
+            'answers',
+            'activityLogs',
+        ]);
 
-        // Build stats for the report
-        $processed = $sessions->map(function (ExamSession $session) use ($includeStatistics) {
-            $totalQ = count($session->answers_meta ?? []);
-            if ($totalQ === 0) {
-                $totalQ = $session->examPackage?->questions()->count() ?? 0;
-            }
-
-            $answeredCount = $session->answers()
-                ->whereNotNull('answer')->where('answer', '!=', '')->count();
-            $correctCount = $session->answers()
-                ->where('score', '>', 0)
-                ->whereNotNull('answer')->where('answer', '!=', '')->count();
-            $wrongCount = $session->answers()
-                ->where('score', '<=', 0)
-                ->whereNotNull('answer')->where('answer', '!=', '')->count();
-            $unansweredCount = max(0, $totalQ - $answeredCount);
-
+        // Build per-session data row
+        $processed = $sessions->map(function (ExamSession $session) {
+            $evalMethod  = $session->examPackage?->examType?->evaluation_method ?? 'correct_wrong';
+            $isWeighted  = $evalMethod === 'weighted';
             $passingGrade = $session->examPackage->passing_grade ?? 0;
-            $isLulus = ($session->total_score ?? 0) >= $passingGrade;
 
             $violationCount = $session->activityLogs
                 ->whereIn('severity', ['warning', 'danger', 'critical'])
                 ->count();
 
+            if ($isWeighted) {
+                // ── Mansoskul: weighted per-unit scoring ─────────────
+                $unitResults = $this->examSessionService->calculateWeightedResult($session);
+                $allPassing  = !empty($unitResults)
+                    && collect($unitResults)->every(fn($u) => $u['is_passing']);
+                $isLulus = $allPassing && ($session->total_score ?? 0) >= $passingGrade;
+
+                return [
+                    'eval_method'   => 'weighted',
+                    'nama'          => $session->user?->name ?? '-',
+                    'nip'           => (string) ($session->user?->nip ?? '-'),
+                    'paket_ujian'   => $session->examPackage?->title ?? '-',
+                    'tanggal'       => $session->started_at ? $session->started_at->format('d/m/Y') : '-',
+                    'waktu_mulai'   => $session->started_at ? $session->started_at->format('H:i') . ' WIB' : '-',
+                    'waktu_selesai' => $session->finished_at ? $session->finished_at->format('H:i') . ' WIB' : '-',
+                    'durasi'        => $this->formatDuration($session),
+                    'pelanggaran'   => $violationCount,
+                    'nilai'         => $session->total_score ?? 0,
+                    'nab'           => $passingGrade,
+                    'status'        => $isLulus ? 'LULUS' : 'TIDAK LULUS',
+                    'is_lulus'      => $isLulus,
+                    // Mansoskul-specific
+                    'unit_results'       => $unitResults,
+                    'unit_lulus_count'   => collect($unitResults)->filter(fn($u) => $u['is_passing'])->count(),
+                    'unit_total_count'   => count($unitResults),
+                ];
+            }
+
+            // ── Teknis: correct/wrong scoring ──────────────────────────
+            $totalQ = count($session->answers_meta ?? []);
+            if ($totalQ === 0) {
+                $totalQ = $session->examPackage?->questions()->count() ?? 0;
+            }
+            $answeredCount = $session->answers()
+                ->whereNotNull('answer')->where('answer', '!=', '')->count();
+            $correctCount  = $session->answers()
+                ->where('score', '>', 0)
+                ->whereNotNull('answer')->where('answer', '!=', '')->count();
+            $wrongCount    = $session->answers()
+                ->where('score', '<=', 0)
+                ->whereNotNull('answer')->where('answer', '!=', '')->count();
+            $unansweredCount = max(0, $totalQ - $answeredCount);
+            $isLulus = ($session->total_score ?? 0) >= $passingGrade;
+
             return [
+                'eval_method'    => 'correct_wrong',
                 'nama'           => $session->user?->name ?? '-',
                 'nip'            => (string) ($session->user?->nip ?? '-'),
                 'paket_ujian'    => $session->examPackage?->title ?? '-',
@@ -63,24 +105,30 @@ class ExamResultsPdfExportService
                 'total_soal'     => $totalQ,
                 'pelanggaran'    => $violationCount,
                 'nilai'          => $session->total_score ?? 0,
-                'kkm'            => $passingGrade,
+                'nab'            => $passingGrade,
                 'status'         => $isLulus ? 'LULUS' : 'TIDAK LULUS',
                 'is_lulus'       => $isLulus,
             ];
         });
 
-        // Summary statistics
+        // Split by exam type for separate tables in PDF
+        $teknisResults     = $processed->filter(fn($r) => ($r['eval_method'] ?? '') !== 'weighted')->values();
+        $mansoskulResults  = $processed->filter(fn($r) => ($r['eval_method'] ?? '') === 'weighted')->values();
+
+        // Summary statistics (all sessions combined)
         $summary = [
-            'total_peserta'  => $processed->count(),
-            'jumlah_lulus'   => $processed->where('is_lulus', true)->count(),
-            'jumlah_gagal'   => $processed->where('is_lulus', false)->count(),
+            'total_peserta'   => $processed->count(),
+            'jumlah_lulus'    => $processed->where('is_lulus', true)->count(),
+            'jumlah_gagal'    => $processed->where('is_lulus', false)->count(),
             'rata_rata_nilai' => $processed->count() > 0 ? round($processed->avg('nilai'), 2) : 0,
             'nilai_tertinggi' => $processed->max('nilai') ?? 0,
             'nilai_terendah'  => $processed->min('nilai') ?? 0,
         ];
 
         $pdf = Pdf::loadView('exports.exam-results-pdf', [
-            'results'           => $processed,
+            'results'           => $processed,         // backward-compat
+            'teknis_results'    => $teknisResults,
+            'mansoskul_results' => $mansoskulResults,
             'includeStatistics' => $includeStatistics,
             'filterMeta'        => $filterMeta,
             'summary'           => $summary,
