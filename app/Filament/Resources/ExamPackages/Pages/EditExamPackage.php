@@ -10,7 +10,29 @@ class EditExamPackage extends EditRecord
 {
     protected static string $resource = ExamPackageResource::class;
 
-    protected static ?string $title = 'Edit Paket Ujian';
+    // Dynamic title showing the package name
+    public function getTitle(): string
+    {
+        return 'Edit: ' . ($this->record->name ?? 'Paket Ujian');
+    }
+
+    // Show exam type as a subheading badge
+    public function getSubheading(): ?string
+    {
+        $examType = $this->record->examType;
+
+        if (! $examType) {
+            return null;
+        }
+
+        $method = match ($examType->evaluation_method) {
+            'weighted' => 'Pembobotan (Mansoskul)',
+            'correct_wrong' => 'Benar/Salah (Teknis)',
+            default => $examType->evaluation_method,
+        };
+
+        return "Tipe Ujian: {$examType->name} — Metode: {$method}";
+    }
 
     protected function getHeaderActions(): array
     {
