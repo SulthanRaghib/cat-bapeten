@@ -24,6 +24,8 @@ class ExamResultsExcelExport extends ExcelExport
 {
     protected array $filterData = [];
     protected bool $includeStatistics = true;
+    protected bool $isMansoskul = false;
+    protected int  $unitCount   = 0;
 
     public function setFilterData(array $data): static
     {
@@ -34,6 +36,18 @@ class ExamResultsExcelExport extends ExcelExport
     public function setIncludeStatistics(bool $value): static
     {
         $this->includeStatistics = $value;
+        return $this;
+    }
+
+    public function setIsMansoskul(bool $value): static
+    {
+        $this->isMansoskul = $value;
+        return $this;
+    }
+
+    public function setUnitCount(int $count): static
+    {
+        $this->unitCount = $count;
         return $this;
     }
 
@@ -88,11 +102,15 @@ class ExamResultsExcelExport extends ExcelExport
 
     /**
      * Number of data columns.
-     * With statistics: A–N = 14 (added Pelanggaran).
-     * Without statistics: A–K = 11.
+     * Mansoskul: 7 base + 2*unitCount per-unit cols + 5 summary = 12 + 2*unitCount.
+     * Teknis with statistics: A–N = 14.
+     * Teknis without statistics: A–K = 11.
      */
     private function getColumnCount(): int
     {
+        if ($this->isMansoskul) {
+            return 12 + 2 * $this->unitCount;
+        }
         return $this->includeStatistics ? 14 : 11;
     }
 
@@ -103,12 +121,13 @@ class ExamResultsExcelExport extends ExcelExport
 
     public function registerEvents(): array
     {
-        $includeStats = $this->includeStatistics;
-        $filterData = $this->filterData;
+        $includeStats  = $this->includeStatistics;
+        $isMansoskul   = $this->isMansoskul;
+        $unitCount     = $this->unitCount;
 
         // Merge any parent events (e.g. RTL BeforeSheet)
         return array_merge(parent::registerEvents(), [
-            AfterSheet::class => function (AfterSheet $event) use ($includeStats): void {
+            AfterSheet::class => function (AfterSheet $event) use ($includeStats, $isMansoskul, $unitCount): void {
                 $sheet      = $event->sheet->getDelegate();
                 $colCount   = $this->getColumnCount();
                 $lastCol    = Coordinate::stringFromColumnIndex($colCount);
@@ -199,52 +218,99 @@ class ExamResultsExcelExport extends ExcelExport
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
-                    // ── 7. Numeric columns: integer / decimal formats ──────────
-                    // Column indices shift based on include_statistics toggle
-                    // With stats: H=Benar,I=Salah,J=TdkDijawab, K=Pelanggaran, L=Nilai, M=KKM, N=Keterangan
-                    // Without stats: H=Pelanggaran, I=Nilai, J=KKM, K=Keterangan
-                    $pelanggaranCol = $includeStats ? 'K' : 'H';
-                    $nilaiCol       = $includeStats ? 'L' : 'I';
-                    $kkmCol         = $includeStats ? 'M' : 'J';
-                    $keteranganCol  = $includeStats ? 'N' : 'K';
+                    // ── 7. Per-column formatting & colouring ────────────────────
+                    if ($isMansoskul) {
+                        // ── MANSOSKUL layout ──────────────────────────────────────
+                        // A-G: base cols (1-7)
+                        // H, J, L, ...: Skor unit[0], unit[1], ...  (col 8+2i)
+                        // I, K, M, ...: Indikator unit[0], unit[1], ...  (col 9+2i)
+                        // After units: UnitKompeten, Pelanggaran, Nilai, NAB, Keterangan
+                        $afterUnitsBase = 8 + 2 * $unitCount;   // 1-based col index of "Unit Kompeten"
+                        $unitKompetenCol = Coordinate::stringFromColumnIndex($afterUnitsBase);
+                        $pelanggaranCol  = Coordinate::stringFromColumnIndex($afterUnitsBase + 1);
+                        $nilaiCol        = Coordinate::stringFromColumnIndex($afterUnitsBase + 2);
+                        $nabCol          = Coordinate::stringFromColumnIndex($afterUnitsBase + 3);
+                        $keteranganCol   = Coordinate::stringFromColumnIndex($afterUnitsBase + 4);
 
-                    // Statistik columns (only when included): center align
-                    if ($includeStats) {
-                        foreach (['H', 'I', 'J'] as $statCol) {
-                            $statRange = "{$statCol}2:{$statCol}{$lastRow}";
-                            $sheet->getStyle($statRange)
-                                ->getNumberFormat()
-                                ->setFormatCode('0');
-                            $sheet->getStyle($statRange)
-                                ->getAlignment()
-                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        for ($u = 0; $u < $unitCount; $u++) {
+                            $skorCol      = Coordinate::stringFromColumnIndex(8 + 2 * $u);
+                            $indikatorCol = Coordinate::stringFromColumnIndex(9 + 2 * $u);
+
+                            // Skor col: decimal format + center + bold dark blue
+                            $sheet->getStyle("{$skorCol}2:{$skorCol}{$lastRow}")
+                                ->getNumberFormat()->setFormatCode('0.00');
+                            $sheet->getStyle("{$skorCol}2:{$skorCol}{$lastRow}")
+                                ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                            for ($row = 2; $row <= $lastRow; $row++) {
+                                $sheet->getStyle("{$skorCol}{$row}")->applyFromArray([
+                                    'font' => ['bold' => true, 'color' => ['rgb' => 'E67E22']],
+                                ]);
+                            }
+
+                            // Indikator col: green if KOMPETEN, red if BELUM KOMPETEN
+                            $sheet->getStyle("{$indikatorCol}2:{$indikatorCol}{$lastRow}")
+                                ->getAlignment()->setWrapText(true);
+                            for ($row = 2; $row <= $lastRow; $row++) {
+                                $val   = (string) $sheet->getCell("{$indikatorCol}{$row}")->getValue();
+                                // Contains "[KOMPETEN]" but NOT "[BELUM KOMPETEN]"
+                                $lulus = str_contains($val, '[KOMPETEN]') && !str_contains($val, '[BELUM KOMPETEN]');
+                                $sheet->getStyle("{$indikatorCol}{$row}")->applyFromArray([
+                                    'font' => [
+                                        'bold'  => true,
+                                        'color' => ['rgb' => $lulus ? '1A6B3C' : 'C0392B'],
+                                    ],
+                                ]);
+                            }
                         }
 
-                        // Color the stat columns
+                        // Unit Kompeten: center + green if all pass
+                        $sheet->getStyle("{$unitKompetenCol}2:{$unitKompetenCol}{$lastRow}")
+                            ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         for ($row = 2; $row <= $lastRow; $row++) {
-                            // Benar (H) → green
-                            $sheet->getStyle("H{$row}")->applyFromArray([
-                                'font' => ['color' => ['rgb' => '1A6B3C'], 'bold' => true],
+                            $val   = (string) $sheet->getCell("{$unitKompetenCol}{$row}")->getValue();
+                            // Format is "X/Y" — all pass when X === Y
+                            [$passed, $total] = array_pad(explode('/', $val), 2, '0');
+                            $allPass = (trim($passed) === trim($total)) && trim($total) !== '0';
+                            $sheet->getStyle("{$unitKompetenCol}{$row}")->applyFromArray([
+                                'font' => [
+                                    'bold'  => true,
+                                    'color' => ['rgb' => $allPass ? '1A6B3C' : 'C0392B'],
+                                ],
                             ]);
-                            // Salah (I) → red
-                            $sheet->getStyle("I{$row}")->applyFromArray([
-                                'font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true],
-                            ]);
-                            // Tidak Dijawab (J) → orange
-                            $sheet->getStyle("J{$row}")->applyFromArray([
-                                'font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true],
-                            ]);
+                        }
+                    } else {
+                        // ── TEKNIS layout ────────────────────────────────────────
+                        // With stats: H=Benar,I=Salah,J=TdkDijawab, K=Pelanggaran, L=Nilai, M=NAB, N=Keterangan
+                        // Without stats: H=Pelanggaran, I=Nilai, J=NAB, K=Keterangan
+                        $pelanggaranCol = $includeStats ? 'K' : 'H';
+                        $nilaiCol       = $includeStats ? 'L' : 'I';
+                        $nabCol         = $includeStats ? 'M' : 'J';
+                        $keteranganCol  = $includeStats ? 'N' : 'K';
+
+                        // Statistik columns (only when included): center align
+                        if ($includeStats) {
+                            foreach (['H', 'I', 'J'] as $statCol) {
+                                $statRange = "{$statCol}2:{$statCol}{$lastRow}";
+                                $sheet->getStyle($statRange)
+                                    ->getNumberFormat()->setFormatCode('0');
+                                $sheet->getStyle($statRange)
+                                    ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                            }
+                            for ($row = 2; $row <= $lastRow; $row++) {
+                                $sheet->getStyle("H{$row}")->applyFromArray(['font' => ['color' => ['rgb' => '1A6B3C'], 'bold' => true]]);
+                                $sheet->getStyle("I{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true]]);
+                                $sheet->getStyle("J{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true]]);
+                            }
                         }
                     }
 
-                    // Pelanggaran column: center + conditional red
+                    // ── Shared trailing columns (Pelanggaran, Nilai, NAB, Keterangan) ──
+                    // Pelanggaran: center + red if > 0
                     $pelanggaranRange = "{$pelanggaranCol}2:{$pelanggaranCol}{$lastRow}";
                     $sheet->getStyle($pelanggaranRange)
-                        ->getNumberFormat()
-                        ->setFormatCode('0');
+                        ->getNumberFormat()->setFormatCode('0');
                     $sheet->getStyle($pelanggaranRange)
-                        ->getAlignment()
-                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     for ($row = 2; $row <= $lastRow; $row++) {
                         $val = (int) $sheet->getCell("{$pelanggaranCol}{$row}")->getValue();
                         if ($val > 0) {
@@ -254,25 +320,30 @@ class ExamResultsExcelExport extends ExcelExport
                         }
                     }
 
-                    // Nilai Akhir: show up to 2 decimal places
+                    // Nilai: 2 decimal places + center
                     $nilaiRange = "{$nilaiCol}2:{$nilaiCol}{$lastRow}";
                     $sheet->getStyle($nilaiRange)
-                        ->getNumberFormat()
-                        ->setFormatCode('0.00');
+                        ->getNumberFormat()->setFormatCode('0.00');
                     $sheet->getStyle($nilaiRange)
-                        ->getAlignment()
-                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    // Color nilai red/green based on pass/fail (compare with NAB)
+                    for ($row = 2; $row <= $lastRow; $row++) {
+                        $nilai = (float) $sheet->getCell("{$nilaiCol}{$row}")->getValue();
+                        $nab   = (float) $sheet->getCell("{$nabCol}{$row}")->getValue();
+                        $pass  = $nilai >= $nab && $nab > 0;
+                        $sheet->getStyle("{$nilaiCol}{$row}")->applyFromArray([
+                            'font' => ['bold' => true, 'color' => ['rgb' => $pass ? '1A6B3C' : 'C0392B']],
+                        ]);
+                    }
 
-                    // KKM: whole number
-                    $kkmRange = "{$kkmCol}2:{$kkmCol}{$lastRow}";
-                    $sheet->getStyle($kkmRange)
-                        ->getNumberFormat()
-                        ->setFormatCode('0');
-                    $sheet->getStyle($kkmRange)
-                        ->getAlignment()
-                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    // NAB: whole number + center
+                    $nabRange = "{$nabCol}2:{$nabCol}{$lastRow}";
+                    $sheet->getStyle($nabRange)
+                        ->getNumberFormat()->setFormatCode('0');
+                    $sheet->getStyle($nabRange)
+                        ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                    // Keterangan: bold + conditional colour
+                    // Keterangan: bold + green/red
                     for ($row = 2; $row <= $lastRow; $row++) {
                         $cellVal = $sheet->getCell("{$keteranganCol}{$row}")->getValue();
                         $color   = $cellVal === 'LULUS' ? '1A6B3C' : 'C0392B';

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Laporan Hasil Ujian BAPETEN</title>
@@ -42,7 +43,6 @@
             margin-top: 4px;
         }
 
-        /* Filter meta */
         .filter-meta {
             margin-bottom: 10px;
             padding: 6px 10px;
@@ -92,9 +92,31 @@
             color: #1E3A5F;
         }
 
-        .summary-row .value.success { color: #1A6B3C; }
-        .summary-row .value.danger { color: #C0392B; }
-        .summary-row .value.warning { color: #E67E22; }
+        .summary-row .value.success {
+            color: #1A6B3C;
+        }
+
+        .summary-row .value.danger {
+            color: #C0392B;
+        }
+
+        /* Section heading */
+        .section-heading {
+            margin: 14px 0 6px;
+            padding: 5px 10px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+            border-radius: 3px;
+        }
+
+        .section-heading.teknis {
+            background: #1E3A5F;
+        }
+
+        .section-heading.mansoskul {
+            background: #6D28D9;
+        }
 
         /* Main data table */
         table.data-table {
@@ -114,6 +136,11 @@
             white-space: nowrap;
         }
 
+        table.data-table.mansoskul thead th {
+            background: #6D28D9;
+            border-color: #a78bfa;
+        }
+
         table.data-table tbody td {
             padding: 4px 4px;
             border: 1px solid #ddd;
@@ -125,13 +152,52 @@
             background: #f7f9fb;
         }
 
-        table.data-table tbody tr:hover {
-            background: #eef2f7;
+        table.data-table.mansoskul tbody tr:nth-child(even) {
+            background: #f5f3ff;
         }
 
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .text-left { text-align: left; }
+        /* Unit sub-table inside mansoskul rows */
+        .unit-subtable {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 3px 0;
+            font-size: 7.5px;
+        }
+
+        .unit-subtable th {
+            background: #ede9fe;
+            color: #4c1d95;
+            padding: 3px 4px;
+            border: 1px solid #c4b5fd;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .unit-subtable td {
+            padding: 3px 4px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        .unit-subtable tr.passing {
+            background: #f0fdf4;
+        }
+
+        .unit-subtable tr.failing {
+            background: #fff5f5;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-left {
+            text-align: left;
+        }
 
         .badge {
             display: inline-block;
@@ -152,9 +218,25 @@
             color: #C0392B;
         }
 
-        .stat-correct { color: #1A6B3C; font-weight: bold; }
-        .stat-wrong { color: #C0392B; font-weight: bold; }
-        .stat-unanswered { color: #E67E22; font-weight: bold; }
+        .badge-purple {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .stat-correct {
+            color: #1A6B3C;
+            font-weight: bold;
+        }
+
+        .stat-wrong {
+            color: #C0392B;
+            font-weight: bold;
+        }
+
+        .stat-unanswered {
+            color: #E67E22;
+            font-weight: bold;
+        }
 
         .footer {
             margin-top: 8px;
@@ -170,6 +252,7 @@
         }
     </style>
 </head>
+
 <body>
 
     {{-- ── HEADER ────────────────────────────────────────── --}}
@@ -180,10 +263,10 @@
     </div>
 
     {{-- ── FILTER META ───────────────────────────────────── --}}
-    @if(! empty($filterMeta))
+    @if (!empty($filterMeta))
         <div class="filter-meta">
             <strong>Filter Aktif:</strong>
-            @foreach($filterMeta as $key => $value)
+            @foreach ($filterMeta as $key => $value)
                 <span><strong>{{ $key }}:</strong> {{ $value }}</span>
             @endforeach
         </div>
@@ -221,63 +304,189 @@
         </table>
     </div>
 
-    {{-- ── DATA TABLE ───────────────────────────────────── --}}
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Nama Lengkap</th>
-                <th>NIP</th>
-                <th>Paket Ujian</th>
-                <th>Tanggal</th>
-                <th>Mulai</th>
-                <th>Selesai</th>
-                <th>Durasi</th>
-                @if($includeStatistics)
-                    <th>Benar</th>
-                    <th>Salah</th>
-                    <th>Kosong</th>
-                @endif
-                <th>Pelanggaran</th>
-                <th>Nilai</th>
-                <th>KKM</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($results as $index => $row)
+    {{-- ════════════════════════════════════════════════════
+         BAGIAN 1 : UJIAN TEKNIS (Benar / Salah)
+    ════════════════════════════════════════════════════ --}}
+    @if ($teknis_results->isNotEmpty())
+        <div class="section-heading teknis">
+            UJIAN TEKNIS — Penilaian Benar / Salah
+            ({{ $teknis_results->count() }} peserta)
+        </div>
+
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td class="text-left">{{ $row['nama'] }}</td>
-                    <td class="text-left">{{ $row['nip'] }}</td>
-                    <td class="text-left">{{ $row['paket_ujian'] }}</td>
-                    <td class="text-center">{{ $row['tanggal'] }}</td>
-                    <td class="text-center">{{ $row['waktu_mulai'] }}</td>
-                    <td class="text-center">{{ $row['waktu_selesai'] }}</td>
-                    <td class="text-center">{{ $row['durasi'] }}</td>
-                    @if($includeStatistics)
-                        <td class="text-center stat-correct">{{ $row['benar'] }}</td>
-                        <td class="text-center stat-wrong">{{ $row['salah'] }}</td>
-                        <td class="text-center stat-unanswered">{{ $row['tidak_dijawab'] }}</td>
+                    <th>No</th>
+                    <th>Nama Lengkap</th>
+                    <th>NIP</th>
+                    <th>Paket Ujian</th>
+                    <th>Tanggal</th>
+                    <th>Mulai</th>
+                    <th>Selesai</th>
+                    <th>Durasi</th>
+                    @if ($includeStatistics)
+                        <th>Benar</th>
+                        <th>Salah</th>
+                        <th>Kosong</th>
                     @endif
-                    <td class="text-center" style="{{ $row['pelanggaran'] > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">{{ $row['pelanggaran'] }}</td>
-                    <td class="text-center" style="font-weight: bold;">{{ $row['nilai'] }}</td>
-                    <td class="text-center">{{ $row['kkm'] }}</td>
-                    <td class="text-center">
-                        <span class="badge {{ $row['is_lulus'] ? 'badge-success' : 'badge-danger' }}">
-                            {{ $row['status'] }}
-                        </span>
-                    </td>
+                    <th>Pelanggaran</th>
+                    <th>Nilai</th>
+                    <th>NAB</th>
+                    <th>Status</th>
                 </tr>
-            @empty
+            </thead>
+            <tbody>
+                @forelse($teknis_results as $index => $row)
+                    <tr>
+                        <td class="text-center">{{ $index + 1 }}</td>
+                        <td class="text-left">{{ $row['nama'] }}</td>
+                        <td class="text-left">{{ $row['nip'] }}</td>
+                        <td class="text-left">{{ $row['paket_ujian'] }}</td>
+                        <td class="text-center">{{ $row['tanggal'] }}</td>
+                        <td class="text-center">{{ $row['waktu_mulai'] }}</td>
+                        <td class="text-center">{{ $row['waktu_selesai'] }}</td>
+                        <td class="text-center">{{ $row['durasi'] }}</td>
+                        @if ($includeStatistics)
+                            <td class="text-center stat-correct">{{ $row['benar'] ?? 0 }}</td>
+                            <td class="text-center stat-wrong">{{ $row['salah'] ?? 0 }}</td>
+                            <td class="text-center stat-unanswered">{{ $row['tidak_dijawab'] ?? 0 }}</td>
+                        @endif
+                        <td class="text-center"
+                            style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">
+                            {{ $row['pelanggaran'] ?? 0 }}
+                        </td>
+                        <td class="text-center" style="font-weight: bold;">{{ $row['nilai'] }}</td>
+                        <td class="text-center">{{ $row['nab'] }}</td>
+                        <td class="text-center">
+                            <span class="badge {{ $row['is_lulus'] ? 'badge-success' : 'badge-danger' }}">
+                                {{ $row['status'] }}
+                            </span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="{{ $includeStatistics ? 15 : 12 }}" class="text-center"
+                            style="padding: 12px; color: #999;">
+                            Tidak ada data ujian teknis.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    @endif
+
+    {{-- ════════════════════════════════════════════════════
+         BAGIAN 2 : UJIAN MANSOSKUL (Pembobotan per Unit)
+    ════════════════════════════════════════════════════ --}}
+    @if ($mansoskul_results->isNotEmpty())
+        <div class="section-heading mansoskul">
+            UJIAN MANSOSKUL — Penilaian Pembobotan Nilai per Unit
+            ({{ $mansoskul_results->count() }} peserta)
+        </div>
+
+        <table class="data-table mansoskul">
+            <thead>
                 <tr>
-                    <td colspan="{{ $includeStatistics ? 15 : 12 }}" class="text-center" style="padding: 20px; color: #999;">
-                        Tidak ada data hasil ujian yang ditemukan.
-                    </td>
+                    <th>No</th>
+                    <th>Nama Lengkap</th>
+                    <th>NIP</th>
+                    <th>Paket Ujian</th>
+                    <th>Tanggal</th>
+                    <th>Mulai</th>
+                    <th>Selesai</th>
+                    <th>Pelanggaran</th>
+                    <th>Nilai Total</th>
+                    <th>NAB</th>
+                    <th>Unit Kompeten</th>
+                    <th>Status</th>
+                    <th style="min-width:220px;">Rincian Nilai per Unit</th>
                 </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($mansoskul_results as $index => $row)
+                    <tr>
+                        <td class="text-center">{{ $index + 1 }}</td>
+                        <td class="text-left">{{ $row['nama'] }}</td>
+                        <td class="text-left">{{ $row['nip'] }}</td>
+                        <td class="text-left">{{ $row['paket_ujian'] }}</td>
+                        <td class="text-center">{{ $row['tanggal'] }}</td>
+                        <td class="text-center">{{ $row['waktu_mulai'] }}</td>
+                        <td class="text-center">{{ $row['waktu_selesai'] }}</td>
+                        <td class="text-center"
+                            style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">
+                            {{ $row['pelanggaran'] ?? 0 }}
+                        </td>
+                        <td class="text-center" style="font-weight: bold;">
+                            {{ number_format((float) ($row['nilai'] ?? 0), 2, ',', '.') }}
+                        </td>
+                        <td class="text-center">{{ $row['nab'] }}</td>
+                        {{-- Unit kompeten progress --}}
+                        <td class="text-center">
+                            <span
+                                style="font-weight:bold; color: {{ ($row['unit_lulus_count'] ?? 0) === ($row['unit_total_count'] ?? 0) ? '#1A6B3C' : '#C0392B' }}">
+                                {{ $row['unit_lulus_count'] ?? 0 }}/{{ $row['unit_total_count'] ?? 0 }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {{ $row['is_lulus'] ? 'badge-success' : 'badge-danger' }}">
+                                {{ $row['status'] }}
+                            </span>
+                        </td>
+                        {{-- Per-unit sub table --}}
+                        <td>
+                            @if (!empty($row['unit_results']))
+                                <table class="unit-subtable">
+                                    <thead>
+                                        <tr>
+                                            <th>Unit</th>
+                                            <th>Skor</th>
+                                            <th>Indikator Dicapai</th>
+                                            <th>Kompetensi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($row['unit_results'] as $unit)
+                                            <tr class="{{ $unit['is_passing'] ? 'passing' : 'failing' }}">
+                                                <td class="text-left">{{ $unit['unit_name'] }}</td>
+                                                <td class="text-center"
+                                                    style="font-weight:bold; color:{{ $unit['is_passing'] ? '#1A6B3C' : '#C0392B' }}">
+                                                    {{ number_format((float) ($unit['total_score'] ?? 0), 2, ',', '.') }}
+                                                </td>
+                                                <td class="text-left" style="color: #6D28D9;">
+                                                    {{ $unit['achieved_indicator'] ?: '—' }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <span
+                                                        style="font-weight:bold; color:{{ $unit['is_passing'] ? '#1A6B3C' : '#C0392B' }}">
+                                                        {{ $unit['is_passing'] ? 'KOMPETEN' : 'BELUM' }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <span style="color:#999; font-style:italic;">—</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="13" class="text-center" style="padding: 12px; color: #999;">
+                            Tidak ada data ujian mansoskul.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    @endif
+
+    {{-- Show generic table only if both result sets are empty (backward-compat fallback) --}}
+    @if ($teknis_results->isEmpty() && $mansoskul_results->isEmpty())
+        <p style="text-align:center; color:#999; padding:20px; font-style:italic;">
+            Tidak ada data hasil ujian yang ditemukan.
+        </p>
+    @endif
 
     {{-- ── FOOTER ───────────────────────────────────────── --}}
     <div class="footer">
@@ -287,4 +496,5 @@
     </div>
 
 </body>
+
 </html>
