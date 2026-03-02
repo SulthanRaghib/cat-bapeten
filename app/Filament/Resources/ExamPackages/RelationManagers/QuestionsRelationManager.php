@@ -10,6 +10,7 @@ use App\Models\ExamType;
 use App\Models\Question;
 use App\Models\QuestionSubUnit;
 use App\Models\QuestionUnit;
+use App\Services\NabSyncService;
 use Filament\Actions\Action;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
@@ -165,14 +166,16 @@ class QuestionsRelationManager extends RelationManager
                     ->label('Hapus Soal')
                     ->modalHeading('Hapus Soal dari Paket')
                     ->modalDescription('Soal ini akan dihapus dari paket ujian, tetapi tetap ada di Bank Soal.')
-                    ->modalSubmitActionLabel('Ya, Hapus'),
+                    ->modalSubmitActionLabel('Ya, Hapus')
+                    ->after(fn() => $this->syncNabAfterChange()),
             ])
             ->toolbarActions([
                 DetachBulkAction::make()
                     ->label('Hapus Soal Terpilih')
                     ->modalHeading('Hapus Soal Terpilih')
                     ->modalDescription('Hapus soal-soal terpilih dari paket ujian ini?')
-                    ->modalSubmitActionLabel('Ya, Hapus'),
+                    ->modalSubmitActionLabel('Ya, Hapus')
+                    ->after(fn() => $this->syncNabAfterChange()),
             ])
             ->reorderable('sort_order');
     }
@@ -486,6 +489,9 @@ class QuestionsRelationManager extends RelationManager
 
         $pkg->questions()->attach($idsToAttach->toArray());
 
+        // Auto-sync NAB config after adding questions
+        $this->syncNabAfterChange();
+
         Notification::make()
             ->title('Berhasil')
             ->body("Berhasil menambahkan {$idsToAttach->count()} soal secara acak ke paket ujian.")
@@ -640,6 +646,22 @@ class QuestionsRelationManager extends RelationManager
             'medium' => (clone $query)->where('category', 'medium')->count(),
             'hard'   => (clone $query)->where('category', 'hard')->count(),
         ];
+    }
+
+    /**
+     * Auto-sync `unit_scoring_configs` after any question attach/detach.
+     * Only runs for Mansoskul (weighted) exam packages.
+     */
+    protected function syncNabAfterChange(): void
+    {
+        /** @var ExamPackage $pkg */
+        $pkg = $this->getOwnerRecord();
+
+        if ($pkg->examType?->evaluation_method !== 'weighted') {
+            return;
+        }
+
+        app(NabSyncService::class)->smartSync($pkg);
     }
 
     /**

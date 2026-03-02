@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\ExamPackages\RelationManagers;
 
 use App\Models\ExamPackage;
-use App\Models\QuestionUnit;
-use App\Models\QuestionUnitIndicator;
+use App\Services\NabSyncService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -14,7 +13,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\RenderHook;
@@ -31,17 +29,15 @@ use Illuminate\Database\Eloquent\Model;
  * Repeater-based form that manages the JSON `unit_scoring_configs`
  * column on ExamPackage.
  *
- * State management:
- *   - A public Livewire property `$nabData` holds the form state
- *   - A Group with `statePath('nabData')` scopes all components to this property
- *   - On mount(), we auto-sync from master data if no config exists yet
+ * Bidirectional sync architecture:
+ *   - Units are DRIVEN by questions in the "Soal Ujian" tab
+ *   - Indicator edits here propagate BACK to Master Data (`question_unit_indicators`)
+ *   - On mount(), Smart Sync loads fresh data from master
+ *   - On save, changes are written to both JSON and master table
  *
- * Features:
- *  – Auto-sync from master data on first tab open (if empty)
- *  – "⚡ Sync dari Soal" button for manual re-sync
- *  – "💾 Simpan Konfigurasi" persists inline edits
- *  – Full inline editing of indicator levels per unit
- *  – Conditionally hidden for non-weighted (Teknis) exam types
+ * Buttons:
+ *  – "🔄 Sinkronkan" Smart Sync: refresh units from attached questions
+ *  – "💾 Simpan" Persist edits to JSON + sync back to Master Data
  */
 class NabConfigurationRelationManager extends RelationManager
 {
@@ -52,8 +48,6 @@ class NabConfigurationRelationManager extends RelationManager
     /**
      * Livewire state property — all form components bind to this
      * via Group::make()->statePath('nabData').
-     *
-     * @var array{unit_scoring_configs: array<int, array>}
      */
     public array $nabData = [];
 
@@ -64,7 +58,7 @@ class NabConfigurationRelationManager extends RelationManager
         return $ownerRecord->examType?->evaluation_method === 'weighted';
     }
 
-    // ── Mount: auto-sync from master data if no config exists yet ──
+    // ── Mount: always Smart Sync to ensure data is fresh from master ──
     public function mount(): void
     {
         parent::mount();
@@ -79,88 +73,120 @@ class NabConfigurationRelationManager extends RelationManager
                 $this->getTabsContentComponent(),
                 RenderHook::make(PanelsRenderHook::RESOURCE_RELATION_MANAGER_BEFORE),
 
-                // ── Wrap everything in a Group scoped to our Livewire property ──
                 Group::make()
                     ->statePath('nabData')
                     ->schema([
                         Section::make('Konfigurasi NAB & Kelulusan')
-                            ->description('Kelola konfigurasi penilaian per-unit untuk paket Mansoskul ini. Gunakan "⚡ Sync dari Soal" untuk me-refresh dari Master Data.')
+                            ->description(
+                                'Daftar unit ditentukan otomatis dari soal di tab "Soal Ujian".'
+                                    . ' Perubahan indikator di sini akan tersimpan ke Master Data saat klik "💾 Simpan".'
+                            )
                             ->icon('heroicon-o-adjustments-horizontal')
+                            ->headerActions([
+                                // ── Smart Sync: refresh units from questions ──
+                                Action::make('syncFromQuestions')
+                                    ->label('🔄 Sinkronkan')
+                                    ->icon('heroicon-o-arrow-path')
+                                    ->color('warning')
+                                    ->action(function (): void {
+                                        /** @var ExamPackage $record */
+                                        $record = $this->getOwnerRecord();
+
+                                        $result = app(NabSyncService::class)->smartSync($record);
+
+                                        if (empty($result['configs'])) {
+                                            Notification::make()
+                                                ->warning()
+                                                ->title('Tidak ada soal terkait')
+                                                ->body('Pastikan soal sudah ditambahkan di tab "Soal Ujian" dan setiap soal memiliki Unit.')
+                                                ->send();
+
+                                            return;
+                                        }
+
+                                        // Build descriptive notification
+                                        $parts = [];
+                                        if ($result['added'] > 0) {
+                                            $parts[] = "{$result['added']} unit baru ditambahkan";
+                                        }
+                                        if ($result['removed'] > 0) {
+                                            $parts[] = "{$result['removed']} unit tidak relevan dihapus";
+                                        }
+                                        if ($result['kept'] > 0) {
+                                            $parts[] = "{$result['kept']} unit dipertahankan";
+                                        }
+
+                                        $hasChanges = $result['added'] > 0 || $result['removed'] > 0;
+
+                                        Notification::make()
+                                            ->color($hasChanges ? 'success' : 'info')
+                                            ->title($hasChanges ? 'Sinkronisasi Berhasil' : 'Data Sudah Sinkron')
+                                            ->body(
+                                                $hasChanges
+                                                    ? implode(', ', $parts) . '. Total: ' . count($result['configs']) . ' unit.'
+                                                    : 'Semua unit sudah sesuai dengan soal yang ada (' . count($result['configs']) . ' unit). Tidak ada perubahan.'
+                                            )
+                                            ->send();
+
+                                        // Force page reload — Repeater caches child schemas in PHP
+                                        $this->js('setTimeout(() => window.location.reload(), 600)');
+                                    }),
+
+                                // ── Save & sync to Master Data ──
+                                Action::make('saveNabConfig')
+                                    ->label('💾 Simpan')
+                                    ->icon('heroicon-o-check-circle')
+                                    ->color('primary')
+                                    ->action(function (): void {
+                                        $configs = collect($this->nabData['unit_scoring_configs'] ?? [])
+                                            ->values()
+                                            ->map(function (array $unit): array {
+                                                $unit['indicators'] = array_values($unit['indicators'] ?? []);
+
+                                                return $unit;
+                                            })
+                                            ->toArray();
+
+                                        /** @var ExamPackage $record */
+                                        $record = $this->getOwnerRecord();
+
+                                        // Bidirectional sync: save to JSON + propagate to master data
+                                        $result = app(NabSyncService::class)->saveWithMasterSync($record, $configs);
+
+                                        // Build notification message
+                                        $parts = [];
+                                        if ($result['updated'] > 0) {
+                                            $parts[] = "{$result['updated']} diperbarui";
+                                        }
+                                        if ($result['created'] > 0) {
+                                            $parts[] = "{$result['created']} ditambahkan";
+                                        }
+                                        if ($result['deleted'] > 0) {
+                                            $parts[] = "{$result['deleted']} dihapus";
+                                        }
+
+                                        $detail = ! empty($parts)
+                                            ? ' Indikator master: ' . implode(', ', $parts) . '.'
+                                            : '';
+
+                                        Notification::make()
+                                            ->success()
+                                            ->title('Tersimpan')
+                                            ->body('Konfigurasi NAB & Kelulusan berhasil disimpan.' . $detail)
+                                            ->send();
+
+                                        // Reload to reflect fresh indicator_ids
+                                        $this->js('setTimeout(() => window.location.reload(), 600)');
+                                    }),
+                            ])
                             ->schema([
-                                // ── Action Buttons ──
-                                Actions::make([
-                                    Action::make('syncFromQuestions')
-                                        ->label('⚡ Sync dari Soal')
-                                        ->icon('heroicon-o-arrow-path')
-                                        ->color('warning')
-                                        ->requiresConfirmation()
-                                        ->modalHeading('Sinkronisasi Konfigurasi NAB')
-                                        ->modalDescription('Ini akan menimpa seluruh konfigurasi NAB yang ada dengan template default dari Master Data Unit. Lanjutkan?')
-                                        ->modalSubmitActionLabel('Ya, Sinkronkan')
-                                        ->action(function (): void {
-                                            $configs = $this->buildConfigsFromMasterData();
-
-                                            if (empty($configs)) {
-                                                Notification::make()
-                                                    ->warning()
-                                                    ->title('Tidak ada soal terkait')
-                                                    ->body('Pastikan soal sudah ditambahkan di tab "Soal Ujian" dan setiap soal memiliki Unit.')
-                                                    ->send();
-
-                                                return;
-                                            }
-
-                                            // Persist to DB
-                                            $this->getOwnerRecord()->update(['unit_scoring_configs' => $configs]);
-
-                                            // Update local state (in case reload is delayed)
-                                            $this->nabData = ['unit_scoring_configs' => $configs];
-
-                                            Notification::make()
-                                                ->success()
-                                                ->title('Berhasil Disinkronisasi')
-                                                ->body('Konfigurasi NAB berhasil disinkronisasi dari ' . count($configs) . ' unit soal. Halaman akan di-refresh...')
-                                                ->send();
-
-                                            // Force page reload to rebuild Repeater items from fresh DB state.
-                                            // The Repeater caches child schemas in PHP; $set() inside a content()
-                                            // override can't clear that cache reliably, so we reload to re-mount.
-                                            $this->js('setTimeout(() => window.location.reload(), 600)');
-                                        }),
-
-                                    Action::make('saveNabConfig')
-                                        ->label('💾 Simpan Konfigurasi')
-                                        ->icon('heroicon-o-check-circle')
-                                        ->color('primary')
-                                        ->action(function (): void {
-                                            // Read directly from the Livewire property (wire:model keeps it in sync).
-                                            // Strip Repeater UUID keys so we store clean numeric arrays in JSON.
-                                            $configs = collect($this->nabData['unit_scoring_configs'] ?? [])
-                                                ->values()
-                                                ->map(function (array $unit): array {
-                                                    $unit['indicators'] = array_values($unit['indicators'] ?? []);
-
-                                                    return $unit;
-                                                })
-                                                ->toArray();
-
-                                            $this->getOwnerRecord()->update(['unit_scoring_configs' => $configs]);
-
-                                            Notification::make()
-                                                ->success()
-                                                ->title('Tersimpan')
-                                                ->body('Konfigurasi NAB & Kelulusan berhasil disimpan.')
-                                                ->send();
-                                        }),
-                                ]),
-
-                                // ── Outer Repeater: one item per Unit ──
                                 Repeater::make('unit_scoring_configs')
                                     ->label('')
                                     ->addable(false)
-                                    ->deletable(true)
+                                    ->deletable(false)
                                     ->reorderable(false)
                                     ->defaultItems(0)
+                                    ->helperText('Unit ditentukan oleh soal di tab "Soal Ujian". Untuk menambah/menghapus unit, kelola soal terlebih dahulu, lalu klik "🔄 Sinkronkan".')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             TextInput::make('unit_name')
@@ -172,14 +198,17 @@ class NabConfigurationRelationManager extends RelationManager
                                             Hidden::make('question_unit_id'),
                                         ]),
 
-                                        // ── Inner Repeater: indicator levels per unit ──
                                         Repeater::make('indicators')
                                             ->label('Level Indikator')
                                             ->addActionLabel('+ Tambah Indikator')
                                             ->collapsible()
                                             ->cloneable()
                                             ->defaultItems(0)
+                                            ->deletable(true)
+                                            ->helperText('Perubahan indikator akan tersinkron ke Master Data saat disimpan.')
                                             ->schema([
+                                                Hidden::make('indicator_id'),
+
                                                 Grid::make(4)->schema([
                                                     TextInput::make('name')
                                                         ->label('Nama Indikator')
@@ -217,7 +246,7 @@ class NabConfigurationRelationManager extends RelationManager
             ]);
     }
 
-    // ── Unused but required by RelationManager contract ──
+    // ── Required by RelationManager contract ──
     public function table(Table $table): Table
     {
         return $table->columns([])->paginated(false);
@@ -228,69 +257,29 @@ class NabConfigurationRelationManager extends RelationManager
         return $form->schema([]);
     }
 
-    // ─── Load state from DB, auto-sync if empty ────────────────────────
+    // ─── Load state from DB — always Smart Sync on mount ───────────────
 
     protected function loadNabData(): void
     {
         /** @var ExamPackage $record */
         $record = $this->getOwnerRecord();
-        $configs = $record->unit_scoring_configs;
 
-        // Auto-sync from master data if no config exists yet
-        if (empty($configs)) {
-            $configs = $this->buildConfigsFromMasterData();
+        // Always run Smart Sync on mount to ensure data is fresh from master
+        $result = app(NabSyncService::class)->smartSync($record);
 
-            if (! empty($configs)) {
-                $record->update(['unit_scoring_configs' => $configs]);
+        $configs = $result['configs'];
 
-                Notification::make()
-                    ->info()
-                    ->title('Auto-Sync')
-                    ->body('Konfigurasi NAB otomatis di-sync dari ' . count($configs) . ' unit soal.')
-                    ->send();
-            }
+        // Only notify on first auto-sync (when units were added from scratch)
+        if ($result['added'] > 0 && $result['kept'] === 0 && ! empty($configs)) {
+            Notification::make()
+                ->info()
+                ->title('Auto-Sync')
+                ->body('Konfigurasi NAB otomatis di-sync dari ' . count($configs) . ' unit soal.')
+                ->send();
         }
 
         $this->nabData = [
-            'unit_scoring_configs' => $configs ?? [],
+            'unit_scoring_configs' => $configs,
         ];
-    }
-
-    // ─── Build config array from master data (questions → units → indicators) ──
-
-    protected function buildConfigsFromMasterData(): array
-    {
-        /** @var ExamPackage $record */
-        $record = $this->getOwnerRecord()->fresh();
-
-        $unitIds = $record->questions()
-            ->whereNotNull('questions.question_unit_id')
-            ->pluck('questions.question_unit_id')
-            ->unique()
-            ->values()
-            ->toArray();
-
-        if (empty($unitIds)) {
-            return [];
-        }
-
-        $units = QuestionUnit::with('indicators')
-            ->whereIn('id', $unitIds)
-            ->orderBy('name')
-            ->get();
-
-        return $units->map(fn(QuestionUnit $unit): array => [
-            'question_unit_id' => $unit->id,
-            'unit_name'        => $unit->name,
-            'indicators'       => $unit->indicators
-                ->map(fn(QuestionUnitIndicator $ind): array => [
-                    'name'       => $ind->name,
-                    'min_score'  => $ind->min_score,
-                    'max_score'  => $ind->max_score,
-                    'is_passing' => $ind->is_passing,
-                ])
-                ->values()
-                ->toArray(),
-        ])->values()->toArray();
     }
 }
