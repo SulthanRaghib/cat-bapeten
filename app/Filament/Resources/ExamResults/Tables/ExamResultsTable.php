@@ -48,6 +48,7 @@ class ExamResultsTable
     {
         return $table
             ->recordUrl(null)
+            ->poll('5s')
             ->defaultSort('finished_at', 'desc')
             // ── Purple left-border stripe for Mansoskul, subtle blue for Teknis
             ->recordClasses(

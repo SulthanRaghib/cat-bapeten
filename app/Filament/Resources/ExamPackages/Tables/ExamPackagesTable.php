@@ -18,6 +18,7 @@ class ExamPackagesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('title')
                     ->label('Judul Ujian')
@@ -83,7 +84,8 @@ class ExamPackagesTable
                     Action::make('edit_konfigurasi_nab_dan_kelulusan')
                         ->label('Edit Konfigurasi NAB & Kelulusan')
                         ->icon('heroicon-m-cog-6-tooth')
-                        ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=1")),
+                        ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=1"))
+                        ->visible(fn($record) => $record->examType?->evaluation_method === 'weighted'),
 
                     Action::make('edit_participants')
                         ->label('Edit Peserta Ujian')
