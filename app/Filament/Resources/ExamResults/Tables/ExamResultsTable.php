@@ -5,6 +5,8 @@ namespace App\Filament\Resources\ExamResults\Tables;
 use App\Filament\Actions\DownloadBapAction;
 use App\Filament\Actions\ExportExamResultsHeaderAction;
 use App\Models\ExamSession;
+use App\Models\ExamType;
+use App\Services\ExamSessionService;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
@@ -44,6 +46,13 @@ class ExamResultsTable
         return $table
             ->recordUrl(null)
             ->defaultSort('finished_at', 'desc')
+            // ── Purple left-border stripe for Mansoskul, subtle blue for Teknis
+            ->recordClasses(
+                fn(ExamSession $record): string =>
+                $record->examPackage?->examType?->evaluation_method === 'weighted'
+                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
+                    : 'border-s-[3px] border-info-400 dark:border-info-500'
+            )
             ->columns([
 
                 // ── 1. Peserta ───────────────────────────────────────────
@@ -57,14 +66,30 @@ class ExamResultsTable
                 // ── 2. Paket Ujian ───────────────────────────────────────
                 TextColumn::make('examPackage.title')
                     ->label('Paket Ujian')
-                    ->description(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
-                        'weighted'      => '📊 Mansoskul (Pembobotan)',
-                        'correct_wrong' => '✅ Teknis (Benar/Salah)',
-                        default         => '—',
-                    })
                     ->sortable()
                     ->searchable()
                     ->wrap(),
+
+                // ── 2b. Tipe Ujian badge ────────────────────────────────
+                TextColumn::make('tipe_ujian')
+                    ->label('Tipe')
+                    ->badge()
+                    ->state(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
+                        'weighted'      => 'Mansoskul',
+                        'correct_wrong' => 'Teknis',
+                        default         => 'Lainnya',
+                    })
+                    ->color(fn(string $state): string => match ($state) {
+                        'Mansoskul' => 'primary',   // purple
+                        'Teknis'    => 'info',       // blue
+                        default     => 'gray',
+                    })
+                    ->icon(fn(string $state): string => match ($state) {
+                        'Mansoskul' => 'heroicon-m-chart-bar',
+                        'Teknis'    => 'heroicon-m-check-badge',
+                        default     => 'heroicon-m-question-mark-circle',
+                    })
+                    ->alignCenter(),
 
                 // ── 3. Tanggal & Waktu Ujian ─────────────────────────────
                 TextColumn::make('started_at')
@@ -85,49 +110,79 @@ class ExamResultsTable
                     ->state(fn(ExamSession $record): string => self::formatDuration($record))
                     ->color('gray'),
 
-                // ── 5. Statistik Jawaban: Benar ──────────────────────────
+                // ── 5. Statistik Jawaban / Unit Kompeten ──────────────────────
+                // Teknis → Benar (hijau)
+                // Mansoskul → Jumlah unit lulus (ungu)
                 TextColumn::make('jawaban_benar')
-                    ->label('Benar')
+                    ->label('Benar / Unit ✓')
                     ->icon(fn(ExamSession $record): string =>
                     $record->examPackage?->examType?->evaluation_method === 'weighted'
-                        ? 'heroicon-m-minus-circle'
+                        ? 'heroicon-m-squares-2x2'
                         : 'heroicon-m-check-circle')
                     ->state(function (ExamSession $record): string {
                         if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
-                            return '—';
+                            $units    = app(ExamSessionService::class)->calculateWeightedResult($record);
+                            $lulus    = collect($units)->filter(fn($u) => $u['is_passing'])->count();
+                            $total    = count($units);
+                            return "{$lulus}/{$total}";
                         }
                         return (string) $record->answers()->where('score', '>', 0)
                             ->whereNotNull('answer')->where('answer', '!=', '')->count();
                     })
-                    ->color(fn(string $state): string => $state === '—' ? 'gray' : 'success')
+                    ->description(
+                        fn(ExamSession $record): ?string =>
+                        $record->examPackage?->examType?->evaluation_method === 'weighted'
+                            ? 'unit kompeten'
+                            : null
+                    )
+                    ->color(function (ExamSession $record, string $state): string {
+                        if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
+                            [$l, $t] = explode('/', $state . '/0');
+                            return ((int) $l === (int) $t && (int) $t > 0) ? 'success' : 'warning';
+                        }
+                        return 'success';
+                    })
+                    ->weight(
+                        fn(ExamSession $record): string =>
+                        $record->examPackage?->examType?->evaluation_method === 'weighted' ? 'bold' : 'medium'
+                    )
                     ->alignCenter()
                     ->toggleable(),
 
-                // ── 6. Statistik Jawaban: Salah ──────────────────────────
+                // ── 6. Statistik Jawaban: Salah / Unit ✕ ──────────────────────
                 TextColumn::make('jawaban_salah')
-                    ->label('Salah')
+                    ->label('Salah / Unit ✗')
                     ->icon(fn(ExamSession $record): string =>
                     $record->examPackage?->examType?->evaluation_method === 'weighted'
-                        ? 'heroicon-m-minus-circle'
+                        ? 'heroicon-m-x-circle'
                         : 'heroicon-m-x-circle')
                     ->state(function (ExamSession $record): string {
                         if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
-                            return '—';
+                            $units  = app(ExamSessionService::class)->calculateWeightedResult($record);
+                            $gagal  = collect($units)->filter(fn($u) => !$u['is_passing'])->count();
+                            return $gagal > 0 ? (string) $gagal : '—';
                         }
                         return (string) $record->answers()->where('score', '<=', 0)
                             ->whereNotNull('answer')->where('answer', '!=', '')->count();
                     })
-                    ->color(fn(string $state): string => $state === '—' ? 'gray' : 'danger')
+                    ->description(
+                        fn(ExamSession $record): ?string =>
+                        $record->examPackage?->examType?->evaluation_method === 'weighted'
+                            ? 'unit belum kompeten'
+                            : null
+                    )
+                    ->color(function (ExamSession $record, string $state): string {
+                        if ($state === '—') return 'gray';
+                        if ($record->examPackage?->examType?->evaluation_method === 'weighted') return 'danger';
+                        return 'danger';
+                    })
                     ->alignCenter()
                     ->toggleable(),
 
                 // ── 7. Statistik Jawaban: Tidak Dijawab ──────────────────
                 TextColumn::make('tidak_dijawab')
                     ->label('Kosong')
-                    ->icon(fn(ExamSession $record): string =>
-                    $record->examPackage?->examType?->evaluation_method === 'weighted'
-                        ? 'heroicon-m-minus-circle'
-                        : 'heroicon-m-minus-circle')
+                    ->icon('heroicon-m-minus-circle')
                     ->state(function (ExamSession $record): string {
                         if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
                             return '—';
@@ -212,6 +267,31 @@ class ExamResultsTable
                 SelectFilter::make('exam_package_id')
                     ->label('Paket Ujian')
                     ->relationship('examPackage', 'title'),
+
+                // ── Filter: Tipe Ujian (dari DB) ──────────────────────────────
+                SelectFilter::make('tipe_ujian')
+                    ->label('Tipe Ujian')
+                    ->options(
+                        fn(): array =>
+                        ExamType::orderBy('name')
+                            ->pluck('name', 'id')
+                            ->toArray()
+                    )
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) {
+                            return $query;
+                        }
+                        return $query->whereHas('examPackage.examType', function (Builder $q) use ($data) {
+                            $q->where('id', $data['value']);
+                        });
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if (empty($data['value'])) {
+                            return null;
+                        }
+                        $name = ExamType::find($data['value'])?->name;
+                        return $name ? 'Tipe: ' . $name : null;
+                    }),
 
                 Filter::make('rentang_waktu')
                     ->label('Rentang Tanggal Ujian')
