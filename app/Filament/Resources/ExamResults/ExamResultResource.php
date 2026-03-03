@@ -37,7 +37,7 @@ class ExamResultResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'awaiting_interview'])
             ->orderBy('finished_at', 'desc')
             ->with(['examPackage.examType']); // Eager-load for exam-type detection in table & infolist
     }

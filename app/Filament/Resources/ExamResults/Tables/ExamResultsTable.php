@@ -7,9 +7,12 @@ use App\Filament\Actions\ExportExamResultsHeaderAction;
 use App\Models\ExamSession;
 use App\Models\ExamType;
 use App\Services\ExamSessionService;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -247,18 +250,24 @@ class ExamResultsTable
                 TextColumn::make('kelulusan')
                     ->label('Status')
                     ->badge()
-                    ->state(
-                        fn(ExamSession $record): string =>
-                        self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS'
-                    )
-                    ->color(
-                        fn(string $state): string =>
-                        $state === 'LULUS' ? 'success' : 'danger'
-                    )
-                    ->icon(
-                        fn(string $state): string =>
-                        $state === 'LULUS' ? 'heroicon-m-trophy' : 'heroicon-m-x-circle'
-                    )
+                    ->state(function (ExamSession $record): string {
+                        if ($record->status === 'awaiting_interview') {
+                            return 'MENUNGGU WAWANCARA';
+                        }
+                        return self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS';
+                    })
+                    ->color(fn(string $state): string => match ($state) {
+                        'LULUS'               => 'success',
+                        'TIDAK LULUS'         => 'danger',
+                        'MENUNGGU WAWANCARA'  => 'warning',
+                        default               => 'gray',
+                    })
+                    ->icon(fn(string $state): string => match ($state) {
+                        'LULUS'               => 'heroicon-m-trophy',
+                        'TIDAK LULUS'         => 'heroicon-m-x-circle',
+                        'MENUNGGU WAWANCARA'  => 'heroicon-m-microphone',
+                        default               => 'heroicon-m-question-mark-circle',
+                    })
                     ->alignCenter(),
 
             ])
@@ -358,6 +367,60 @@ class ExamResultsTable
             ->recordActions([
                 ViewAction::make()
                     ->label('Lihat Detail'),
+
+                // ── Input Nilai Wawancara (hanya untuk sesi awaiting_interview) ────
+                Action::make('inputInterviewScore')
+                    ->label('Input Nilai Wawancara')
+                    ->icon('heroicon-o-microphone')
+                    ->color('warning')
+                    ->visible(fn(ExamSession $record): bool => $record->status === 'awaiting_interview')
+                    ->modalHeading('Input Nilai Wawancara')
+                    ->modalDescription(
+                        fn(ExamSession $record): string =>
+                        'Peserta: ' . ($record->user?->name ?? '-')
+                            . ' | CBT Score: ' . number_format((float) ($record->cbt_score ?? 0), 2)
+                    )
+                    ->modalWidth('md')
+                    ->schema([
+                        TextInput::make('interview_score')
+                            ->label('Nilai Wawancara (0 – 100)')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->suffix('poin')
+                            ->helperText('Masukkan nilai wawancara peserta pada skala 0–100.'),
+                    ])
+                    ->action(function (ExamSession $record, array $data): void {
+                        $config       = $record->examPackage?->technical_scoring_config ?? [];
+                        $cbtWeight    = (float) ($config['cbt_weight'] ?? 100);
+                        $intWeight    = (float) ($config['interview_weight'] ?? 0);
+                        $interviewScore = (float) $data['interview_score'];
+
+                        $finalScore = round(
+                            ($record->cbt_score * $cbtWeight / 100)
+                                + ($interviewScore   * $intWeight  / 100),
+                            2
+                        );
+
+                        $record->update([
+                            'interview_score' => $interviewScore,
+                            'total_score'     => $finalScore,
+                            'status'          => 'completed',
+                        ]);
+
+                        Notification::make()
+                            ->title('Nilai Wawancara Tersimpan')
+                            ->body(
+                                'CBT: ' . number_format((float) $record->cbt_score, 2)
+                                    . ' × ' . $cbtWeight . '%'
+                                    . ' + Wawancara: ' . number_format($interviewScore, 2)
+                                    . ' × ' . $intWeight . '%'
+                                    . ' = Nilai Akhir: ' . number_format($finalScore, 2)
+                            )
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
