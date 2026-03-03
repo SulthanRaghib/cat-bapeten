@@ -75,6 +75,29 @@ class ExamPackage extends Model
     }
 
     /**
+     * Get the exam participants (pivot records) directly as models.
+     */
+    public function examParticipants(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ExamParticipant::class);
+    }
+
+    /**
+     * Get all exam sessions for this package through participants.
+     */
+    public function examSessions(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ExamSession::class,
+            ExamParticipant::class,
+            'exam_package_id', // Foreign key on ExamParticipant table...
+            'exam_participant_id', // Foreign key on ExamSession table...
+            'id', // Local key on ExamPackage table...
+            'id'  // Local key on ExamParticipant table...
+        );
+    }
+
+    /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function questions(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
