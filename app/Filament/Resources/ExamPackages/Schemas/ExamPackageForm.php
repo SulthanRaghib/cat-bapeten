@@ -40,7 +40,7 @@ class ExamPackageForm
                                     ->label('Nilai Ambang Batas (Passing Grade)')
                                     ->numeric()
                                     ->required()
-                                    ->helperText('Contoh: Jika 100 soal x 5 poin = 500 Max. Passing grade bisa 300.'),
+                                    ->helperText('Contoh: Jika 100 soal x 1 poin = 100 Max. Passing grade bisa 70.'),
                             ]),
 
                         TextInput::make('duration_minutes')

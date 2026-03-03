@@ -284,7 +284,7 @@ class QuestionForm
 
                                 // correct_wrong: Correct/Incorrect toggle
                                 Toggle::make('is_correct')
-                                    ->label('Kunci Jawaban (Benar = 5 Poin)')
+                                    ->label('Kunci Jawaban (Benar = 1 Poin)')
                                     ->default(false)
                                     ->visible(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'correct_wrong')
                                     ->reactive(),

@@ -165,7 +165,7 @@ class Question extends Model
 
             // Technical: mark correct via 'is_correct' flag
             if (is_array($opt) && array_key_exists('is_correct', $opt) && $opt['is_correct']) {
-                $skor = $skor ?? 5; // default technical correct weight
+                $skor = $skor ?? 1; // default technical correct weight
                 $correct = $kode;
             }
 
@@ -180,7 +180,7 @@ class Question extends Model
         $result = ['list' => $list, 'bobot' => $map];
         if ($correct) {
             $result['correct'] = $correct;
-            $result['skor'] = $map[$correct] ?? 5;
+            $result['skor'] = $map[$correct] ?? 1;
         }
 
         return $result;

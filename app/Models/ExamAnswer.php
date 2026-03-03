@@ -113,14 +113,14 @@ class ExamAnswer extends Model
         // 3) If scoring_config has a 'correct' key (technical), assign default weight for correct
         if (isset($sc['correct'])) {
             if ((string) $sc['correct'] === (string) $this->answer) {
-                $this->score = (int) ($sc['skor'] ?? 5); // default 5 if not provided
+                $this->score = (int) ($sc['skor'] ?? 1); // default 1 if not provided
                 return $this->score;
             }
             // also support if numeric answer and correct is letter
             if (is_numeric($this->answer)) {
                 $letter = chr(65 + (int) $this->answer);
                 if ((string) $sc['correct'] === $letter) {
-                    $this->score = (int) ($sc['skor'] ?? 5);
+                    $this->score = (int) ($sc['skor'] ?? 1);
                     return $this->score;
                 }
             }
