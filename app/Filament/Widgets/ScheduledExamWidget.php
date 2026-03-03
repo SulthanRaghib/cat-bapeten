@@ -27,6 +27,9 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
     protected static ?int $sort = 2; // Position below stats overview
     protected int | string | array $columnSpan = 'full';
 
+    // Auto-refresh widget every 5 seconds to keep status/counts updated real-time
+    protected static ?string $pollingInterval = '3s';
+
     public function getHeading(): string
     {
         return 'Daftar Ujian Terjadwal';
@@ -155,6 +158,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
         }
 
         return $table
+            ->poll('5s') // Refresh every 5 seconds
             ->description($finalDescription)
             ->query(
                 ExamPackage::query()
