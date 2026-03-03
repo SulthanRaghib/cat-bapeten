@@ -18,14 +18,16 @@ class ExamPackage extends Model
         'start_time',
         'end_time',
         'unit_scoring_configs',
+        'technical_scoring_config',
         'exam_type_id',
     ];
 
     protected $casts = [
-        'is_active'            => 'boolean',
-        'unit_scoring_configs' => 'array',
-        'start_time'           => 'datetime',
-        'end_time'             => 'datetime',
+        'is_active'               => 'boolean',
+        'unit_scoring_configs'    => 'array',
+        'technical_scoring_config' => 'array',
+        'start_time'              => 'datetime',
+        'end_time'                => 'datetime',
     ];
 
     /**

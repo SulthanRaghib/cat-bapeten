@@ -82,16 +82,13 @@ class ExamParticipant extends Pivot
 
         // Jika sudah pernah ujian, prioritaskan status sesi terbaru
         if ($session) {
-            if ($session->status === 'completed') {
-                return 'Selesai';
-            }
-
-            if ($session->status === 'ongoing') {
-                return 'Sedang Mengerjakan';
-            }
-
-            // Fallback lain jika status berbeda
-            return ucfirst($session->status);
+            return match ($session->status) {
+                'completed'          => 'Selesai',
+                'ongoing'            => 'Sedang Mengerjakan',
+                'awaiting_interview' => 'Menunggu Wawancara',
+                'terminated'         => 'Diberhentikan',
+                default              => ucfirst($session->status),
+            };
         }
 
         // Belum punya sesi sama sekali
@@ -109,22 +106,26 @@ class ExamParticipant extends Pivot
     public function getStatusColorAttribute(): string
     {
         return match ($this->status_label) {
-            'Nonaktif' => 'danger',
-            'Belum Mengerjakan' => 'gray',
+            'Nonaktif'           => 'danger',
+            'Belum Mengerjakan'  => 'gray',
             'Sedang Mengerjakan' => 'warning',
-            'Selesai' => 'success',
-            default => 'info',
+            'Menunggu Wawancara' => 'info',
+            'Selesai'            => 'success',
+            'Diberhentikan'      => 'danger',
+            default              => 'gray',
         };
     }
 
     public function getStatusIconAttribute(): string
     {
         return match ($this->status_label) {
-            'Nonaktif' => 'heroicon-m-x-circle',
-            'Belum Mengerjakan' => 'heroicon-m-clock',
+            'Nonaktif'           => 'heroicon-m-x-circle',
+            'Belum Mengerjakan'  => 'heroicon-m-clock',
             'Sedang Mengerjakan' => 'heroicon-m-play-circle',
-            'Selesai' => 'heroicon-m-check-badge',
-            default => 'heroicon-m-question-mark-circle',
+            'Menunggu Wawancara' => 'heroicon-m-microphone',
+            'Selesai'            => 'heroicon-m-check-badge',
+            'Diberhentikan'      => 'heroicon-m-no-symbol',
+            default              => 'heroicon-m-question-mark-circle',
         };
     }
 }
