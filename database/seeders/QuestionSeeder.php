@@ -83,11 +83,9 @@ class QuestionSeeder extends Seeder
 
         // --- Default NAB indicators for Mansoskul units ---
         $manIndicatorTemplate = [
-            ['name' => 'Di Bawah Standar',       'min_score' => 0,  'max_score' => 5,  'is_passing' => false, 'sort_order' => 1],
-            ['name' => 'Memenuhi Sebagian',       'min_score' => 6,  'max_score' => 12, 'is_passing' => false, 'sort_order' => 2],
-            ['name' => 'Memenuhi Standar',        'min_score' => 13, 'max_score' => 18, 'is_passing' => true,  'sort_order' => 3],
-            ['name' => 'Melebihi Standar',        'min_score' => 19, 'max_score' => 25, 'is_passing' => true,  'sort_order' => 4],
-            ['name' => 'Jauh Melebihi Standar',   'min_score' => 26, 'max_score' => 50, 'is_passing' => true,  'sort_order' => 5],
+            ['name' => 'Kurang Optimal',          'min_score' => 0,  'max_score' => 68, 'is_passing' => false, 'sort_order' => 1],
+            ['name' => 'Optimal',                 'min_score' => 69, 'max_score' => 84, 'is_passing' => true,  'sort_order' => 2],
+            ['name' => 'Melebihi Standar',        'min_score' => 85, 'max_score' => 100, 'is_passing' => true,  'sort_order' => 3],
         ];
 
         // Helper: create units + sub-units, return nested id map
