@@ -56,12 +56,14 @@ class ExamPackageForm
                             ->schema([
                                 DateTimePicker::make('start_time')
                                     ->label('Waktu Mulai')
+                                    ->required()
                                     ->seconds(false)
                                     ->helperText('Kapan ujian ini mulai bisa diakses.')
                                     ->columnSpan(1),
 
                                 DateTimePicker::make('end_time')
                                     ->label('Waktu Selesai')
+                                    ->required()
                                     ->seconds(false)
                                     ->helperText('Batas akhir akses ujian.')
                                     ->after('start_time')
