@@ -87,7 +87,12 @@ class ExamAnswer extends Model
         if (isset($sc['list']) && is_array($sc['list'])) {
             foreach ($sc['list'] as $config) {
                 if (isset($config['kode']) && (string) $config['kode'] === (string) $this->answer) {
-                    $this->score = (int) ($config['skor'] ?? 0);
+                    $skor = (int) ($config['skor'] ?? 0);
+                    // Guard for legacy data: if skor=0 but this kode IS the correct answer, return 1
+                    if ($skor === 0 && isset($sc['correct']) && (string) $sc['correct'] === (string) $this->answer) {
+                        $skor = 1;
+                    }
+                    $this->score = $skor;
                     return $this->score;
                 }
             }
@@ -167,7 +172,7 @@ class ExamAnswer extends Model
 
             // Technical: use 'is_correct' flag if present
             if (is_array($selected) && array_key_exists('is_correct', $selected)) {
-                $this->score = $selected['is_correct'] ? 5 : 0; // default 5 for correct
+                $this->score = $selected['is_correct'] ? 1 : 0; // 1 point for correct answer
                 return $this->score;
             }
         }
