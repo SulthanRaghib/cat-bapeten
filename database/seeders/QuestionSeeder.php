@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\DTOs\Question\CreateQuestionDTO;
 use App\Models\ExamType;
-use App\Models\Question;
 use App\Models\QuestionSubUnit;
 use App\Models\QuestionUnit;
 use App\Models\QuestionUnitIndicator;
+use App\Services\QuestionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
 
@@ -147,98 +148,99 @@ class QuestionSeeder extends Seeder
         // ---------------------------------------------------------
         // 1. Generate 100 Soal TEKNIKAL
         // ---------------------------------------------------------
-        $technicalQuestions = [];
+        $service = app(QuestionService::class);
 
+        // ---------------------------------------------------------
+        // 1. Generate 100 Soal TEKNIKAL
+        //    Menggunakan QuestionService::create() — alur identik dengan
+        //    pembuatan soal manual via form admin.
+        //    - options: is_correct toggle, score field tersembunyi (0 dari form)
+        //    - QuestionOptionData::toArray() otomatis set score=1 jika is_correct=true
+        //    - generateScoringConfigFromOptions() otomatis build scoring_config
+        // ---------------------------------------------------------
         for ($i = 1; $i <= 100; $i++) {
             $difficulty = Arr::random(['easy', 'medium', 'hard']);
 
-            // Pick a random unit & sub-unit
             $unitName  = Arr::random($tekUnitKeys);
             $unitId    = $tekUnits[$unitName]['id'];
             $subNames  = array_keys($tekUnits[$unitName]['subs']);
             $subName   = Arr::random($subNames);
             $subUnitId = $tekUnits[$unitName]['subs'][$subName];
 
-            // Random correct answer index (0-4)
             $correctIndex = rand(0, 4);
             $labels       = ['A', 'B', 'C', 'D', 'E'];
-            $options      = [];
 
-            foreach ($labels as $index => $label) {
-                $isCorrect = ($index === $correctIndex);
-                $options[] = [
+            // Simulasikan data form Teknis:
+            // - score tidak ada di form (field hidden → default 0)
+            // - is_correct diisi via toggle
+            $optionsFormData = [];
+            foreach ($labels as $idx => $label) {
+                $isCorrect         = ($idx === $correctIndex);
+                $optionsFormData[] = [
                     'answer_text' => "<p>Pilihan $label untuk soal teknis $i ($difficulty) - " . ($isCorrect ? 'Benar' : 'Salah') . '</p>',
                     'is_correct'  => $isCorrect,
+                    // score tidak diisi di form untuk teknis (seperti form asli)
                     'is_active'   => true,
                 ];
             }
 
-            $technicalQuestions[] = [
+            $service->create(CreateQuestionDTO::fromFormData([
                 'exam_type_id'         => $tekType->id,
                 'question_unit_id'     => $unitId,
                 'question_sub_unit_id' => $subUnitId,
                 'category'             => $difficulty,
                 'question_text'        => "<p><strong>[Teknis — {$unitName} / {$subName}]</strong> ({$difficulty}) Contoh pertanyaan dummy nomor $i. Pilihlah jawaban yang benar.</p>",
-                'options'              => json_encode($options),
-                'scoring_config'       => '[]',
-                'created_at'           => now(),
-                'updated_at'           => now(),
-            ];
+                'explanation'          => '',
+                'options'              => $optionsFormData,
+            ]));
         }
 
-        foreach (array_chunk($technicalQuestions, 50) as $chunk) {
-            Question::insert($chunk);
-        }
-
-        $this->command->info('✅ 100 soal Teknis seeded (with units & sub-units).');
+        $this->command->info('✅ 100 soal Teknis seeded (via QuestionService).');
 
         // ---------------------------------------------------------
         // 2. Generate 100 Soal MANSOSKUL  (weighted / skala Likert)
+        //    - score diisi eksplisit per opsi (5,4,3,2,1)
+        //    - is_correct selalu false (tidak ada jawaban benar tunggal)
+        //    - generateScoringConfigFromOptions() akan build scoring_config tanpa key 'correct'
         // ---------------------------------------------------------
-        $structuralQuestions = [];
-
         $choices = [
-            ['text' => 'Sangat Setuju',        'val' => 5],
-            ['text' => 'Setuju',               'val' => 4],
-            ['text' => 'Ragu-ragu',            'val' => 3],
-            ['text' => 'Tidak Setuju',         'val' => 2],
-            ['text' => 'Sangat Tidak Setuju',  'val' => 1],
+            ['text' => 'Sangat Setuju',       'val' => 5],
+            ['text' => 'Setuju',              'val' => 4],
+            ['text' => 'Ragu-ragu',           'val' => 3],
+            ['text' => 'Tidak Setuju',        'val' => 2],
+            ['text' => 'Sangat Tidak Setuju', 'val' => 1],
         ];
 
         for ($i = 1; $i <= 100; $i++) {
-            // Pick a random unit & sub-unit
             $unitName  = Arr::random($manUnitKeys);
             $unitId    = $manUnits[$unitName]['id'];
             $subNames  = array_keys($manUnits[$unitName]['subs']);
             $subName   = Arr::random($subNames);
             $subUnitId = $manUnits[$unitName]['subs'][$subName];
 
-            $options = [];
+            // Simulasikan data form Mansoskul:
+            // - score diisi via TextInput (visible untuk tipe weighted)
+            // - is_correct selalu false
+            $optionsFormData = [];
             foreach ($choices as $choice) {
-                $options[] = [
+                $optionsFormData[] = [
                     'answer_text' => "<p>{$choice['text']} (Soal Mansoskul $i)</p>",
+                    'is_correct'  => false,
                     'score'       => $choice['val'],
                     'is_active'   => true,
                 ];
             }
 
-            $structuralQuestions[] = [
+            $service->create(CreateQuestionDTO::fromFormData([
                 'exam_type_id'         => $strType->id,
                 'question_unit_id'     => $unitId,
                 'question_sub_unit_id' => $subUnitId,
-                'category'             => null,
                 'question_text'        => "<p><strong>[Mansoskul — {$unitName} / {$subName}]</strong> Studi kasus nomor $i. Bagaimana sikap Anda dalam situasi ini?</p>",
-                'options'              => json_encode($options),
-                'scoring_config'       => '[]',
-                'created_at'           => now(),
-                'updated_at'           => now(),
-            ];
+                'explanation'          => '',
+                'options'              => $optionsFormData,
+            ]));
         }
 
-        foreach (array_chunk($structuralQuestions, 50) as $chunk) {
-            Question::insert($chunk);
-        }
-
-        $this->command->info('✅ 100 soal Mansoskul seeded (with units, sub-units & NAB indicators).');
+        $this->command->info('✅ 100 soal Mansoskul seeded (via QuestionService).');
     }
 }
