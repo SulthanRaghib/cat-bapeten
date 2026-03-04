@@ -42,6 +42,10 @@ final readonly class QuestionOptionData
     /**
      * Serialize back to a plain array for model persistence.
      *
+     * For Technical questions (is_correct-based), score is derived from
+     * isCorrect so we never store 0 for the correct answer even though the
+     * score field is hidden in the form.
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -49,7 +53,10 @@ final readonly class QuestionOptionData
         return [
             'answer_text' => $this->answerText,
             'is_correct'  => $this->isCorrect,
-            'score'       => $this->score,
+            // Ensure the correct option always carries score=1 for Teknis questions.
+            // For Mansoskul (is_correct always false) this has no effect; the
+            // explicit $this->score from the form is used as-is.
+            'score'       => $this->isCorrect ? 1 : $this->score,
             'is_active'   => $this->isActive,
         ];
     }

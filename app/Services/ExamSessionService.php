@@ -122,28 +122,52 @@ final class ExamSessionService
                 );
             }
 
-            // Tally the total score from all persisted answers.
-            $totalScore = (int) ExamAnswer::where('exam_session_id', $session->id)
+            // Tally the raw CBT score from all persisted answers.
+            $cbtScore = (int) ExamAnswer::where('exam_session_id', $session->id)
                 ->sum('score');
 
-            // Persist the final state in a single update — no risk of race.
-            $session->update([
-                'status'      => 'completed',
-                'finished_at' => $dto->finishedAt,
-                'total_score' => $totalScore,
-            ]);
+            // Determine if this Teknis package requires an interview stage.
+            $technicalConfig = $session->examPackage?->technical_scoring_config ?? [];
+            $hasInterview    =
+                ($session->examPackage?->examType?->evaluation_method === 'correct_wrong')
+                && (bool) ($technicalConfig['has_interview'] ?? false);
+
+            if ($hasInterview) {
+                // Await interview: store CBT score provisionally, final score TBD.
+                $session->update([
+                    'status'      => 'awaiting_interview',
+                    'finished_at' => $dto->finishedAt,
+                    'cbt_score'   => $cbtScore,
+                    'total_score' => $cbtScore,
+                ]);
+
+                Log::info('Exam awaiting interview', [
+                    'session_id'  => $session->id,
+                    'participant' => $dto->examParticipantId,
+                    'cbt_score'   => $cbtScore,
+                    'finished_at' => $dto->finishedAt,
+                ]);
+            } else {
+                // No interview: exam is fully completed.
+                $session->update([
+                    'status'      => 'completed',
+                    'finished_at' => $dto->finishedAt,
+                    'cbt_score'   => $cbtScore,
+                    'total_score' => $cbtScore,
+                ]);
+
+                Log::info('Exam finished', [
+                    'session_id'  => $session->id,
+                    'participant' => $dto->examParticipantId,
+                    'total_score' => $cbtScore,
+                    'finished_at' => $dto->finishedAt,
+                ]);
+            }
 
             // Business rule: once an exam is submitted the participant's
             // is_active flag is turned off so they cannot start again.
             ExamParticipant::where('id', $dto->examParticipantId)
                 ->update(['is_active' => false]);
-
-            Log::info("Exam finished", [
-                'session_id'    => $session->id,
-                'participant'   => $dto->examParticipantId,
-                'total_score'   => $totalScore,
-                'finished_at'   => $dto->finishedAt,
-            ]);
 
             return $session->fresh();
         });

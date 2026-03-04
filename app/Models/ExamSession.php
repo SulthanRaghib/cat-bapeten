@@ -16,14 +16,18 @@ class ExamSession extends Model
         'started_at',
         'finished_at',
         'total_score',
+        'cbt_score',
+        'interview_score',
         'answers_meta',
     ];
 
     protected $casts = [
-        'answers_meta' => 'array',
-        'started_at' => 'datetime',
-        'finished_at' => 'datetime',
-        'total_score' => 'integer',
+        'answers_meta'    => 'array',
+        'started_at'      => 'datetime',
+        'finished_at'     => 'datetime',
+        'total_score'     => 'float',
+        'cbt_score'       => 'float',
+        'interview_score' => 'float',
     ];
 
     /**

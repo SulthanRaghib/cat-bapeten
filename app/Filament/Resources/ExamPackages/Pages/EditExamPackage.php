@@ -43,7 +43,8 @@ class EditExamPackage extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return \Filament\Pages\Dashboard::getUrl();
+        // Stay on the edit page after saving — needed so relation manager tabs remain accessible.
+        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
     }
 
     // UX Improvement: Menggabungkan Form dan Relation Manager dalam Tab Sejajar

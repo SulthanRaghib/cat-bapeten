@@ -87,7 +87,12 @@ class ExamAnswer extends Model
         if (isset($sc['list']) && is_array($sc['list'])) {
             foreach ($sc['list'] as $config) {
                 if (isset($config['kode']) && (string) $config['kode'] === (string) $this->answer) {
-                    $this->score = (int) ($config['skor'] ?? 0);
+                    $skor = (int) ($config['skor'] ?? 0);
+                    // Guard for legacy data: if skor=0 but this kode IS the correct answer, return 1
+                    if ($skor === 0 && isset($sc['correct']) && (string) $sc['correct'] === (string) $this->answer) {
+                        $skor = 1;
+                    }
+                    $this->score = $skor;
                     return $this->score;
                 }
             }
@@ -113,14 +118,14 @@ class ExamAnswer extends Model
         // 3) If scoring_config has a 'correct' key (technical), assign default weight for correct
         if (isset($sc['correct'])) {
             if ((string) $sc['correct'] === (string) $this->answer) {
-                $this->score = (int) ($sc['skor'] ?? 5); // default 5 if not provided
+                $this->score = (int) ($sc['skor'] ?? 1); // default 1 if not provided
                 return $this->score;
             }
             // also support if numeric answer and correct is letter
             if (is_numeric($this->answer)) {
                 $letter = chr(65 + (int) $this->answer);
                 if ((string) $sc['correct'] === $letter) {
-                    $this->score = (int) ($sc['skor'] ?? 5);
+                    $this->score = (int) ($sc['skor'] ?? 1);
                     return $this->score;
                 }
             }
@@ -167,7 +172,7 @@ class ExamAnswer extends Model
 
             // Technical: use 'is_correct' flag if present
             if (is_array($selected) && array_key_exists('is_correct', $selected)) {
-                $this->score = $selected['is_correct'] ? 5 : 0; // default 5 for correct
+                $this->score = $selected['is_correct'] ? 1 : 0; // 1 point for correct answer
                 return $this->score;
             }
         }

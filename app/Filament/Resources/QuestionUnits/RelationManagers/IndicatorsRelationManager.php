@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Manages the default/template indicator levels (NAB) for each QuestionUnit.
@@ -28,6 +29,12 @@ class IndicatorsRelationManager extends RelationManager
 
     protected static ?string $title = 'Indikator NAB (Template)';
     protected static ?string $modelLabel = 'Indikator';
+
+    // Hanya tampilkan tab ini untuk unit bertipe Mansoskul (weighted)
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord->examType?->evaluation_method === 'weighted';
+    }
 
     public function form(Schema $form): Schema
     {

@@ -35,11 +35,14 @@ final class ExamPackageService
     {
         return DB::transaction(static function () use ($dto): ExamPackage {
             return ExamPackage::create([
-                'title'            => $dto->title,
-                'exam_type_id'     => $dto->examTypeId,
-                'passing_grade'    => $dto->passingGrade,
-                'duration_minutes' => $dto->durationMinutes,
-                'is_active'        => $dto->isActive,
+                'title'                     => $dto->title,
+                'exam_type_id'              => $dto->examTypeId,
+                'passing_grade'             => $dto->passingGrade,
+                'duration_minutes'          => $dto->durationMinutes,
+                'is_active'                 => $dto->isActive,
+                'start_time'                => $dto->startTime,
+                'end_time'                  => $dto->endTime,
+                'technical_scoring_config'  => $dto->technicalScoringConfig,
             ]);
         });
     }
@@ -53,11 +56,14 @@ final class ExamPackageService
     {
         return DB::transaction(static function () use ($package, $dto): ExamPackage {
             $package->update([
-                'title'            => $dto->title,
-                'exam_type_id'     => $dto->examTypeId,
-                'passing_grade'    => $dto->passingGrade,
-                'duration_minutes' => $dto->durationMinutes,
-                'is_active'        => $dto->isActive,
+                'title'                     => $dto->title,
+                'exam_type_id'              => $dto->examTypeId,
+                'passing_grade'             => $dto->passingGrade,
+                'duration_minutes'          => $dto->durationMinutes,
+                'is_active'                 => $dto->isActive,
+                'start_time'                => $dto->startTime,
+                'end_time'                  => $dto->endTime,
+                'technical_scoring_config'  => $dto->technicalScoringConfig,
             ]);
 
             return $package->fresh();

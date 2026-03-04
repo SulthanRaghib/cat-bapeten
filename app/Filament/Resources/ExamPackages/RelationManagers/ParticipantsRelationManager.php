@@ -72,12 +72,15 @@ class ParticipantsRelationManager extends RelationManager
 
                         return $participant?->status_label ?? 'Nonaktif';
                     })
-                    ->colors([
-                        'danger' => 'Nonaktif',
-                        'gray' => 'Belum Mengerjakan',
-                        'warning' => 'Sedang Mengerjakan',
-                        'success' => 'Selesai',
-                    ])
+                    ->color(fn(string $state): string => match ($state) {
+                        'Nonaktif'           => 'danger',
+                        'Belum Mengerjakan'  => 'gray',
+                        'Sedang Mengerjakan' => 'warning',
+                        'Menunggu Wawancara' => 'info',
+                        'Selesai'            => 'success',
+                        'Diberhentikan'      => 'danger',
+                        default              => 'gray',
+                    })
                     ->icon(function ($state, $record) {
                         $participant = $record->pivot instanceof ExamParticipant
                             ? $record->pivot
@@ -87,6 +90,7 @@ class ParticipantsRelationManager extends RelationManager
                     }),
             ])
             ->headerActions([
+                // filter hanya role user yang bisa ditambahkan (bukan admin) dan belum menjadi peserta
                 AttachAction::make()
                     ->label('Tambah Peserta')
                     ->color(Color::Amber)
@@ -94,7 +98,13 @@ class ParticipantsRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Tambahkan')
                     ->preloadRecordSelect()
                     ->multiple() // Bisa pilih banyak sekaligus
-                    ->recordSelectSearchColumns(['name', 'nip']),
+                    ->recordSelectOptionsQuery(function (\Illuminate\Database\Eloquent\Builder $query) {
+                        $examPackage = $this->getOwnerRecord();
+                        $existingParticipantIds = $examPackage->participants()->pluck('users.id')->toArray();
+
+                        return $query->whereNotIn('id', $existingParticipantIds)
+                            ->where('role', 'user'); // Hanya tampilkan user biasa, bukan admin
+                    }),
             ])
             ->recordActions([
                 ActionGroup::make([

@@ -157,15 +157,16 @@ class Question extends Model
                 $kode = (string) $key;
             }
 
-            // Structural: explicit score
+            // Structural (Mansoskul): use explicit 'score' field
             $skor = null;
             if (is_array($opt) && array_key_exists('score', $opt)) {
                 $skor = (int) $opt['score'];
             }
 
-            // Technical: mark correct via 'is_correct' flag
+            // Technical: when 'is_correct' is true, ALWAYS force skor = 1
+            // Using ?? here is wrong because score:0 is falsy but not null — so we override instead
             if (is_array($opt) && array_key_exists('is_correct', $opt) && $opt['is_correct']) {
-                $skor = $skor ?? 5; // default technical correct weight
+                $skor = 1; // force correct weight to 1 regardless of 'score' field value
                 $correct = $kode;
             }
 
@@ -180,7 +181,7 @@ class Question extends Model
         $result = ['list' => $list, 'bobot' => $map];
         if ($correct) {
             $result['correct'] = $correct;
-            $result['skor'] = $map[$correct] ?? 5;
+            $result['skor'] = $map[$correct] ?? 1;
         }
 
         return $result;
