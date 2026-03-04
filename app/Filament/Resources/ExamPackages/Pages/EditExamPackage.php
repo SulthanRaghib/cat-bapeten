@@ -5,10 +5,16 @@ namespace App\Filament\Resources\ExamPackages\Pages;
 use App\Filament\Resources\ExamPackages\ExamPackageResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Livewire\Attributes\Url;
 
 class EditExamPackage extends EditRecord
 {
     protected static string $resource = ExamPackageResource::class;
+
+    // Menyimpan parameter 'return_url' dari query string secara otomatis.
+    // Ini bertindak sebagai pengganti hidden input untuk state management di Livewire.
+    #[Url]
+    public ?string $return_url = null;
 
     // Dynamic title showing the package name
     public function getTitle(): string
@@ -43,8 +49,13 @@ class EditExamPackage extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        // Stay on the edit page after saving — needed so relation manager tabs remain accessible.
-        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+        // Jika ada parameter return_url, gunakan itu (misal dari Dashboard)
+        if ($this->return_url) {
+            return $this->return_url;
+        }
+
+        // Default: Kembali ke halaman index Resource (Menu Edit Ujian)
+        return $this->getResource()::getUrl('index');
     }
 
     // UX Improvement: Menggabungkan Form dan Relation Manager dalam Tab Sejajar

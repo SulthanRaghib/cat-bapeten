@@ -422,6 +422,13 @@ class ExamPage extends Component
             return;
         }
 
+        // VALIDASI: Hanya catat log jika ujian masih berstatus 'ongoing'
+        // Mencegah log palsu setelah ujian selesai tetapi peserta masih di halaman result.
+        $session = ExamSession::find($this->examSessionId);
+        if (! $session || $session->status !== 'ongoing') {
+            return;
+        }
+
         $messageMap = [
             'tab_switch'    => 'Peserta berpindah tab atau meminimalkan browser.',
             'window_blur'   => 'Peserta mengklik di luar jendela ujian.',

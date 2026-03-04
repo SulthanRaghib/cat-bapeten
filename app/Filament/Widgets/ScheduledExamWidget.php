@@ -244,7 +244,18 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             ->actions([
                 EditAction::make()
                     ->label('Edit Ujian')
-                    ->url(fn(ExamPackage $record): string => ExamPackageResource::getUrl('edit', ['record' => $record])),
+                    ->url(function (ExamPackage $record): string {
+                        // Cek apakah request saat ini adalah POST (seperti Livewire update)
+                        // Jika ya, gunakan Referer sebagai return_url karena kita tidak bisa redirect GET ke route POST
+                        $currentUrl = request()->isMethod('POST')
+                            ? request()->header('Referer')
+                            : request()->fullUrl();
+
+                        return ExamPackageResource::getUrl('edit', [
+                            'record' => $record,
+                            'return_url' => $currentUrl,
+                        ]);
+                    }),
             ])
             ->emptyStateHeading('Belum ada ujian terjadwal.')
             ->filters([

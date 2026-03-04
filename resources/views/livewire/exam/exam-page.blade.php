@@ -2,7 +2,14 @@
 @include('livewire.exam.partials.scripts')
 
 <div x-data="{
+    // Sinkronisasi status 'step' dari Livewire ke Alpine.js
+    step: @entangle('step'),
+
     logActivity(action, message, severity = 'warning') {
+        // PERBAIKAN: Gunakan pendekatan 'blacklist' (blokir jika result) daripada 'whitelist' (hanya jika exam).
+        // Ini lebih aman jika status 'step' belum tersinkronisasi sempurna di awal.
+        if (this.step === 'result') return;
+
         // Simple throttle to prevent spamming DB
         if (this._lastLog && Date.now() - this._lastLog < 2000) return;
         this._lastLog = Date.now();
@@ -12,9 +19,9 @@
 }" x-init="
     // 1. Detect Tab Switching / Visibility Change
     document.addEventListener('visibilitychange', () => {
+        // Hapus pengecekan step di sini untuk menghindari masalah scope 'this' pada arrow function
         if (document.hidden) {
             logActivity('tab_switch', '', 'warning');
-            // alert('Peringatan: Dilarang beralih tab selama ujian berlangsung!');
         }
     });
 
