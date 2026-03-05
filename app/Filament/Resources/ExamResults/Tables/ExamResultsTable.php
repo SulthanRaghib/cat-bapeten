@@ -11,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Table;
@@ -253,21 +254,21 @@ class ExamResultsTable
                     ->badge()
                     ->state(function (ExamSession $record): string {
                         if ($record->status === 'awaiting_interview') {
-                            return 'MENUNGGU WAWANCARA';
+                            return 'MENUNGGU SELEKSI';
                         }
                         return self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS';
                     })
                     ->color(fn(string $state): string => match ($state) {
-                        'LULUS'               => 'success',
-                        'TIDAK LULUS'         => 'danger',
-                        'MENUNGGU WAWANCARA'  => 'warning',
-                        default               => 'gray',
+                        'LULUS'             => 'success',
+                        'TIDAK LULUS'       => 'danger',
+                        'MENUNGGU SELEKSI'  => 'warning',
+                        default             => 'gray',
                     })
                     ->icon(fn(string $state): string => match ($state) {
-                        'LULUS'               => 'heroicon-m-trophy',
-                        'TIDAK LULUS'         => 'heroicon-m-x-circle',
-                        'MENUNGGU WAWANCARA'  => 'heroicon-m-microphone',
-                        default               => 'heroicon-m-question-mark-circle',
+                        'LULUS'             => 'heroicon-m-trophy',
+                        'TIDAK LULUS'       => 'heroicon-m-x-circle',
+                        'MENUNGGU SELEKSI'  => 'heroicon-m-clipboard-document-check',
+                        default             => 'heroicon-m-question-mark-circle',
                     })
                     ->alignCenter(),
 
@@ -369,59 +370,24 @@ class ExamResultsTable
                 ViewAction::make()
                     ->label('Lihat Detail'),
 
-                // ── Input Nilai Wawancara (hanya untuk sesi awaiting_interview) ────
-                Action::make('inputInterviewScore')
-                    ->label('Input Nilai Wawancara')
-                    ->icon('heroicon-o-microphone')
+                // ── Input Nilai Seleksi Lanjutan (hanya untuk sesi awaiting_interview) ────
+                Action::make('inputStageScores')
+                    ->label('Input Nilai Seleksi')
+                    ->icon('heroicon-o-clipboard-document-check')
                     ->color('warning')
                     ->visible(fn(ExamSession $record): bool => $record->status === 'awaiting_interview')
-                    ->modalHeading('Input Nilai Wawancara')
+                    ->modalHeading(
+                        fn(ExamSession $record): string =>
+                        'Input Nilai Seleksi — ' . ($record->user?->name ?? '-')
+                    )
                     ->modalDescription(
                         fn(ExamSession $record): string =>
-                        'Peserta: ' . ($record->user?->name ?? '-')
-                            . ' | CBT Score: ' . number_format((float) ($record->cbt_score ?? 0), 2)
+                        'Nilai CBT: ' . number_format((float) ($record->cbt_score ?? 0), 2)
+                            . ' poin  |  Paket: ' . ($record->examPackage?->title ?? '-')
                     )
-                    ->modalWidth('md')
-                    ->schema([
-                        TextInput::make('interview_score')
-                            ->label('Nilai Wawancara (0 – 100)')
-                            ->numeric()
-                            ->required()
-                            ->minValue(0)
-                            ->maxValue(100)
-                            ->suffix('poin')
-                            ->helperText('Masukkan nilai wawancara peserta pada skala 0–100.'),
-                    ])
-                    ->action(function (ExamSession $record, array $data): void {
-                        $config       = $record->examPackage?->technical_scoring_config ?? [];
-                        $cbtWeight    = (float) ($config['cbt_weight'] ?? 100);
-                        $intWeight    = (float) ($config['interview_weight'] ?? 0);
-                        $interviewScore = (float) $data['interview_score'];
-
-                        $finalScore = round(
-                            ($record->cbt_score * $cbtWeight / 100)
-                                + ($interviewScore   * $intWeight  / 100),
-                            2
-                        );
-
-                        $record->update([
-                            'interview_score' => $interviewScore,
-                            'total_score'     => $finalScore,
-                            'status'          => 'completed',
-                        ]);
-
-                        Notification::make()
-                            ->title('Nilai Wawancara Tersimpan')
-                            ->body(
-                                'CBT: ' . number_format((float) $record->cbt_score, 2)
-                                    . ' × ' . $cbtWeight . '%'
-                                    . ' + Wawancara: ' . number_format($interviewScore, 2)
-                                    . ' × ' . $intWeight . '%'
-                                    . ' = Nilai Akhir: ' . number_format($finalScore, 2)
-                            )
-                            ->success()
-                            ->send();
-                    }),
+                    ->modalWidth('lg')
+                    ->schema(fn(ExamSession $record): array => self::buildStageScoreSchema($record))
+                    ->action(fn(ExamSession $record, array $data) => self::processStageScores($record, $data)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -432,5 +398,130 @@ class ExamResultsTable
                         ->modalSubmitActionLabel('Ya, Hapus'),
                 ])->label('Tindakan Massal'),
             ]);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // HELPER: Build dynamic score input form for each selection stage
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Build a Filament form schema array for inputting scores per stage.
+     * Supports:
+     *  - New format: technical_scoring_config.stages[] with {label, weight}
+     *  - Legacy format: interview_weight (single interview stage)
+     */
+    private static function buildStageScoreSchema(ExamSession $record): array
+    {
+        $config    = $record->examPackage?->technical_scoring_config ?? [];
+        $cbtWeight = (float) ($config['cbt_weight'] ?? 100);
+        $stages    = $config['stages'] ?? null;
+
+        // Legacy backward-compat: old format only had interview_weight
+        if (empty($stages) && isset($config['interview_weight'])) {
+            $stages = [
+                ['label' => 'Wawancara', 'weight' => (float) $config['interview_weight']],
+            ];
+        }
+
+        $stages = (array) $stages;
+
+        $fields = [];
+
+        // ── CBT summary info ──────────────────────────────────────────────
+        $fields[] = \Filament\Schemas\Components\Section::make()
+            ->extraAttributes(['class' => 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl'])
+            ->schema([
+                \Filament\Forms\Components\Placeholder::make('cbt_summary')
+                    ->label('')
+                    ->content(function () use ($record, $cbtWeight): string {
+                        return '📊 Nilai CBT: ' . number_format((float) ($record->cbt_score ?? 0), 2)
+                            . ' poin  ×  Bobot CBT: ' . $cbtWeight . '%'
+                            . '  →  Kontribusi CBT: ' . number_format((float) ($record->cbt_score ?? 0) * $cbtWeight / 100, 2) . ' poin';
+                    }),
+            ]);
+
+        // ── Per-stage score inputs ────────────────────────────────────────
+        if (empty($stages)) {
+            $fields[] = \Filament\Forms\Components\Placeholder::make('no_stages')
+                ->label('')
+                ->content('⚠️ Tidak ada tahap seleksi yang terkonfigurasi pada paket ujian ini.');
+        } else {
+            foreach ($stages as $i => $stage) {
+                $label  = $stage['label'] ?? ('Tahap ' . ($i + 1));
+                $weight = (float) ($stage['weight'] ?? 0);
+                $key    = 'stage_' . $i;
+
+                $fields[] = TextInput::make("stage_scores.{$key}")
+                    ->label("{$label}")
+                    ->helperText("Bobot: {$weight}% dari nilai akhir")
+                    ->numeric()
+                    ->required()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->suffix('poin')
+                    ->placeholder('0 – 100')
+                    // Pre-fill from existing stage_scores if re-editing
+                    ->default(fn() => $record->stage_scores[$key] ?? null);
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Process stage scores: calculate final score, persist, notify.
+     */
+    private static function processStageScores(ExamSession $record, array $data): void
+    {
+        $config    = $record->examPackage?->technical_scoring_config ?? [];
+        $cbtWeight = (float) ($config['cbt_weight'] ?? 100);
+        $stages    = $config['stages'] ?? null;
+
+        if (empty($stages) && isset($config['interview_weight'])) {
+            $stages = [
+                ['label' => 'Wawancara', 'weight' => (float) $config['interview_weight']],
+            ];
+        }
+
+        $stages      = (array) $stages;
+        $stageScores = $data['stage_scores'] ?? [];
+
+        // ── Calculate final score ─────────────────────────────────────────
+        $finalScore = (float) ($record->cbt_score ?? 0) * $cbtWeight / 100;
+        $breakdown  = ['CBT: ' . number_format((float) $record->cbt_score, 2) . ' × ' . $cbtWeight . '%'];
+
+        foreach ($stages as $i => $stage) {
+            $label  = $stage['label'] ?? ('Tahap ' . ($i + 1));
+            $weight = (float) ($stage['weight'] ?? 0);
+            $key    = 'stage_' . $i;
+            $score  = (float) ($stageScores[$key] ?? 0);
+
+            $finalScore += $score * $weight / 100;
+            $breakdown[] = "{$label}: " . number_format($score, 2) . " × {$weight}%";
+        }
+
+        $finalScore = round($finalScore, 2);
+
+        // ── Backward-compat: keep interview_score for single-stage packages ──
+        $legacyInterviewScore = null;
+        if (count($stages) === 1) {
+            $legacyInterviewScore = (float) ($stageScores['stage_0'] ?? 0);
+        }
+
+        $record->update([
+            'stage_scores'    => $stageScores,
+            'interview_score' => $legacyInterviewScore,
+            'total_score'     => $finalScore,
+            'status'          => 'completed',
+        ]);
+
+        Notification::make()
+            ->title('Nilai Seleksi Tersimpan')
+            ->body(
+                implode('  +  ', $breakdown)
+                    . '  =  Nilai Akhir: ' . number_format($finalScore, 2) . ' poin'
+            )
+            ->success()
+            ->send();
     }
 }

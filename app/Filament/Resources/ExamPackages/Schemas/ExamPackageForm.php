@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\ExamPackages\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -83,58 +84,124 @@ class ExamPackageForm
                             ->helperText('Tentukan apakah paket ini terlihat dan dapat diakses oleh peserta.'),
                     ]),
 
-                // ── Konfigurasi Wawancara (hanya untuk Teknis / correct_wrong) ─────
-                Section::make('Konfigurasi Wawancara (Teknis)')
-                    ->description('Aktifkan jika ujian ini memerlukan tahap wawancara setelah CBT selesai.')
-                    ->icon('heroicon-o-microphone')
+                // ── Konfigurasi Seleksi Lanjutan (hanya untuk Teknis / correct_wrong) ─────
+                Section::make('Konfigurasi Seleksi Lanjutan (Teknis)')
+                    ->description('Aktifkan jika ujian ini memerlukan tahap seleksi setelah CBT selesai — seperti Wawancara, Presentasi, FGD, dan lain-lain.')
+                    ->icon('heroicon-o-clipboard-document-list')
                     ->collapsible()
                     ->visible(
                         fn(Get $get): bool =>
                         \App\Models\ExamType::find($get('exam_type_id'))?->evaluation_method === 'correct_wrong'
                     )
                     ->schema([
-                        Toggle::make('technical_scoring_config.has_interview')
-                            ->label('Gunakan Tahap Wawancara?')
-                            ->helperText('Jika aktif, status sesi peserta akan menjadi "Menunggu Wawancara" setelah CBT selesai, dan nilai akhir dihitung dari kombinasi CBT + Wawancara.')
+                        Toggle::make('technical_scoring_config.has_stages')
+                            ->label('Gunakan Tahap Seleksi Lanjutan?')
+                            ->helperText('Jika aktif, peserta akan berstatus "Menunggu Seleksi" setelah CBT dan admin perlu menginput nilai setiap tahap seleksi sebelum nilai akhir ditetapkan.')
                             ->live()
                             ->default(false),
 
-                        Grid::make(2)
-                            ->visible(fn(Get $get): bool => (bool) $get('technical_scoring_config.has_interview'))
+                        // ── Seluruh konten ini hanya tampil jika has_stages = true ──
+                        Section::make()
+                            ->visible(fn(Get $get): bool => (bool) $get('technical_scoring_config.has_stages'))
+                            ->extraAttributes(['class' => 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl'])
                             ->schema([
+
+                                // ── Bobot CBT ──
                                 TextInput::make('technical_scoring_config.cbt_weight')
                                     ->label('Bobot CBT (%)')
                                     ->numeric()
                                     ->minValue(1)
                                     ->maxValue(99)
-                                    ->required(fn(Get $get): bool => (bool) $get('technical_scoring_config.has_interview'))
-                                    ->helperText('Persentase kontribusi nilai CBT ke nilai akhir.')
+                                    ->default(100)
+                                    ->suffix('%')
+                                    ->live(debounce: 500)
+                                    ->required(fn(Get $get): bool => (bool) $get('technical_scoring_config.has_stages'))
+                                    ->helperText('Persentase bobot nilai CBT terhadap nilai akhir.')
                                     ->rules([
                                         fn(Get $get): \Closure => static function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
-                                            $cbt       = (float) ($value ?? 0);
-                                            $interview = (float) ($get('technical_scoring_config.interview_weight') ?? 0);
-                                            if ($cbt + $interview !== 100.0) {
-                                                $fail("Bobot CBT + Bobot Wawancara harus berjumlah tepat 100%. Saat ini: {$cbt} + {$interview} = " . ($cbt + $interview) . '%.');
+                                            if (! (bool) $get('technical_scoring_config.has_stages')) return;
+
+                                            $cbtWeight   = (float) ($value ?? 0);
+                                            $stages      = (array) ($get('technical_scoring_config.stages') ?? []);
+                                            $stagesTotal = array_sum(array_column($stages, 'weight'));
+                                            $total       = $cbtWeight + $stagesTotal;
+
+                                            if (abs($total - 100) > 0.001) {
+                                                $fail("Total bobot harus 100%. CBT ({$cbtWeight}%) + Tahap Seleksi ({$stagesTotal}%) = {$total}%.");
                                             }
                                         },
                                     ]),
 
-                                TextInput::make('technical_scoring_config.interview_weight')
-                                    ->label('Bobot Wawancara (%)')
-                                    ->numeric()
-                                    ->minValue(1)
-                                    ->maxValue(99)
-                                    ->required(fn(Get $get): bool => (bool) $get('technical_scoring_config.has_interview'))
-                                    ->helperText('Persentase kontribusi nilai wawancara ke nilai akhir.')
-                                    ->rules([
-                                        fn(Get $get): \Closure => static function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
-                                            $interview = (float) ($value ?? 0);
-                                            $cbt       = (float) ($get('technical_scoring_config.cbt_weight') ?? 0);
-                                            if ($cbt + $interview !== 100.0) {
-                                                $fail("Bobot CBT + Bobot Wawancara harus berjumlah tepat 100%. Saat ini: {$cbt} + {$interview} = " . ($cbt + $interview) . '%.');
-                                            }
-                                        },
-                                    ]),
+                                // ── Repeater Tahap Seleksi ──
+                                Repeater::make('technical_scoring_config.stages')
+                                    ->label('Tahap Seleksi')
+                                    ->helperText('Tambahkan setiap tahap seleksi beserta bobot nilainya. Total bobot CBT + semua tahap harus tepat 100%.')
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                TextInput::make('label')
+                                                    ->label('Nama Tahap')
+                                                    ->placeholder('Contoh: Wawancara, Presentasi, FGD')
+                                                    ->required()
+                                                    ->maxLength(100),
+
+                                                TextInput::make('weight')
+                                                    ->label('Bobot (%)')
+                                                    ->numeric()
+                                                    ->minValue(1)
+                                                    ->maxValue(99)
+                                                    ->suffix('%')
+                                                    ->required()
+                                                    ->live(debounce: 500),
+                                            ]),
+                                    ])
+                                    ->addActionLabel('+ Tambah Tahap Seleksi')
+                                    ->reorderableWithButtons()
+                                    ->collapsible()
+                                    ->itemLabel(
+                                        fn(array $state): string => ($state['label'] ?? 'Tahap Baru')
+                                            . ' — Bobot: ' . ($state['weight'] ?? 0) . '%'
+                                    )
+                                    ->minItems(1)
+                                    ->required(fn(Get $get): bool => (bool) $get('../../technical_scoring_config.has_stages'))
+                                    ->live()
+                                    ->afterStateUpdated(function () {}) // trigger live re-render for hint
+                                    ->hintIcon('heroicon-m-information-circle')
+                                    ->hint(function (Get $get): string {
+                                        $cbtWeight   = (float) ($get('technical_scoring_config.cbt_weight') ?? 0);
+                                        $stages      = (array) ($get('technical_scoring_config.stages') ?? []);
+                                        $stagesTotal = array_sum(array_column($stages, 'weight'));
+                                        $total       = $cbtWeight + $stagesTotal;
+                                        $remaining   = 100 - $total;
+
+                                        // Build per-stage breakdown
+                                        $parts = ["CBT: {$cbtWeight}%"];
+                                        foreach ($stages as $stage) {
+                                            $lbl = $stage['label'] ?? 'Tahap';
+                                            $w   = $stage['weight'] ?? 0;
+                                            $parts[] = "{$lbl}: {$w}%";
+                                        }
+                                        $breakdown = implode(' + ', $parts) . " = {$total}%";
+
+                                        if (abs($remaining) < 0.001) {
+                                            return "✅ {$breakdown} — Total sudah 100%";
+                                        }
+                                        if ($remaining > 0) {
+                                            return "⚠️ {$breakdown} — Sisa bobot: {$remaining}%";
+                                        }
+                                        return "❌ {$breakdown} — Melebihi 100% sebesar " . abs($remaining) . '% — harap kurangi.';
+                                    })
+                                    ->hintColor(function (Get $get): string {
+                                        $cbtWeight   = (float) ($get('technical_scoring_config.cbt_weight') ?? 0);
+                                        $stages      = (array) ($get('technical_scoring_config.stages') ?? []);
+                                        $stagesTotal = array_sum(array_column($stages, 'weight'));
+                                        $total       = $cbtWeight + $stagesTotal;
+                                        $remaining   = 100 - $total;
+                                        if (abs($remaining) < 0.001) return 'success';
+                                        if ($remaining > 0) return 'warning';
+                                        return 'danger';
+                                    }),
+
                             ]),
                     ]),
             ]);

@@ -76,7 +76,7 @@ class ParticipantsRelationManager extends RelationManager
                         'Nonaktif'           => 'danger',
                         'Belum Mengerjakan'  => 'gray',
                         'Sedang Mengerjakan' => 'warning',
-                        'Menunggu Wawancara' => 'info',
+                        'Menunggu Seleksi'   => 'info',
                         'Selesai'            => 'success',
                         'Diberhentikan'      => 'danger',
                         default              => 'gray',
