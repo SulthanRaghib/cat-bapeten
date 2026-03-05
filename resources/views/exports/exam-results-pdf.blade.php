@@ -187,6 +187,46 @@
             background: #fff5f5;
         }
 
+        /* Stage sub-table inside teknis rows (multi-stage scoring) */
+        .stage-subtable {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 3px 0;
+            font-size: 7.5px;
+        }
+
+        .stage-subtable th {
+            background: #1E3A5F;
+            color: #fff;
+            padding: 3px 4px;
+            border: 1px solid #4B8BBE;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .stage-subtable td {
+            padding: 3px 4px;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        .stage-subtable tr.cbt-row {
+            background: #eff6ff;
+        }
+
+        .stage-subtable tr.stage-row {
+            background: #f5f3ff;
+        }
+
+        .stage-subtable tr.total-row {
+            background: #f0fdf4;
+            font-weight: bold;
+        }
+
+        .stage-subtable tr.total-row.gagal {
+            background: #fff5f5;
+        }
+
         .text-center {
             text-align: center;
         }
@@ -309,7 +349,7 @@
     ════════════════════════════════════════════════════ --}}
     @if ($teknis_results->isNotEmpty())
         <div class="section-heading teknis">
-            UJIAN TEKNIS — Penilaian Benar / Salah
+            UJIAN TEKNIS — Penilaian Benar / Salah{{ $has_staged_teknis ? ' + Tahap Seleksi Lanjutan' : '' }}
             ({{ $teknis_results->count() }} peserta)
         </div>
 
@@ -333,6 +373,9 @@
                     <th>Nilai</th>
                     <th>NAB</th>
                     <th>Status</th>
+                    @if ($has_staged_teknis)
+                        <th style="min-width:200px;">Rincian Tahap Seleksi</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -362,11 +405,73 @@
                                 {{ $row['status'] }}
                             </span>
                         </td>
+                        @if ($has_staged_teknis)
+                            <td>
+                                @if (!empty($row['has_stages']) && !empty($row['stages_config']))
+                                    @php
+                                        $cbtScore = (float) ($row['cbt_score'] ?? 0);
+                                        $cbtWeight = (float) ($row['cbt_weight'] ?? 100);
+                                        $cbtContrib = round(($cbtScore * $cbtWeight) / 100, 2);
+                                        $stageScores = $row['stage_scores'] ?? [];
+                                    @endphp
+                                    <table class="stage-subtable">
+                                        <thead>
+                                            <tr>
+                                                <th>Komponen</th>
+                                                <th>Nilai</th>
+                                                <th>Bobot</th>
+                                                <th>Nilai Terbobot</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{-- CBT row --}}
+                                            <tr class="cbt-row">
+                                                <td class="text-left">CBT</td>
+                                                <td class="text-center" style="font-weight:bold; color:#1d4ed8;">
+                                                    {{ number_format($cbtScore, 1, ',', '.') }}</td>
+                                                <td class="text-center">{{ $cbtWeight }}%</td>
+                                                <td class="text-center" style="color:#1d4ed8;">
+                                                    {{ number_format($cbtContrib, 2, ',', '.') }}</td>
+                                            </tr>
+                                            {{-- Per-stage rows --}}
+                                            @foreach ($row['stages_config'] as $si => $stage)
+                                                @php
+                                                    $stageLabel = $stage['label'] ?? 'Tahap ' . ($si + 1);
+                                                    $stageWeight = (float) ($stage['weight'] ?? 0);
+                                                    $stageScore = (float) ($stageScores['stage_' . $si] ?? 0);
+                                                    $stageContrib = round(($stageScore * $stageWeight) / 100, 2);
+                                                @endphp
+                                                <tr class="stage-row">
+                                                    <td class="text-left">{{ $stageLabel }}</td>
+                                                    <td class="text-center" style="font-weight:bold; color:#6d28d9;">
+                                                        {{ number_format($stageScore, 1, ',', '.') }}</td>
+                                                    <td class="text-center">{{ $stageWeight }}%</td>
+                                                    <td class="text-center" style="color:#6d28d9;">
+                                                        {{ number_format($stageContrib, 2, ',', '.') }}</td>
+                                                </tr>
+                                            @endforeach
+                                            {{-- Total row --}}
+                                            <tr class="total-row {{ $row['is_lulus'] ? '' : 'gagal' }}">
+                                                <td class="text-left" colspan="3"
+                                                    style="font-size:7px; text-transform:uppercase; letter-spacing:0.3px;">
+                                                    Nilai Akhir Terbobot</td>
+                                                <td class="text-center"
+                                                    style="font-size:9px; color:{{ $row['is_lulus'] ? '#1A6B3C' : '#C0392B' }};">
+                                                    {{ number_format((float) ($row['nilai'] ?? 0), 2, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                @else
+                                    <span style="color:#999; font-style:italic;">—</span>
+                                @endif
+                            </td>
+                        @endif
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $includeStatistics ? 15 : 12 }}" class="text-center"
-                            style="padding: 12px; color: #999;">
+                        <td colspan="{{ $includeStatistics ? ($has_staged_teknis ? 16 : 15) : ($has_staged_teknis ? 13 : 12) }}"
+                            class="text-center" style="padding: 12px; color: #999;">
                             Tidak ada data ujian teknis.
                         </td>
                     </tr>

@@ -348,6 +348,12 @@ class ExportExamResultsHeaderAction
                 self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS');
         } else {
             // ── TEKNIS (correct_wrong): standard columns ──────────────────
+            // Detect multi-stage config from the selected package (if any)
+            $technicalConfig = $package?->technical_scoring_config ?? [];
+            $hasStages       = !empty($technicalConfig['has_stages']) && (bool) $technicalConfig['has_stages'];
+            $cbtWeight       = (int) ($technicalConfig['cbt_weight'] ?? 100);
+            $stagesConf      = $technicalConfig['stages'] ?? [];
+
             if ($includeStatistics) {
                 $columns[] = Column::make('jawaban_benar')
                     ->heading('Benar')
@@ -366,8 +372,64 @@ class ExportExamResultsHeaderAction
                 ->heading('Pelanggaran')
                 ->getStateUsing(fn(ExamSession $record): int => self::countViolations($record));
 
-            $columns[] = Column::make('total_score')
-                ->heading('Nilai Akhir');
+            if ($hasStages) {
+                // ── Multi-stage Teknis: add CBT + per-stage score columns ──
+                $columns[] = Column::make('cbt_score')
+                    ->heading('Skor CBT (' . $cbtWeight . '%)')
+                    ->getStateUsing(fn(ExamSession $record): string =>
+                    $record->cbt_score !== null
+                        ? number_format((float) $record->cbt_score, 2, '.', '')
+                        : '—');
+
+                foreach ($stagesConf as $si => $stage) {
+                    $stageName   = $stage['label'] ?? ('Tahap ' . ($si + 1));
+                    $stageWeight = (int) ($stage['weight'] ?? 0);
+                    $stageKey    = 'stage_' . $si;
+
+                    $columns[] = Column::make('stage_score_' . $si)
+                        ->heading('Nilai ' . $stageName . ' (' . $stageWeight . '%)')
+                        ->getStateUsing(function (ExamSession $record) use ($stageKey): string {
+                            $stageScores = $record->stage_scores ?? [];
+                            $score       = $stageScores[$stageKey] ?? null;
+                            return $score !== null ? number_format((float) $score, 2, '.', '') : '—';
+                        });
+                }
+
+                $columns[] = Column::make('total_score')
+                    ->heading('Nilai Akhir Terbobot (NAB: ' . ($package->passing_grade ?? '—') . ')');
+            } elseif ($package === null) {
+                // ── All packages: add generic CBT & stage summary columns ──
+                $columns[] = Column::make('cbt_score_generic')
+                    ->heading('Skor CBT')
+                    ->getStateUsing(fn(ExamSession $record): string =>
+                    $record->cbt_score !== null
+                        ? number_format((float) $record->cbt_score, 2, '.', '')
+                        : '—');
+
+                $columns[] = Column::make('stage_scores_summary')
+                    ->heading('Rincian Tahap Seleksi')
+                    ->getStateUsing(function (ExamSession $record): string {
+                        $stageScores = $record->stage_scores ?? [];
+                        if (empty($stageScores)) {
+                            return '—';
+                        }
+                        $config = $record->examPackage?->technical_scoring_config ?? [];
+                        $stages = $config['stages'] ?? [];
+                        $parts  = [];
+                        foreach ($stages as $si => $stage) {
+                            $label = $stage['label'] ?? ('Tahap ' . ($si + 1));
+                            $score = $stageScores['stage_' . $si] ?? '—';
+                            $parts[] = $label . ': ' . (is_numeric($score) ? number_format((float) $score, 1, '.', '') : $score);
+                        }
+                        return implode(' | ', $parts);
+                    });
+
+                $columns[] = Column::make('total_score')
+                    ->heading('Nilai Akhir');
+            } else {
+                $columns[] = Column::make('total_score')
+                    ->heading('Nilai Akhir');
+            }
 
             $columns[] = Column::make('nab')
                 ->heading('Nilai Ambang Batas (NAB)')

@@ -90,6 +90,8 @@ class ExamResultsPdfExportService
             $unansweredCount = max(0, $totalQ - $answeredCount);
             $isLulus = ($session->total_score ?? 0) >= $passingGrade;
 
+            $technicalConfig = $session->examPackage?->technical_scoring_config ?? [];
+
             return [
                 'eval_method'    => 'correct_wrong',
                 'nama'           => $session->user?->name ?? '-',
@@ -108,6 +110,12 @@ class ExamResultsPdfExportService
                 'nab'            => $passingGrade,
                 'status'         => $isLulus ? 'LULUS' : 'TIDAK LULUS',
                 'is_lulus'       => $isLulus,
+                // Multi-stage fields (null when no stages configured)
+                'cbt_score'      => $session->cbt_score,
+                'stage_scores'   => $session->stage_scores ?? [],
+                'has_stages'     => !empty($session->stage_scores),
+                'cbt_weight'     => (float) ($technicalConfig['cbt_weight'] ?? 100),
+                'stages_config'  => $technicalConfig['stages'] ?? [],
             ];
         });
 
@@ -126,12 +134,14 @@ class ExamResultsPdfExportService
         ];
 
         $pdf = Pdf::loadView('exports.exam-results-pdf', [
-            'results'           => $processed,         // backward-compat
-            'teknis_results'    => $teknisResults,
-            'mansoskul_results' => $mansoskulResults,
-            'includeStatistics' => $includeStatistics,
-            'filterMeta'        => $filterMeta,
-            'summary'           => $summary,
+            'results'             => $processed,         // backward-compat
+            'teknis_results'      => $teknisResults,
+            'mansoskul_results'   => $mansoskulResults,
+            'includeStatistics'   => $includeStatistics,
+            'filterMeta'          => $filterMeta,
+            'summary'             => $summary,
+            // True when at least one teknis row has multi-stage scoring
+            'has_staged_teknis'   => $teknisResults->contains('has_stages', true),
         ])
             ->setPaper('a4', 'landscape')
             ->setOption('isHtml5ParserEnabled', true)

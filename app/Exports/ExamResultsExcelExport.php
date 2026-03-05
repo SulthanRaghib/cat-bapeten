@@ -100,19 +100,6 @@ class ExamResultsExcelExport extends ExcelExport
         });
     }
 
-    /**
-     * Number of data columns.
-     * Mansoskul: 7 base + 2*unitCount per-unit cols + 5 summary = 12 + 2*unitCount.
-     * Teknis with statistics: A–N = 14.
-     * Teknis without statistics: A–K = 11.
-     */
-    private function getColumnCount(): int
-    {
-        if ($this->isMansoskul) {
-            return 12 + 2 * $this->unitCount;
-        }
-        return $this->includeStatistics ? 14 : 11;
-    }
 
     /**
      * Column letter index of NIP (2nd column = B).
@@ -129,8 +116,8 @@ class ExamResultsExcelExport extends ExcelExport
         return array_merge(parent::registerEvents(), [
             AfterSheet::class => function (AfterSheet $event) use ($includeStats, $isMansoskul, $unitCount): void {
                 $sheet      = $event->sheet->getDelegate();
-                $colCount   = $this->getColumnCount();
-                $lastCol    = Coordinate::stringFromColumnIndex($colCount);
+                $lastCol    = $sheet->getHighestColumn();
+                $colCount   = Coordinate::columnIndexFromString($lastCol);
                 $lastRow    = $sheet->getHighestRow();
                 $headerRange = "A1:{$lastCol}1";
                 $dataRange   = "A1:{$lastCol}{$lastRow}";
@@ -280,26 +267,77 @@ class ExamResultsExcelExport extends ExcelExport
                         }
                     } else {
                         // ── TEKNIS layout ────────────────────────────────────────
-                        // With stats: H=Benar,I=Salah,J=TdkDijawab, K=Pelanggaran, L=Nilai, M=NAB, N=Keterangan
-                        // Without stats: H=Pelanggaran, I=Nilai, J=NAB, K=Keterangan
-                        $pelanggaranCol = $includeStats ? 'K' : 'H';
-                        $nilaiCol       = $includeStats ? 'L' : 'I';
-                        $nabCol         = $includeStats ? 'M' : 'J';
-                        $keteranganCol  = $includeStats ? 'N' : 'K';
+                        // Column positions are dynamic because multi-stage packages
+                        // insert CBT + per-stage columns between Pelanggaran and Nilai Akhir.
+                        // Scan the header row to locate each column by heading text.
 
-                        // Statistik columns (only when included): center align
+                        $headerMap = [];
+                        for ($c = 1; $c <= $colCount; $c++) {
+                            $letter = Coordinate::stringFromColumnIndex($c);
+                            $headerMap[(string) $sheet->getCell("{$letter}1")->getValue()] = $letter;
+                        }
+                        // Partial-match helper (matches heading text that STARTS WITH $search)
+                        $findCol = function (string $search) use ($headerMap): ?string {
+                            if (isset($headerMap[$search])) {
+                                return $headerMap[$search];
+                            }
+                            foreach ($headerMap as $heading => $letter) {
+                                if (str_starts_with($heading, $search)) {
+                                    return $letter;
+                                }
+                            }
+                            return null;
+                        };
+
+                        $pelanggaranCol = $findCol('Pelanggaran');
+                        $nilaiCol       = $findCol('Nilai Akhir');
+                        $nabCol         = $findCol('Nilai Ambang Batas');
+                        $keteranganCol  = $findCol('Keterangan');
+
+                        // Statistik columns: Benar / Salah / Tidak Dijawab
                         if ($includeStats) {
-                            foreach (['H', 'I', 'J'] as $statCol) {
-                                $statRange = "{$statCol}2:{$statCol}{$lastRow}";
-                                $sheet->getStyle($statRange)
+                            $benarCol   = $findCol('Benar');
+                            $salahCol   = $findCol('Salah');
+                            $tdkCol     = $findCol('Tidak Dijawab');
+                            foreach (array_filter([$benarCol, $salahCol, $tdkCol]) as $statCol) {
+                                $sheet->getStyle("{$statCol}2:{$statCol}{$lastRow}")
                                     ->getNumberFormat()->setFormatCode('0');
-                                $sheet->getStyle($statRange)
+                                $sheet->getStyle("{$statCol}2:{$statCol}{$lastRow}")
                                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                             }
-                            for ($row = 2; $row <= $lastRow; $row++) {
-                                $sheet->getStyle("H{$row}")->applyFromArray(['font' => ['color' => ['rgb' => '1A6B3C'], 'bold' => true]]);
-                                $sheet->getStyle("I{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true]]);
-                                $sheet->getStyle("J{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true]]);
+                            if ($benarCol) {
+                                for ($row = 2; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$benarCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => '1A6B3C'], 'bold' => true]]);
+                                }
+                            }
+                            if ($salahCol) {
+                                for ($row = 2; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$salahCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true]]);
+                                }
+                            }
+                            if ($tdkCol) {
+                                for ($row = 2; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$tdkCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true]]);
+                                }
+                            }
+                        }
+
+                        // Score columns between Pelanggaran and Nilai Akhir
+                        // (Skor CBT, per-stage scores) — decimal format + center
+                        if ($pelanggaranCol && $nilaiCol) {
+                            $pelIdx = Coordinate::columnIndexFromString($pelanggaranCol);
+                            $nilIdx = Coordinate::columnIndexFromString($nilaiCol);
+                            for ($c = $pelIdx + 1; $c < $nilIdx; $c++) {
+                                $letter = Coordinate::stringFromColumnIndex($c);
+                                $sheet->getStyle("{$letter}2:{$letter}{$lastRow}")
+                                    ->getNumberFormat()->setFormatCode('0.00');
+                                $sheet->getStyle("{$letter}2:{$letter}{$lastRow}")
+                                    ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                                for ($row = 2; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$letter}{$row}")->applyFromArray([
+                                        'font' => ['bold' => true, 'color' => ['rgb' => '1d4ed8']],
+                                    ]);
+                                }
                             }
                         }
                     }
