@@ -205,6 +205,17 @@ class ExamResultResource extends Resource
                                     ->columnSpanFull()
                                     ->hidden(fn(ExamSession $record): bool =>
                                     $record->examPackage?->examType?->evaluation_method !== 'weighted'),
+
+                                // ── Rincian tahap seleksi lanjutan (Teknis multi-stage) ──
+                                ViewEntry::make('stage_scores_breakdown')
+                                    ->label('')
+                                    ->view('filament.resources.exam-results.infolists.stage-scores-breakdown')
+                                    ->columnSpanFull()
+                                    ->hidden(
+                                        fn(ExamSession $record): bool =>
+                                        empty($record->stage_scores)
+                                            || $record->examPackage?->examType?->evaluation_method === 'weighted'
+                                    ),
                             ]),
 
                         Section::make('Detail Soal & Jawaban')
