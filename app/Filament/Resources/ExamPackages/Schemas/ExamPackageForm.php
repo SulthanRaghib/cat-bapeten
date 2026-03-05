@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ExamPackages\Schemas;
 
+use App\Models\SelectionStageType;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -139,11 +140,32 @@ class ExamPackageForm
                                     ->schema([
                                         Grid::make(2)
                                             ->schema([
-                                                TextInput::make('label')
+                                                Select::make('label')
                                                     ->label('Nama Tahap')
-                                                    ->placeholder('Contoh: Wawancara, Presentasi, FGD')
+                                                    ->options(fn(): array => SelectionStageType::active()->pluck('name', 'name')->toArray())
+                                                    ->searchable()
+                                                    ->createOptionForm([
+                                                        TextInput::make('name')
+                                                            ->label('Nama Tahap Baru')
+                                                            ->required()
+                                                            ->maxLength(100),
+                                                        TextInput::make('description')
+                                                            ->label('Keterangan')
+                                                            ->maxLength(255),
+                                                    ])
+                                                    ->createOptionUsing(function (array $data): string {
+                                                        $type = SelectionStageType::create([
+                                                            'name'        => $data['name'],
+                                                            'description' => $data['description'] ?? null,
+                                                            'is_active'   => true,
+                                                            'sort_order'  => (SelectionStageType::max('sort_order') ?? 0) + 1,
+                                                        ]);
+                                                        return $type->name;
+                                                    })
+                                                    ->getOptionLabelUsing(fn($value): string => $value)
                                                     ->required()
-                                                    ->maxLength(100),
+                                                    ->native(false)
+                                                    ->placeholder('Pilih atau tambah nama tahap...'),
 
                                                 TextInput::make('weight')
                                                     ->label('Bobot (%)')
