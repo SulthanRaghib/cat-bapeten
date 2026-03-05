@@ -18,11 +18,13 @@ class ExamSession extends Model
         'total_score',
         'cbt_score',
         'interview_score',
+        'stage_scores',
         'answers_meta',
     ];
 
     protected $casts = [
         'answers_meta'    => 'array',
+        'stage_scores'    => 'array',
         'started_at'      => 'datetime',
         'finished_at'     => 'datetime',
         'total_score'     => 'float',

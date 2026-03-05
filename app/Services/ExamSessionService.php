@@ -126,14 +126,15 @@ final class ExamSessionService
             $cbtScore = (int) ExamAnswer::where('exam_session_id', $session->id)
                 ->sum('score');
 
-            // Determine if this Teknis package requires an interview stage.
+            // Determine if this Teknis package requires additional selection stages.
+            // Supports new 'has_stages' format AND legacy 'has_interview' format.
             $technicalConfig = $session->examPackage?->technical_scoring_config ?? [];
-            $hasInterview    =
+            $hasStages       =
                 ($session->examPackage?->examType?->evaluation_method === 'correct_wrong')
-                && (bool) ($technicalConfig['has_interview'] ?? false);
+                && ((bool) ($technicalConfig['has_stages'] ?? false) || (bool) ($technicalConfig['has_interview'] ?? false));
 
-            if ($hasInterview) {
-                // Await interview: store CBT score provisionally, final score TBD.
+            if ($hasStages) {
+                // Await selection stages: store CBT score provisionally, final score TBD.
                 $session->update([
                     'status'      => 'awaiting_interview',
                     'finished_at' => $dto->finishedAt,
@@ -141,7 +142,7 @@ final class ExamSessionService
                     'total_score' => $cbtScore,
                 ]);
 
-                Log::info('Exam awaiting interview', [
+                Log::info('Exam awaiting selection stages', [
                     'session_id'  => $session->id,
                     'participant' => $dto->examParticipantId,
                     'cbt_score'   => $cbtScore,

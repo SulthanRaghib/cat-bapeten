@@ -85,7 +85,7 @@ class ExamParticipant extends Pivot
             return match ($session->status) {
                 'completed'          => 'Selesai',
                 'ongoing'            => 'Sedang Mengerjakan',
-                'awaiting_interview' => 'Menunggu Wawancara',
+                'awaiting_interview' => 'Menunggu Seleksi',
                 'terminated'         => 'Diberhentikan',
                 default              => ucfirst($session->status),
             };
@@ -109,7 +109,7 @@ class ExamParticipant extends Pivot
             'Nonaktif'           => 'danger',
             'Belum Mengerjakan'  => 'gray',
             'Sedang Mengerjakan' => 'warning',
-            'Menunggu Wawancara' => 'info',
+            'Menunggu Seleksi'   => 'info',
             'Selesai'            => 'success',
             'Diberhentikan'      => 'danger',
             default              => 'gray',
@@ -122,7 +122,7 @@ class ExamParticipant extends Pivot
             'Nonaktif'           => 'heroicon-m-x-circle',
             'Belum Mengerjakan'  => 'heroicon-m-clock',
             'Sedang Mengerjakan' => 'heroicon-m-play-circle',
-            'Menunggu Wawancara' => 'heroicon-m-microphone',
+            'Menunggu Seleksi'   => 'heroicon-m-clipboard-document-check',
             'Selesai'            => 'heroicon-m-check-badge',
             'Diberhentikan'      => 'heroicon-m-no-symbol',
             default              => 'heroicon-m-question-mark-circle',
