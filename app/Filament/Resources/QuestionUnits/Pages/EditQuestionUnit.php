@@ -17,8 +17,27 @@ class EditQuestionUnit extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->modalHeading('Hapus Unit Soal?')
+                ->modalDescription('Unit soal beserta semua sub unit dan soal yang terkait akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
+                ->modalSubmitActionLabel('Ya, Hapus'),
         ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan Perubahan'),
+
+            $this->getCancelFormAction()
+                ->label('Batal'),
+        ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 
     // Combine form + relation managers (Indicators) as sibling tabs

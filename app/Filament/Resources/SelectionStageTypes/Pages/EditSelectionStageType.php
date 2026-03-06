@@ -15,7 +15,21 @@ class EditSelectionStageType extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->modalHeading('Hapus Jenis Tahap Seleksi?')
+                ->modalDescription('Jenis tahap seleksi ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
+                ->modalSubmitActionLabel('Ya, Hapus'),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan Perubahan'),
+
+            $this->getCancelFormAction()
+                ->label('Batal'),
         ];
     }
 

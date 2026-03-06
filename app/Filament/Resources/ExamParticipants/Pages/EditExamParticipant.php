@@ -15,7 +15,21 @@ class EditExamParticipant extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->modalHeading('Hapus Peserta Ujian?')
+                ->modalDescription('Data peserta ujian ini beserta seluruh sesi dan jawaban ujiannya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
+                ->modalSubmitActionLabel('Ya, Hapus'),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan Perubahan'),
+
+            $this->getCancelFormAction()
+                ->label('Batal'),
         ];
     }
 

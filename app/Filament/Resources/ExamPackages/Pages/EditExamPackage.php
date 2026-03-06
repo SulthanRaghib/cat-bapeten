@@ -43,7 +43,21 @@ class EditExamPackage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->modalHeading('Hapus Paket Ujian?')
+                ->modalDescription('Paket ujian beserta seluruh soal, konfigurasi NAB, dan data peserta yang terkait akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
+                ->modalSubmitActionLabel('Ya, Hapus'),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan Perubahan'),
+
+            $this->getCancelFormAction()
+                ->label('Batal'),
         ];
     }
 

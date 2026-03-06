@@ -57,7 +57,21 @@ class EditQuestion extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->modalHeading('Hapus Soal?')
+                ->modalDescription('Soal ini beserta semua jawaban dan konfigurasi skornya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
+                ->modalSubmitActionLabel('Ya, Hapus'),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan Perubahan'),
+
+            $this->getCancelFormAction()
+                ->label('Batal'),
         ];
     }
 

@@ -15,7 +15,18 @@ class EditExamType extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            // DeleteAction::make(),
+            // Tipe ujian adalah data master — tidak disediakan tombol hapus
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Simpan Perubahan'),
+
+            $this->getCancelFormAction()
+                ->label('Batal'),
         ];
     }
 

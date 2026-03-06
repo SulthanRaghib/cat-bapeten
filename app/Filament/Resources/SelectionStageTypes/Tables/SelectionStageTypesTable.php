@@ -83,8 +83,12 @@ class SelectionStageTypesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()->label('Hapus Terpilih'),
-                ]),
+                    DeleteBulkAction::make()
+                        ->label('Hapus Terpilih')
+                        ->modalHeading('Hapus Jenis Tahap Terpilih?')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus jenis tahap yang dipilih? Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
+                ])->label('Tindakan Massal'),
             ])
             ->emptyStateHeading('Belum ada jenis tahap seleksi')
             ->emptyStateDescription('Tambahkan jenis tahap seleksi yang digunakan dalam proses rekrutmen, seperti Wawancara, FGD, atau Presentasi.')
