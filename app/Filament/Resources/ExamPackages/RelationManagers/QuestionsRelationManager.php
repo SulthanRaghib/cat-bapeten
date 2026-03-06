@@ -12,8 +12,10 @@ use App\Models\QuestionSubUnit;
 use App\Models\QuestionUnit;
 use App\Services\NabSyncService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
+use Filament\Support\Enums\Size;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -151,23 +153,29 @@ class QuestionsRelationManager extends RelationManager
                 $this->makeGenerateRandomAction(),
             ])
             ->recordActions([
-                Action::make('view')
-                    ->icon('heroicon-m-eye')
-                    ->color('gray')
-                    ->label('Lihat Detail')
-                    ->modalHeading('Detail Pertanyaan')
-                    ->modalContent(fn($record) => view('filament.modals.question-detail', [
-                        'record'  => $record,
-                        'manager' => $this,
-                    ]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup'),
-                DetachAction::make()
-                    ->label('Hapus Soal')
-                    ->modalHeading('Hapus Soal dari Paket')
-                    ->modalDescription('Soal ini akan dihapus dari paket ujian, tetapi tetap ada di Bank Soal.')
-                    ->modalSubmitActionLabel('Ya, Hapus')
-                    ->after(fn() => $this->syncNabAfterChange()),
+                ActionGroup::make([
+                    Action::make('view')
+                        ->icon('heroicon-m-eye')
+                        ->color('gray')
+                        ->label('Lihat Detail')
+                        ->modalHeading('Detail Pertanyaan')
+                        ->modalContent(fn($record) => view('filament.modals.question-detail', [
+                            'record'  => $record,
+                            'manager' => $this,
+                        ]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup'),
+                    DetachAction::make()
+                        ->label('Hapus Soal')
+                        ->modalHeading('Hapus Soal dari Paket')
+                        ->modalDescription('Soal ini akan dihapus dari paket ujian, tetapi tetap ada di Bank Soal.')
+                        ->modalSubmitActionLabel('Ya, Hapus')
+                        ->after(fn() => $this->syncNabAfterChange()),
+                ])
+                    ->label('Aksi')
+                    ->button()
+                    ->size(Size::Small)
+                    ->outlined(),
             ])
             ->toolbarActions([
                 DetachBulkAction::make()

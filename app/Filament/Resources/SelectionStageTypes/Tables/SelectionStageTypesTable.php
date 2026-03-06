@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Filament\Resources\SelectionStageTypes\Tables;
 
 use App\Models\SelectionStageType;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Enums\Size;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -78,8 +80,18 @@ class SelectionStageTypesTable
                 CreateAction::make()->label('Tambah Jenis Tahap'),
             ])
             ->recordActions([
-                EditAction::make()->label('Edit'),
-                DeleteAction::make()->label('Hapus'),
+                ActionGroup::make([
+                    EditAction::make()->label('Edit Tahap'),
+                    DeleteAction::make()
+                        ->label('Hapus Tahap')
+                        ->modalHeading('Hapus Jenis Tahap Seleksi?')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus jenis tahap ini? Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
+                ])
+                    ->label('Aksi')
+                    ->button()
+                    ->size(Size::Small)
+                    ->outlined(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

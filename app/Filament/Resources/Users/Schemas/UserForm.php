@@ -16,7 +16,9 @@ class UserForm
     {
         return $schema
             ->components([
-                Section::make('User Details')
+                Section::make('Informasi Pengguna')
+                    ->description('Lengkapi data pengguna berikut. Password hanya perlu diisi saat menambahkan pengguna baru atau ingin menggantinya.')
+                    ->icon('heroicon-o-user-circle')
                     ->schema([
                         TextInput::make('name')
                             ->label('Nama Lengkap')
@@ -24,28 +26,32 @@ class UserForm
                             ->maxLength(255),
 
                         TextInput::make('email')
-                            ->label('Email Address')
+                            ->label('Alamat Email')
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true),
 
-                        DateTimePicker::make('email_verified_at')
-                            ->label('Email Verified At')
-                            ->nullable(),
-
                         TextInput::make('nip')
                             ->label('NIP')
                             ->required()
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true)
+                            ->helperText('Nomor Induk Pegawai — harus unik.'),
 
                         Select::make('role')
-                            ->label('Role')
+                            ->label('Peran')
                             ->options([
-                                'admin' => 'Admin',
-                                'user' => 'User',
+                                'admin' => 'Administrator',
+                                'user'  => 'Pengguna',
                             ])
                             ->default('user')
-                            ->required(),
+                            ->required()
+                            ->native(false)
+                            ->helperText('Administrator memiliki akses penuh ke seluruh fitur sistem.'),
+
+                        DateTimePicker::make('email_verified_at')
+                            ->label('Tanggal Verifikasi Email')
+                            ->nullable()
+                            ->helperText('Kosongkan jika email belum diverifikasi.'),
 
                         TextInput::make('password')
                             ->label('Password')
@@ -53,7 +59,8 @@ class UserForm
                             ->revealable()
                             ->dehydrated(fn(?string $state) => filled($state))
                             ->required(fn(string $operation): bool => $operation === 'create')
-                            ->dehydrateStateUsing(fn(string $state): string => Hash::make($state)),
+                            ->dehydrateStateUsing(fn(string $state): string => Hash::make($state))
+                            ->helperText('Kosongkan jika tidak ingin mengubah password.'),
                     ])->columns(2),
             ]);
     }

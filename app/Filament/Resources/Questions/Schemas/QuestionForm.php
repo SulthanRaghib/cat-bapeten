@@ -49,6 +49,8 @@ class QuestionForm
             ->columns(1)
             ->components([
                 Section::make('Detail Pertanyaan')
+                    ->description('Lengkapi informasi soal berikut. Pilih tipe, unit, dan sub unit terlebih dahulu sebelum mengisi teks soal dan pilihan jawaban.')
+                    ->icon('heroicon-o-document-text')
                     ->columns(12)
                     ->schema([
                         Select::make('exam_type_id')

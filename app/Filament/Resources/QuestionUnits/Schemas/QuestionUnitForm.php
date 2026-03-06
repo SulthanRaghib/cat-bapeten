@@ -18,6 +18,8 @@ class QuestionUnitForm
         return $schema
             ->components([
                 Section::make('Informasi Unit Soal')
+                    ->description('Lengkapi data unit soal berikut. Unit mengelompokkan soal-soal berdasarkan kompetensi atau bidang materi.')
+                    ->icon('heroicon-o-folder')
                     ->schema([
                         Select::make('exam_type_id')
                             ->label('Tipe Ujian')

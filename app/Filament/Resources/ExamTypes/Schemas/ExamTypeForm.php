@@ -17,6 +17,8 @@ class ExamTypeForm
         return $schema
             ->components([
                 Section::make('Informasi Tipe Ujian')
+                    ->description('Lengkapi konfigurasi tipe ujian berikut. Tipe ujian menentukan metode penilaian dan jenis soal yang digunakan.')
+                    ->icon('heroicon-o-academic-cap')
                     ->schema([
                         TextInput::make('name')
                             ->label('Nama Tipe')

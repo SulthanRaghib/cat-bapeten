@@ -115,14 +115,27 @@ class IndicatorsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Tambah Indikator')
-                    ->icon('heroicon-o-plus'),
+                    ->icon('heroicon-o-plus')
+                    ->modalHeading('Tambah Indikator NAB')
+                    ->modalSubmitActionLabel('Simpan Indikator'),
             ])
-            ->actions([
-                EditAction::make()->iconButton(),
-                DeleteAction::make()->iconButton(),
+            ->recordActions([
+                EditAction::make()
+                    ->iconButton()
+                    ->modalHeading('Ubah Data Indikator')
+                    ->modalSubmitActionLabel('Simpan Perubahan'),
+                DeleteAction::make()
+                    ->iconButton()
+                    ->modalHeading('Hapus Indikator?')
+                    ->modalDescription('Apakah Anda yakin ingin menghapus indikator ini? Tindakan ini tidak dapat dibatalkan.')
+                    ->modalSubmitActionLabel('Ya, Hapus'),
             ])
-            ->bulkActions([
-                DeleteBulkAction::make(),
+            ->toolbarActions([
+                DeleteBulkAction::make()
+                    ->label('Hapus Terpilih')
+                    ->modalHeading('Hapus Indikator Terpilih?')
+                    ->modalDescription('Apakah Anda yakin ingin menghapus indikator yang dipilih? Tindakan ini tidak dapat dibatalkan.')
+                    ->modalSubmitActionLabel('Ya, Hapus'),
             ])
             ->emptyStateHeading('Belum ada indikator')
             ->emptyStateDescription('Tambahkan level indikator NAB untuk unit ini. Data ini akan menjadi template default saat di-sync ke Paket Ujian.')

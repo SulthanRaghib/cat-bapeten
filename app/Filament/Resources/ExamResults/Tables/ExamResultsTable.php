@@ -8,9 +8,11 @@ use App\Models\ExamSession;
 use App\Models\ExamType;
 use App\Services\ExamSessionService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Enums\Size;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -367,27 +369,33 @@ class ExamResultsTable
                 ExportExamResultsHeaderAction::make(),
             ])
             ->recordActions([
-                ViewAction::make()
-                    ->label('Lihat Detail'),
+                ActionGroup::make([
+                    ViewAction::make()
+                        ->label('Lihat Detail'),
 
-                // ── Input Nilai Seleksi Lanjutan (hanya untuk sesi awaiting_interview) ────
-                Action::make('inputStageScores')
-                    ->label('Input Nilai Seleksi')
-                    ->icon('heroicon-o-clipboard-document-check')
-                    ->color('warning')
-                    ->visible(fn(ExamSession $record): bool => $record->status === 'awaiting_interview')
-                    ->modalHeading(
-                        fn(ExamSession $record): string =>
-                        'Input Nilai Seleksi — ' . ($record->user?->name ?? '-')
-                    )
-                    ->modalDescription(
-                        fn(ExamSession $record): string =>
-                        'Nilai CBT: ' . number_format((float) ($record->cbt_score ?? 0), 2)
-                            . ' poin  |  Paket: ' . ($record->examPackage?->title ?? '-')
-                    )
-                    ->modalWidth('lg')
-                    ->schema(fn(ExamSession $record): array => self::buildStageScoreSchema($record))
-                    ->action(fn(ExamSession $record, array $data) => self::processStageScores($record, $data)),
+                    // ── Input Nilai Seleksi Lanjutan (hanya untuk sesi awaiting_interview) ────
+                    Action::make('inputStageScores')
+                        ->label('Input Nilai Seleksi')
+                        ->icon('heroicon-o-clipboard-document-check')
+                        ->color('warning')
+                        ->visible(fn(ExamSession $record): bool => $record->status === 'awaiting_interview')
+                        ->modalHeading(
+                            fn(ExamSession $record): string =>
+                            'Input Nilai Seleksi — ' . ($record->user?->name ?? '-')
+                        )
+                        ->modalDescription(
+                            fn(ExamSession $record): string =>
+                            'Nilai CBT: ' . number_format((float) ($record->cbt_score ?? 0), 2)
+                                . ' poin  |  Paket: ' . ($record->examPackage?->title ?? '-')
+                        )
+                        ->modalWidth('lg')
+                        ->schema(fn(ExamSession $record): array => self::buildStageScoreSchema($record))
+                        ->action(fn(ExamSession $record, array $data) => self::processStageScores($record, $data)),
+                ])
+                    ->label('Aksi')
+                    ->button()
+                    ->size(Size::Small)
+                    ->outlined(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

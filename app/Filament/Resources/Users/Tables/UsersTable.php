@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Enums\Size;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -73,8 +76,19 @@ class UsersTable
                     ]),
             ])
             ->recordActions([
-                EditAction::make()
-                    ->label('Edit Pengguna'),
+                ActionGroup::make([
+                    EditAction::make()
+                        ->label('Edit Pengguna'),
+                    DeleteAction::make()
+                        ->label('Hapus Pengguna')
+                        ->modalHeading('Hapus Pengguna?')
+                        ->modalDescription('Apakah Anda yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
+                ])
+                    ->label('Aksi')
+                    ->button()
+                    ->size(Size::Small)
+                    ->outlined(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

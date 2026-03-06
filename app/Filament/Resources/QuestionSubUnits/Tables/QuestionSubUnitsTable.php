@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\QuestionSubUnits\Tables;
 
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Enums\Size;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -65,9 +68,20 @@ class QuestionSubUnitsTable
                     ->native(false),
             ])
             ->recordActions([
-                EditAction::make()
-                    ->label('Edit Sub Unit')
-                    ->icon('heroicon-m-pencil-square'),
+                ActionGroup::make([
+                    EditAction::make()
+                        ->label('Edit Sub Unit')
+                        ->icon('heroicon-m-pencil-square'),
+                    DeleteAction::make()
+                        ->label('Hapus Sub Unit')
+                        ->modalHeading('Hapus Sub Unit Soal?')
+                        ->modalDescription('Menghapus sub unit ini juga akan menghapus seluruh soal yang terkait. Tindakan ini tidak dapat dibatalkan.')
+                        ->modalSubmitActionLabel('Ya, Hapus'),
+                ])
+                    ->label('Aksi')
+                    ->button()
+                    ->size(Size::Small)
+                    ->outlined(),
             ])
             ->emptyStateHeading('Belum ada sub unit soal')
             ->emptyStateDescription('Tambahkan sub unit sebagai klasifikasi lebih rinci dalam unit soal.')

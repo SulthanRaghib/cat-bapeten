@@ -17,6 +17,8 @@ class QuestionSubUnitForm
         return $schema
             ->components([
                 Section::make('Informasi Sub Unit Soal')
+                    ->description('Lengkapi data sub unit soal berikut. Sub unit merupakan klasifikasi lebih rinci di dalam sebuah unit soal.')
+                    ->icon('heroicon-o-folder-open')
                     ->schema([
                         Select::make('question_unit_id')
                             ->label('Unit Soal')

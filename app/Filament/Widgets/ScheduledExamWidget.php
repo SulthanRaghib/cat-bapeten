@@ -262,7 +262,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     })
                     ->alignment('center'),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make()
                     ->label('Edit Ujian')
                     ->url(function (ExamPackage $record): string {
