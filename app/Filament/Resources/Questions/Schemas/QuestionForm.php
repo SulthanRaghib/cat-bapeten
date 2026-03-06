@@ -272,6 +272,8 @@ class QuestionForm
                     ]),
 
                 Section::make('Jawaban')
+                    ->description('Tambahkan pilihan jawaban. Untuk soal Teknis, tandai satu jawaban sebagai kunci. Untuk Mansoskul, isi bobot poin tiap opsi.')
+                    ->icon('heroicon-o-list-bullet')
                     ->schema([
                         Repeater::make('options')
                             ->schema([
@@ -307,6 +309,15 @@ class QuestionForm
                             ->collapsible()
                             ->itemLabel(fn(array $state): ?string => strip_tags($state['answer_text'] ?? null))
                             ->reorderableWithButtons(),
+                    ]),
+
+                // ── Live Preview ──────────────────────────────────────────
+                Section::make('Pratinjau Soal')
+                    ->description('Tampilan langsung seperti yang dilihat peserta saat ujian. Diperbarui otomatis setiap kali Anda mengisi form di atas.')
+                    ->icon('heroicon-o-eye')
+                    ->collapsible()
+                    ->schema([
+                        View::make('filament.components.question-preview'),
                     ]),
             ]);
     }
