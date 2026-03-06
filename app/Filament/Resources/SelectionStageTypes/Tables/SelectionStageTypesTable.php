@@ -33,7 +33,18 @@ class SelectionStageTypesTable
                 // Icon preview
                 IconColumn::make('icon')
                     ->label('Icon')
-                    ->icon(fn(?string $state): string => $state ?? 'heroicon-o-tag')
+                    ->icon(function (?string $state): string {
+                        if (! $state) {
+                            return 'heroicon-o-tag';
+                        }
+
+                        try {
+                            app(\BladeUI\Icons\Factory::class)->svg($state);
+                            return $state;
+                        } catch (\Throwable $e) {
+                            return 'heroicon-o-tag';
+                        }
+                    })
                     ->color('primary')
                     ->alignCenter()
                     ->width(60),

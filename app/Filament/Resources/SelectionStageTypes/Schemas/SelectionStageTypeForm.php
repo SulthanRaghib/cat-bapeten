@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\SelectionStageTypes\Schemas;
 
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class SelectionStageTypeForm
 {
@@ -30,11 +34,32 @@ class SelectionStageTypeForm
                         ->placeholder('Deskripsi singkat mengenai tahap ini')
                         ->maxLength(255),
 
-                    TextInput::make('icon')
-                        ->label('Icon (Heroicon)')
-                        ->placeholder('Contoh: heroicon-o-microphone')
-                        ->helperText('Nama heroicon yang digunakan pada UI. Kosongkan jika tidak perlu.')
-                        ->maxLength(100),
+                    // Pencarian Icon
+                    TextInput::make('icon_search')
+                        ->label('Cari Icon')
+                        ->placeholder('Ketik nama icon... (misal: user, document, building)')
+                        ->prefixIcon('heroicon-o-magnifying-glass')
+                        ->live(debounce: 500)
+                        ->dehydrated(false) // Field ini tidak disimpan ke database
+                        ->helperText('Ketik untuk menampilkan pilihan icon di bawah.')
+                        ->hidden(true),
+                        
+
+                    // Pilihan Icon Visual
+                    ToggleButtons::make('icon')
+                        ->label('Pilih Icon (Visual)')
+                        ->inline()
+                        ->options(function (Get $get, ?string $state): array {
+                            $search = (string) $get('icon_search');
+                            return self::getIconOptions($search, $state);
+                        })
+                        ->icons(function (Get $get, ?string $state): array {
+                            $search = (string) $get('icon_search');
+                            $options = self::getIconOptions($search, $state);
+                            // Map each option key to itself as the icon name
+                            return array_combine(array_keys($options), array_keys($options));
+                        })
+                        ->helperText('Pilih icon yang paling menggambarkan tahap ini.'),
 
                     TextInput::make('sort_order')
                         ->label('Urutan Tampil')
@@ -49,5 +74,77 @@ class SelectionStageTypeForm
                         ->default(true),
                 ]),
         ]);
+    }
+
+    protected static function getIconOptions(string $search = '', ?string $currentValue = null): array
+    {
+        $factory = app(\BladeUI\Icons\Factory::class);
+        $options = [];
+
+        // 1. Selalu sertakan nilai saat ini jika ada dan valid
+        if ($currentValue && self::isValidIcon($factory, $currentValue)) {
+            $options[$currentValue] = $currentValue;
+        }
+
+        $search = strtolower($search);
+
+        // 2. Jika pencarian kosong, tampilkan daftar default (icon umum untuk proses rekrutmen)
+        if (empty($search)) {
+            $commonIcons = [
+                'heroicon-o-user',
+                'heroicon-o-users',
+                'heroicon-o-user-group',
+                'heroicon-o-document-text',
+                'heroicon-o-clipboard-document-list',
+                'heroicon-o-newspaper',
+                'heroicon-o-pencil',
+                'heroicon-o-pencil-square',
+                'heroicon-o-chat-bubble-left-right',
+                'heroicon-o-chat-bubble-oval-left-ellipsis',
+                'heroicon-o-presentation-chart-line',
+                'heroicon-o-presentation-chart-bar',
+                'heroicon-o-microphone',
+                'heroicon-o-video-camera',
+                'heroicon-o-academic-cap',
+                'heroicon-o-briefcase',
+            ];
+
+            foreach ($commonIcons as $icon) {
+                $options[$icon] = $icon;
+            }
+
+            return $options;
+        }
+
+        // 3. Logika pencarian - hanya sertakan icon yang valid
+        $manifest = app(\BladeUI\Icons\IconsManifest::class)->getManifest($factory->all());
+        $count = 0;
+
+        foreach ($manifest as $set => $paths) {
+            foreach ($paths as $icons) {
+                foreach ($icons as $iconName) {
+                    if (str_contains($iconName, $search) && self::isValidIcon($factory, $iconName)) {
+                        $options[$iconName] = $iconName;
+                        $count++;
+
+                        if ($count >= 30) {
+                            return $options;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $options;
+    }
+
+    protected static function isValidIcon(\BladeUI\Icons\Factory $factory, string $name): bool
+    {
+        try {
+            $factory->svg($name);
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }
