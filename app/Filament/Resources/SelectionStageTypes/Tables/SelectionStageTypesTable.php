@@ -77,13 +77,18 @@ class SelectionStageTypesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->headerActions([
-                CreateAction::make()->label('Tambah Jenis Tahap'),
+                CreateAction::make()
+                    ->label('Tambah Jenis Tahap')
+                    ->icon('heroicon-o-plus-circle'),
             ])
             ->recordActions([
                 ActionGroup::make([
-                    EditAction::make()->label('Edit Tahap'),
+                    EditAction::make()
+                        ->label('Edit Tahap')
+                        ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
                         ->label('Hapus Tahap')
+                        ->icon('heroicon-m-trash')
                         ->modalHeading('Hapus Jenis Tahap Seleksi?')
                         ->modalDescription('Apakah Anda yakin ingin menghapus jenis tahap ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),

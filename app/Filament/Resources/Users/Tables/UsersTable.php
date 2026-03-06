@@ -78,9 +78,11 @@ class UsersTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Pengguna'),
+                        ->label('Edit Pengguna')
+                        ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
                         ->label('Hapus Pengguna')
+                        ->icon('heroicon-m-trash')
                         ->modalHeading('Hapus Pengguna?')
                         ->modalDescription('Apakah Anda yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),

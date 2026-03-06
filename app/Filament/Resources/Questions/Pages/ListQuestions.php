@@ -19,7 +19,8 @@ class ListQuestions extends ListRecords
         return [
             ExportQuestionsHeaderAction::make(),
             CreateAction::make()
-                ->label('Tambah Soal'),
+                ->label('Tambah Soal')
+                ->icon('heroicon-o-document-plus'),
         ];
     }
 

@@ -14,7 +14,8 @@ class ListExamParticipants extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Tambah Peserta Ujian'),
+                ->label('Tambah Peserta Ujian')
+                ->icon('heroicon-o-user-plus'),
         ];
     }
 }

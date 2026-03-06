@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\QuestionUnits\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -86,8 +87,17 @@ class QuestionUnitsTable
                     EditAction::make()
                         ->label('Edit Unit')
                         ->icon('heroicon-m-pencil-square'),
+
+                    Action::make('kelola_indikator')
+                        ->label('Kelola Indikator NAB')
+                        ->icon('heroicon-m-chart-bar')
+                        ->color('primary')
+                        ->url(fn($record) => url("/admin/question-units/{$record->id}/edit?relation=0"))
+                        ->visible(fn($record): bool => $record->examType?->evaluation_method === 'weighted'),
+
                     DeleteAction::make()
                         ->label('Hapus Unit')
+                        ->icon('heroicon-m-trash')
                         ->modalHeading('Hapus Unit Soal?')
                         ->modalDescription('Menghapus unit ini juga akan menghapus seluruh sub unit dan soal yang terkait. Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),

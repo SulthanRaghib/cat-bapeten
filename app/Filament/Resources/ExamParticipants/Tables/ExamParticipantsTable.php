@@ -129,7 +129,7 @@ class ExamParticipantsTable
                 ActionGroup::make([
                     EditAction::make()
                         ->label('Edit')
-                        ->icon('heroicon-m-pencil')
+                        ->icon('heroicon-m-pencil-square')
                         ->color('primary')
                         ->requiresConfirmation()
                         ->modalHeading('Edit Peserta Ujian')
@@ -137,7 +137,7 @@ class ExamParticipantsTable
 
                     Action::make('reset_attempt')
                         ->label('Reset Ujian')
-                        ->icon('heroicon-o-arrow-path')
+                        ->icon('heroicon-m-arrow-path')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(function (ExamParticipant $record): void {
@@ -158,7 +158,7 @@ class ExamParticipantsTable
 
                     Action::make('delete')
                         ->label('Hapus Peserta')
-                        ->icon('heroicon-o-trash')
+                        ->icon('heroicon-m-trash')
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (ExamParticipant $record): void {

@@ -108,7 +108,8 @@ class QuestionsTable
                         ->modalSubmitAction(false)
                         ->modalCancelActionLabel('Tutup'),
                     EditAction::make()
-                        ->label('Edit Soal'),
+                        ->label('Edit Soal')
+                        ->icon('heroicon-m-pencil-square'),
                 ])
                     ->label('Aksi')
                     ->button()

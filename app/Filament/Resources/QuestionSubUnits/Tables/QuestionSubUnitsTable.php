@@ -74,6 +74,7 @@ class QuestionSubUnitsTable
                         ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
                         ->label('Hapus Sub Unit')
+                        ->icon('heroicon-m-trash')
                         ->modalHeading('Hapus Sub Unit Soal?')
                         ->modalDescription('Menghapus sub unit ini juga akan menghapus seluruh soal yang terkait. Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),
