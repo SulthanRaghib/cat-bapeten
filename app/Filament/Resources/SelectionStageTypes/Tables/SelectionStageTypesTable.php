@@ -20,6 +20,7 @@ class SelectionStageTypesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->striped()
             ->reorderable('sort_order')
             ->defaultSort('sort_order')
             ->columns([

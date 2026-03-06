@@ -16,43 +16,53 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\HtmlString;
 
 class ExamParticipantsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->striped()
             ->poll('5s')
             ->defaultSort('created_at', 'desc')
+            ->recordClasses(
+                fn(ExamParticipant $record): string =>
+                $record->examPackage?->examType?->evaluation_method === 'weighted'
+                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
+                    : 'border-s-[3px] border-info-400 dark:border-info-500'
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('examPackage.title')
+                    ->label('Paket Ujian')
                     ->searchable()
                     ->sortable()
-                    ->label('Paket Ujian'),
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label('Nama Peserta')
+                    ->description(fn(ExamParticipant $record): string => 'NIP: ' . ($record->user->nip ?? '—'))
                     ->searchable()
                     ->sortable()
-                    ->label('Nama Peserta'),
-
-                Tables\Columns\TextColumn::make('user.email')
-                    ->searchable()
-                    ->label('Email')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->weight('semibold'),
 
                 Tables\Columns\TextColumn::make('user.nip')
+                    ->label('NIP')
                     ->searchable()
-                    ->label(new HtmlString(
-                        'NIP<br><span class="text-xs text-gray-500">Klik NIP untuk menyalin</span>'
-                    ))
                     ->copyable()
-                    ->copyMessage('NIP Disalin!'),
+                    ->copyMessage('NIP Disalin!')
+                    ->copyMessageDuration(2000)
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('user.email')
+                    ->label('Email')
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessage('Email Disalin!')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('token')
-                    ->label(new HtmlString(
-                        'Token Akses<br><span class="text-xs text-gray-500">Klik token untuk menyalin</span>'
-                    ))
+                    ->label('Token Akses')
+                    ->description('Klik untuk menyalin')
                     ->copyable()
                     ->copyMessage('Token Akses Disalin!')
                     ->copyMessageDuration(2000)
@@ -60,24 +70,26 @@ class ExamParticipantsTable
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('status_label')
+                    ->label('Status')
                     ->badge()
-                    ->color(fn(ExamParticipant $record): string => $record->status_color)
                     ->icon(fn(ExamParticipant $record): string => $record->status_icon)
-                    ->label('Status'),
+                    ->color(fn(ExamParticipant $record): string => $record->status_color),
 
                 Tables\Columns\TextColumn::make('score')
-                    ->state(fn(ExamParticipant $record) => $record->examSessions()->latest()->first()?->total_score ?? '-')
-                    ->label('Skor')
-                    ->sortable(),
+                    ->label('Nilai Terakhir')
+                    ->state(fn(ExamParticipant $record) => $record->examSessions()->latest()->first()?->total_score ?? '—')
+                    ->icon('heroicon-m-academic-cap')
+                    ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('finished_at')
-                    ->state(fn(ExamParticipant $record) => $record->examSessions()->latest()->first()?->finished_at?->format('d M Y H:i') ?? '-')
                     ->label('Selesai Pada')
+                    ->state(fn(ExamParticipant $record) => $record->examSessions()->latest()->first()?->finished_at?->format('d M Y H:i') ?? '—')
+                    ->icon('heroicon-m-calendar-days')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
-                    ->dateTime()
+                    ->label('Terdaftar Pada')
+                    ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -86,19 +98,20 @@ class ExamParticipantsTable
                     ->relationship('examPackage', 'title')
                     ->searchable()
                     ->preload()
-                    ->label('Filter berdasarkan Paket Ujian'),
+                    ->label('Paket Ujian'),
 
                 Tables\Filters\SelectFilter::make('is_active')
                     ->options([
-                        true => 'Active',
-                        false => 'Inactive',
+                        '1' => 'Aktif',
+                        '0' => 'Nonaktif',
                     ])
-                    ->label('Status Active'),
+                    ->label('Status Akses'),
 
                 Tables\Filters\Filter::make('finished_at')
+                    ->label('Tanggal Selesai')
                     ->schema([
-                        DatePicker::make('finished_from'),
-                        DatePicker::make('finished_until'),
+                        DatePicker::make('finished_from')->label('Dari Tanggal'),
+                        DatePicker::make('finished_until')->label('Sampai Tanggal'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -172,6 +185,9 @@ class ExamParticipantsTable
                         ->modalDescription('Apakah Anda yakin ingin menghapus peserta yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),
                 ])->label('Tindakan Massal'),
-            ]);
+            ])
+            ->emptyStateHeading('Belum ada peserta terdaftar')
+            ->emptyStateDescription('Tambahkan peserta ujian untuk memberikan akses ke paket ujian yang tersedia.')
+            ->emptyStateIcon('heroicon-o-user-group');
     }
 }

@@ -14,40 +14,62 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->striped()
+            ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nama Lengkap')
+                    ->label('Nama Pengguna')
+                    ->description(fn($record): string => $record->email ?? '—')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('semibold'),
 
                 TextColumn::make('nip')
                     ->label('NIP')
                     ->searchable()
-                    ->copyable(),
+                    ->sortable()
+                    ->copyable()
+                    ->copyMessage('NIP disalin!')
+                    ->copyMessageDuration(2000),
 
                 TextColumn::make('role')
-                    ->label('Role')
+                    ->label('Peran')
                     ->badge()
+                    ->icon(fn(string $state): string => match ($state) {
+                        'admin' => 'heroicon-m-shield-check',
+                        'user'  => 'heroicon-m-user',
+                        default => 'heroicon-m-question-mark-circle',
+                    })
                     ->color(fn(string $state): string => match ($state) {
                         'admin' => 'danger',
-                        'user' => 'success',
+                        'user'  => 'info',
                         default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'admin' => 'Administrator',
+                        'user'  => 'Pengguna',
+                        default => $state,
                     }),
 
                 TextColumn::make('email')
-                    ->label('Email Address')
-                    ->searchable(),
+                    ->label('Email')
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessage('Email disalin!')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Terdaftar Sejak')
+                    ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('role')
+                    ->label('Peran')
                     ->options([
-                        'admin' => 'Admin',
-                        'user' => 'User',
+                        'admin' => 'Administrator',
+                        'user'  => 'Pengguna',
                     ]),
             ])
             ->recordActions([
@@ -62,6 +84,9 @@ class UsersTable
                         ->modalDescription('Apakah Anda yakin ingin menghapus pengguna yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),
                 ])->label('Tindakan Massal'),
-            ]);
+            ])
+            ->emptyStateHeading('Belum ada pengguna')
+            ->emptyStateDescription('Tambahkan pengguna baru untuk memberikan akses ke sistem.')
+            ->emptyStateIcon('heroicon-o-users');
     }
 }

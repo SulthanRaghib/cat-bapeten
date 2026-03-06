@@ -14,41 +14,46 @@ class QuestionSubUnitsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->striped()
             ->recordUrl(null)
+            ->defaultSort('name')
+            ->recordClasses(
+                fn($record): string =>
+                $record->questionUnit?->examType?->evaluation_method === 'weighted'
+                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
+                    : 'border-s-[3px] border-info-400 dark:border-info-500'
+            )
             ->columns([
                 TextColumn::make('name')
                     ->label('Nama Sub Unit')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('semibold'),
 
                 TextColumn::make('questionUnit.name')
                     ->label('Unit Soal')
+                    ->description(
+                        fn($record): string =>
+                        $record->questionUnit?->examType?->name ?? '\u2014'
+                    )
                     ->badge()
-                    ->color(fn($record) => match ($record->questionUnit?->examType?->evaluation_method) {
+                    ->color(fn($record): string => match ($record->questionUnit?->examType?->evaluation_method) {
                         'correct_wrong' => 'info',
-                        'weighted' => 'warning',
-                        default => 'gray',
-                    })
-                    ->sortable(),
-
-                TextColumn::make('questionUnit.examType.name')
-                    ->label('Tipe Ujian')
-                    ->badge()
-                    ->color(fn($record) => match ($record->questionUnit?->examType?->evaluation_method) {
-                        'correct_wrong' => 'info',
-                        'weighted' => 'warning',
-                        default => 'gray',
+                        'weighted'      => 'primary',
+                        default         => 'gray',
                     })
                     ->sortable(),
 
                 TextColumn::make('questions_count')
-                    ->label('Jumlah Soal')
+                    ->label('Soal')
                     ->counts('questions')
+                    ->icon('heroicon-m-document-text')
+                    ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime('d M Y')
+                    ->label('Dibuat Pada')
+                    ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -64,6 +69,8 @@ class QuestionSubUnitsTable
                     ->label('Edit Sub Unit')
                     ->icon('heroicon-m-pencil-square'),
             ])
-            ->defaultSort('name');
+            ->emptyStateHeading('Belum ada sub unit soal')
+            ->emptyStateDescription('Tambahkan sub unit sebagai klasifikasi lebih rinci dalam unit soal.')
+            ->emptyStateIcon('heroicon-o-folder-open');
     }
 }

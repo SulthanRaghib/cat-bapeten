@@ -9,7 +9,6 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\Size;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -18,53 +17,63 @@ class ExamPackagesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->striped()
             ->defaultSort('created_at', 'desc')
+            ->recordClasses(
+                fn($record): string =>
+                $record->examType?->evaluation_method === 'weighted'
+                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
+                    : 'border-s-[3px] border-info-400 dark:border-info-500'
+            )
             ->columns([
                 TextColumn::make('title')
-                    ->label('Judul Ujian')
+                    ->label('Judul Paket Ujian')
+                    ->description(
+                        fn($record): string =>
+                        'KKM: ' . ($record->passing_grade ?? '—')
+                            . ' · Durasi: ' . ($record->duration_minutes ?? '—') . ' menit'
+                    )
                     ->searchable()
                     ->sortable()
-                    ->weight('medium'),
+                    ->weight('semibold')
+                    ->wrap(),
 
                 TextColumn::make('examType.name')
-                    ->label('Tipe')
+                    ->label('Tipe Ujian')
                     ->badge()
-                    ->color(fn($record) => match ($record->examType?->evaluation_method) {
+                    ->icon(fn($record): string => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'heroicon-m-check-badge',
+                        'weighted'      => 'heroicon-m-chart-bar',
+                        default         => 'heroicon-m-question-mark-circle',
+                    })
+                    ->color(fn($record): string => match ($record->examType?->evaluation_method) {
                         'correct_wrong' => 'info',
-                        'weighted' => 'warning',
-                        default => 'gray',
-                    }),
-
-                TextColumn::make('passing_grade')
-                    ->label('Nilai Kelulusan')
-                    ->sortable(),
-
-                TextColumn::make('duration_minutes')
-                    ->label('Durasi')
-                    ->formatStateUsing(fn(int $state): string => "{$state} Menit")
+                        'weighted'      => 'primary',
+                        default         => 'gray',
+                    })
                     ->sortable(),
 
                 TextColumn::make('start_time')
-                    ->label('Mulai')
-                    ->dateTime('d M Y H:i')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->label('Jadwal Ujian')
+                    ->description(
+                        fn($record): string =>
+                        $record->start_time ? $record->start_time->format('H:i') . ' WIB' : '—'
+                    )
+                    ->date('d M Y')
+                    ->icon('heroicon-m-calendar-days')
+                    ->sortable(),
 
                 TextColumn::make('is_active')
                     ->label('Status')
-                    ->formatStateUsing(
-                        fn(bool $state): string => $state
-                            ? 'Aktif — Peserta bisa mengikuti ujian'
-                            : 'Nonaktif — Paket ditutup untuk peserta'
-                    )
                     ->icon(fn(bool $state): string => $state ? 'heroicon-m-bolt' : 'heroicon-m-pause-circle')
                     ->badge()
+                    ->formatStateUsing(fn(bool $state): string => $state ? 'Aktif' : 'Nonaktif')
                     ->color(fn(bool $state): string => $state ? 'success' : 'gray'),
 
                 TextColumn::make('created_at')
                     ->label('Dibuat Pada')
-                    ->dateTime('d M Y')
+                    ->date('d M Y')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
@@ -135,6 +144,9 @@ class ExamPackagesTable
                         ->modalDescription('Apakah Anda yakin ingin menghapus paket ujian yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
                         ->modalSubmitActionLabel('Ya, Hapus'),
                 ])->label('Tindakan Massal'),
-            ]);
+            ])
+            ->emptyStateHeading('Belum ada paket ujian')
+            ->emptyStateDescription('Buat paket ujian baru untuk mulai mengelola soal dan peserta.')
+            ->emptyStateIcon('heroicon-o-rectangle-stack');
     }
 }

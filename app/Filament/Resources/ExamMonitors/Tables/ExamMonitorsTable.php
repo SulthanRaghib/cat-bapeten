@@ -12,18 +12,23 @@ class ExamMonitorsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->striped()
             ->poll('5s')
+            ->recordUrl(null)
+            ->recordClasses(
+                fn(ExamSession $record): string =>
+                $record->examPackage?->examType?->evaluation_method === 'weighted'
+                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
+                    : 'border-s-[3px] border-info-400 dark:border-info-500'
+            )
             ->columns([
                 TextColumn::make('user.name')
                     ->label('Peserta')
-                    ->description(fn(ExamSession $record): string => 'NIP: ' . ($record->user->nip ?? '-'))
-                    ->searchable(['name', 'nip']),
-                TextColumn::make('user.nip')
-                    ->label('NIP')
-                    ->copyable()
-                    ->copyMessage('NIP disalin!')
-                    ->copyMessageDuration(2000)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->description(fn(ExamSession $record): string => 'NIP: ' . ($record->user->nip ?? '—'))
+                    ->searchable()
+                    ->sortable()
+                    ->weight('semibold'),
+
                 TextColumn::make('examParticipant.token')
                     ->label('Token')
                     ->copyable()
@@ -31,52 +36,79 @@ class ExamMonitorsTable
                     ->copyMessageDuration(2000)
                     ->weight('bold')
                     ->color('primary'),
+
                 TextColumn::make('examPackage.title')
                     ->label('Paket Ujian')
-                    ->limit(30),
+                    ->description(
+                        fn(ExamSession $record): string =>
+                        $record->examPackage?->examType?->name ?? '—'
+                    )
+                    ->limit(35)
+                    ->wrap(),
+
                 TextColumn::make('started_at')
                     ->label('Waktu Mulai')
-                    ->dateTime('H:i'),
+                    ->description(
+                        fn(ExamSession $record): string =>
+                        $record->started_at ? $record->started_at->format('d M Y') : '—'
+                    )
+                    ->dateTime('H:i')
+                    ->icon('heroicon-m-clock'),
+
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
+                    ->icon(fn(string $state): string => match ($state) {
+                        'ongoing'    => 'heroicon-m-play-circle',
+                        'paused'     => 'heroicon-m-pause-circle',
+                        'completed'  => 'heroicon-m-check-circle',
+                        'terminated' => 'heroicon-m-x-circle',
+                        default      => 'heroicon-m-question-mark-circle',
+                    })
                     ->color(fn(string $state): string => match ($state) {
-                        'ongoing' => 'success',
-                        'paused' => 'warning',
-                        'completed' => 'info',
+                        'ongoing'    => 'success',
+                        'paused'     => 'warning',
+                        'completed'  => 'info',
                         'terminated' => 'danger',
-                        default => 'gray',
+                        default      => 'gray',
                     })
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'ongoing' => 'Berjalan',
-                        'paused' => 'Dijeda',
-                        'completed' => 'Selesai',
+                        'ongoing'    => 'Sedang Berjalan',
+                        'paused'     => 'Dijeda',
+                        'completed'  => 'Selesai',
                         'terminated' => 'Dihentikan',
-                        default => $state,
+                        default      => $state,
                     }),
+
                 TextColumn::make('progress')
-                    ->label('Progress')
+                    ->label('Progres')
                     ->state(function (ExamSession $record): string {
-                        // Total questions assigned (from metadata)
-                        $meta = $record->answers_meta ?? [];
-                        $total = is_array($meta) ? count($meta) : 0;
+                        $meta     = $record->answers_meta ?? [];
+                        $total    = is_array($meta) ? count($meta) : 0;
+                        if ($total === 0) return '0 / 0';
+                        $answered = $record->answers()->whereNotNull('answer')->count();
+                        $pct      = round(($answered / $total) * 100);
+                        return "{$answered}/{$total} ({$pct}%)";
+                    })
+                    ->description('soal dijawab')
+                    ->icon('heroicon-m-chart-bar')
+                    ->color('gray'),
 
-                        if ($total === 0) return '0%';
-
-                        // Count answers that are not null/empty
-                        $answeredCount = $record->answers()->whereNotNull('answer')->count();
-
-                        $percentage = ($answeredCount / $total) * 100;
-                        return round($percentage) . '%';
-                    }),
                 TextColumn::make('violation_count')
                     ->label('Pelanggaran')
-                    ->state(fn(ExamSession $record) => \App\Models\ExamActivityLog::where('exam_session_id', $record->id)->whereIn('severity', ['warning', 'danger', 'critical'])->count())
+                    ->state(
+                        fn(ExamSession $record) =>
+                        \App\Models\ExamActivityLog::where('exam_session_id', $record->id)
+                            ->whereIn('severity', ['warning', 'danger', 'critical'])
+                            ->count()
+                    )
+                    ->icon('heroicon-m-exclamation-triangle')
                     ->badge()
+                    ->alignCenter()
                     ->color(fn(string $state): string => match (true) {
-                        $state > 5 => 'danger',
-                        $state > 0 => 'warning',
-                        default => 'success',
+                        (int) $state > 5 => 'danger',
+                        (int) $state > 0 => 'warning',
+                        default          => 'success',
                     }),
             ])
             ->filters([
@@ -92,8 +124,8 @@ class ExamMonitorsTable
                     ->modalCancelAction(false)
                     ->slideOver(),
             ])
-            ->recordUrl(null)
             ->emptyStateHeading('Tidak ada peserta yang sedang ujian')
-            ->emptyStateDescription('Saat ini tidak ada sesi ujian yang berstatus ongoing atau paused.');
+            ->emptyStateDescription('Saat ini tidak ada sesi ujian yang aktif. Halaman ini diperbarui otomatis setiap 5 detik.')
+            ->emptyStateIcon('heroicon-o-computer-desktop');
     }
 }
