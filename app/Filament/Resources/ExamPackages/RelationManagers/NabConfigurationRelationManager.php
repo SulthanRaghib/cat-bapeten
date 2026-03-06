@@ -29,15 +29,17 @@ use Illuminate\Database\Eloquent\Model;
  * Repeater-based form that manages the JSON `unit_scoring_configs`
  * column on ExamPackage.
  *
- * Bidirectional sync architecture:
- *   - Units are DRIVEN by questions in the "Soal Ujian" tab
- *   - Indicator edits here propagate BACK to Master Data (`question_unit_indicators`)
- *   - On mount(), Smart Sync loads fresh data from master
- *   - On save, changes are written to both JSON and master table
+ * Per-package independent architecture:
+ *   - Units are DRIVEN by questions in the "Soal Ujian" tab.
+ *   - Indicator names come from Master Data as a starting template (read-only reference).
+ *   - Each package owns its min_score/max_score/is_passing values INDEPENDENTLY.
+ *   - Saving a package NEVER writes back to the master data table.
+ *   - Per-unit "↩ Reset ke Master" restores the original master template for that unit.
  *
  * Buttons:
- *  – "🔄 Sinkronkan" Smart Sync: refresh units from attached questions
- *  – "💾 Simpan" Persist edits to JSON + sync back to Master Data
+ *  – "🔄 Sinkronkan" Smart Sync: add new units / remove stale units (preserves custom values)
+ *  – "💾 Simpan"      Save per-package config to JSON column only
+ *  – "↩ Reset ke Master" (per-unit) Revert one unit's indicators to the master template
  */
 class NabConfigurationRelationManager extends RelationManager
 {
@@ -79,7 +81,7 @@ class NabConfigurationRelationManager extends RelationManager
                         Section::make('Konfigurasi NAB & Kelulusan')
                             ->description(
                                 'Daftar unit ditentukan otomatis dari soal di tab "Soal Ujian".'
-                                    . ' Perubahan indikator di sini akan tersimpan ke Master Data saat klik "💾 Simpan".'
+                                    . ' Nilai indikator bersifat independen per paket ujian — perubahan di sini hanya berlaku untuk paket ini, tidak mempengaruhi paket lain maupun Master Data.'
                             )
                             ->icon('heroicon-o-adjustments-horizontal')
                             ->headerActions([
@@ -132,7 +134,7 @@ class NabConfigurationRelationManager extends RelationManager
                                         $this->js('setTimeout(() => window.location.reload(), 600)');
                                     }),
 
-                                // ── Save & sync to Master Data ──
+                                // ── Save per-package config (JSON only — no master sync) ──
                                 Action::make('saveNabConfig')
                                     ->label('💾 Simpan')
                                     ->icon('heroicon-o-check-circle')
@@ -150,32 +152,15 @@ class NabConfigurationRelationManager extends RelationManager
                                         /** @var ExamPackage $record */
                                         $record = $this->getOwnerRecord();
 
-                                        // Bidirectional sync: save to JSON + propagate to master data
-                                        $result = app(NabSyncService::class)->saveWithMasterSync($record, $configs);
-
-                                        // Build notification message
-                                        $parts = [];
-                                        if ($result['updated'] > 0) {
-                                            $parts[] = "{$result['updated']} diperbarui";
-                                        }
-                                        if ($result['created'] > 0) {
-                                            $parts[] = "{$result['created']} ditambahkan";
-                                        }
-                                        if ($result['deleted'] > 0) {
-                                            $parts[] = "{$result['deleted']} dihapus";
-                                        }
-
-                                        $detail = ! empty($parts)
-                                            ? ' Indikator master: ' . implode(', ', $parts) . '.'
-                                            : '';
+                                        // Save to package JSON column only — does not touch master data
+                                        app(NabSyncService::class)->savePackageConfig($record, $configs);
 
                                         Notification::make()
                                             ->success()
                                             ->title('Tersimpan')
-                                            ->body('Konfigurasi NAB & Kelulusan berhasil disimpan.' . $detail)
+                                            ->body('Konfigurasi NAB & Kelulusan berhasil disimpan untuk paket ini.')
                                             ->send();
 
-                                        // Reload to reflect fresh indicator_ids
                                         $this->js('setTimeout(() => window.location.reload(), 600)');
                                     }),
                             ])
@@ -186,7 +171,39 @@ class NabConfigurationRelationManager extends RelationManager
                                     ->deletable(false)
                                     ->reorderable(false)
                                     ->defaultItems(0)
-                                    ->helperText('Unit ditentukan oleh soal di tab "Soal Ujian". Untuk menambah/menghapus unit, kelola soal terlebih dahulu, lalu klik "🔄 Sinkronkan".')
+                                    ->helperText('Unit ditentukan oleh soal di tab "Soal Ujian". Untuk menambah/menghapus unit, kelola soal terlebih dahulu, lalu klik "🔄 Sinkronkan". Nilai indikator yang sudah dikustomisasi tidak akan berubah saat sinkronisasi.')
+                                    ->extraItemActions([
+                                        Action::make('resetUnitToMaster')
+                                            ->label('↩ Reset ke Master')
+                                            ->icon('heroicon-o-arrow-uturn-left')
+                                            ->color('warning')
+                                            ->requiresConfirmation()
+                                            ->modalHeading('Reset ke Nilai Master?')
+                                            ->modalDescription('Nilai indikator untuk unit ini akan dikembalikan ke template master data. Kustomisasi yang sudah dilakukan pada unit ini akan hilang.')
+                                            ->action(function (array $arguments): void {
+                                                $itemKey = $arguments['item'];
+                                                $unitId  = (int) ($this->nabData['unit_scoring_configs'][$itemKey]['question_unit_id'] ?? 0);
+
+                                                if ($unitId === 0) {
+                                                    return;
+                                                }
+
+                                                /** @var ExamPackage $record */
+                                                $record = $this->getOwnerRecord();
+
+                                                $updatedConfigs = app(NabSyncService::class)->resetUnitToMaster($record, $unitId);
+
+                                                $this->nabData = ['unit_scoring_configs' => $updatedConfigs];
+
+                                                Notification::make()
+                                                    ->success()
+                                                    ->title('Reset Berhasil')
+                                                    ->body('Indikator unit telah dikembalikan ke template master data.')
+                                                    ->send();
+
+                                                $this->js('setTimeout(() => window.location.reload(), 600)');
+                                            }),
+                                    ])
                                     ->schema([
                                         Grid::make(2)->schema([
                                             TextInput::make('unit_name')
@@ -205,10 +222,8 @@ class NabConfigurationRelationManager extends RelationManager
                                             ->cloneable()
                                             ->defaultItems(0)
                                             ->deletable(true)
-                                            ->helperText('Perubahan indikator akan tersinkron ke Master Data saat disimpan.')
+                                            ->helperText('Tentukan rentang skor dan status kelulusan untuk paket ini. Perubahan tidak mempengaruhi paket ujian lain.')
                                             ->schema([
-                                                Hidden::make('indicator_id'),
-
                                                 Grid::make(4)->schema([
                                                     TextInput::make('name')
                                                         ->label('Nama Indikator')
@@ -264,7 +279,8 @@ class NabConfigurationRelationManager extends RelationManager
         /** @var ExamPackage $record */
         $record = $this->getOwnerRecord();
 
-        // Always run Smart Sync on mount to ensure data is fresh from master
+        // Run Smart Sync on mount: adds new units from questions, removes stale units.
+        // Per-package indicator values are preserved for existing units.
         $result = app(NabSyncService::class)->smartSync($record);
 
         $configs = $result['configs'];

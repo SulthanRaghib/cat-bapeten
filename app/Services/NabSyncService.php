@@ -7,19 +7,20 @@ namespace App\Services;
 use App\Models\ExamPackage;
 use App\Models\QuestionUnit;
 use App\Models\QuestionUnitIndicator;
-use Illuminate\Support\Facades\DB;
 
 /**
- * Service for syncing the `unit_scoring_configs` JSON column on ExamPackage
- * with the actual questions currently attached to the package.
+ * Service for managing the `unit_scoring_configs` JSON column on ExamPackage.
  *
- * Bidirectional sync architecture:
- *  - Units are driven by questions (add/remove questions → add/remove units)
- *  - Indicator edits in the package config propagate BACK to Master Data
- *    (`question_unit_indicators` table) on save
+ * Per-package independent scoring architecture:
+ *  - Units are DRIVEN by questions (add/remove questions → add/remove units).
+ *  - When a unit is FIRST added, master data indicators are used as a TEMPLATE
+ *    (starting point only — names & range values are copied, not linked).
+ *  - After seeding, each package owns its indicator values independently.
+ *    Saving a package config NEVER writes back to the master data table.
+ *  - "Reset to master" is available per-unit to restore the original template.
  *
  * Called from:
- *  - NabConfigurationRelationManager (manual "Sync" button + save action)
+ *  - NabConfigurationRelationManager (Sync button + Save button + Reset action)
  *  - QuestionsRelationManager (auto-sync after attach/detach/generate)
  */
 final class NabSyncService
@@ -28,12 +29,15 @@ final class NabSyncService
      * Perform a "Smart Sync" on the given ExamPackage:
      *
      *  1. Fetch DB Truth — unique question_unit_ids from currently attached questions.
-     *  2. Get Current State — the existing unit_scoring_configs from the DB.
+     *  2. Get Current State — the existing per-package unit_scoring_configs from the DB.
      *  3. Build New State:
-     *     - If a unit_id already exists in Current State → KEEP (with fresh master indicators).
-     *     - If a unit_id is new → build from Master Data template.
-     *     - Any unit_id NOT in DB Truth is simply dropped (stale removal).
+     *     - If a unit_id already EXISTS in Current State → KEEP as-is (preserve per-package values).
+     *       Only the unit_name is refreshed from master (vocabulary sync).
+     *     - If a unit_id is NEW → seed indicator template from Master Data (starting point only).
+     *     - Any unit_id NOT in DB Truth is dropped (stale removal).
      *  4. Persist to DB.
+     *
+     * Note: existing per-package indicator customisations are NEVER overwritten.
      *
      * @return array{configs: array, added: int, removed: int, kept: int}
      */
@@ -63,41 +67,63 @@ final class NabSyncService
             return ['configs' => [], 'added' => 0, 'removed' => 0, 'kept' => 0];
         }
 
-        // ── Step 2: Current State — existing configs from DB ──
+        // ── Step 2: Current State — existing per-package configs ──
         $currentState = collect($package->unit_scoring_configs ?? [])
             ->values()
             ->keyBy(fn(array $item): int => (int) ($item['question_unit_id'] ?? 0))
             ->toArray();
 
-        // ── Step 3: Build fresh templates for ALL units from master data ──
-        $allUnits = QuestionUnit::with('indicators')
-            ->whereIn('id', $dbUnitIds)
-            ->get()
-            ->keyBy('id');
+        // ── Step 3a: Load master data only for NEW units (starting-point template) ──
+        $newUnitIds = array_values(array_filter(
+            $dbUnitIds,
+            fn(int $id): bool => !isset($currentState[$id])
+        ));
+
+        $masterUnitModels = collect();
+        if (!empty($newUnitIds)) {
+            $masterUnitModels = QuestionUnit::with('indicators')
+                ->whereIn('id', $newUnitIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        // ── Step 3b: Refresh unit_name for KEPT units (vocabulary sync only) ──
+        $existingUnitIds = array_values(array_filter(
+            $dbUnitIds,
+            fn(int $id): bool => isset($currentState[$id])
+        ));
+        $masterNames = [];
+        if (!empty($existingUnitIds)) {
+            $masterNames = QuestionUnit::whereIn('id', $existingUnitIds)
+                ->pluck('name', 'id')
+                ->toArray();
+        }
 
         $newState = [];
-        $kept = 0;
-        $added = 0;
+        $kept     = 0;
+        $added    = 0;
 
         foreach ($dbUnitIds as $unitId) {
             if (isset($currentState[$unitId])) {
-                // ── KEEP — but refresh from master data (bidirectional = master is truth) ──
-                $unit = $allUnits[$unitId] ?? null;
-                if ($unit) {
-                    $newState[] = self::buildTemplateForUnit($unit);
-                } else {
-                    // Fallback: keep existing
-                    $existing = $currentState[$unitId];
-                    $existing['indicators'] = array_values($existing['indicators'] ?? []);
-                    $newState[] = $existing;
-                }
+                // ── KEEP — preserve all per-package indicator values ──
+                // Only unit_name is refreshed from master (vocabulary sync).
+                $existing               = $currentState[$unitId];
+                $existing['unit_name']  = $masterNames[$unitId] ?? $existing['unit_name'];
+                $existing['indicators'] = array_values($existing['indicators'] ?? []);
+                $newState[] = $existing;
                 $kept++;
-            } elseif (isset($allUnits[$unitId])) {
-                // ── NEW unit — build from Master Data template ──
-                $newState[] = self::buildTemplateForUnit($allUnits[$unitId]);
+            } elseif ($masterUnitModels->has($unitId)) {
+                // ── NEW unit — seed indicator template from master (starting point only) ──
+                $template = self::buildTemplateForUnit($masterUnitModels[$unitId]);
+                // Strip indicator_id — per-package config does not reference master IDs
+                $template['indicators'] = array_map(
+                    fn(array $ind): array => array_diff_key($ind, ['indicator_id' => true]),
+                    $template['indicators']
+                );
+                $newState[] = $template;
                 $added++;
             } else {
-                // Unit exists in questions but has no master data (edge case)
+                // Edge case: unit in questions but no master data record
                 $newState[] = [
                     'question_unit_id' => $unitId,
                     'unit_name'        => "Unit #{$unitId}",
@@ -122,159 +148,68 @@ final class NabSyncService
     }
 
     /**
-     * Sync indicator edits from the package JSON config back to Master Data.
+     * Save the per-package indicator config to the JSON column ONLY.
      *
-     * For each unit in the config:
-     *  - Indicators WITH `indicator_id` → update the master record
-     *  - Indicators WITHOUT `indicator_id` (new) → create in master, return new ID
-     *  - Master indicators NOT present in the config → delete from master
+     * Does NOT touch the master data table (`question_unit_indicators`).
+     * Each package owns its scoring rules independently.
      *
-     * @return array{updated: int, created: int, deleted: int}
+     * @return array{configs: array}
      */
-    public function syncIndicatorsToMaster(ExamPackage $package, array $configs): array
+    public function savePackageConfig(ExamPackage $package, array $configs): array
     {
-        $updated = 0;
-        $created = 0;
-        $deleted = 0;
+        $cleanConfigs = collect($configs)
+            ->values()
+            ->map(function (array $unit): array {
+                // Strip indicator_id — no longer referenced in per-package storage
+                $unit['indicators'] = array_map(
+                    fn(array $ind): array => array_diff_key($ind, ['indicator_id' => true]),
+                    array_values($unit['indicators'] ?? [])
+                );
 
-        DB::transaction(function () use ($configs, &$updated, &$created, &$deleted): void {
-            foreach ($configs as &$unitConfig) {
-                $unitId = (int) ($unitConfig['question_unit_id'] ?? 0);
-                if ($unitId === 0) {
-                    continue;
-                }
+                return $unit;
+            })
+            ->toArray();
 
-                // Get current master indicators for this unit
-                $masterIndicatorIds = QuestionUnitIndicator::where('question_unit_id', $unitId)
-                    ->pluck('id')
-                    ->toArray();
+        $package->update(['unit_scoring_configs' => $cleanConfigs]);
 
-                $configIndicatorIds = [];
-                $sortOrder = 0;
-
-                foreach (($unitConfig['indicators'] ?? []) as $index => &$indicator) {
-                    $indicatorId = ! empty($indicator['indicator_id']) ? (int) $indicator['indicator_id'] : null;
-                    $sortOrder++;
-
-                    $data = [
-                        'question_unit_id' => $unitId,
-                        'name'             => $indicator['name'] ?? 'Indikator',
-                        'min_score'        => (int) ($indicator['min_score'] ?? 0),
-                        'max_score'        => (int) ($indicator['max_score'] ?? 0),
-                        'is_passing'       => (bool) ($indicator['is_passing'] ?? false),
-                        'sort_order'       => $sortOrder,
-                    ];
-
-                    if ($indicatorId && in_array($indicatorId, $masterIndicatorIds)) {
-                        // ── UPDATE existing master record ──
-                        QuestionUnitIndicator::where('id', $indicatorId)->update($data);
-                        $configIndicatorIds[] = $indicatorId;
-                        $updated++;
-                    } else {
-                        // ── CREATE new master record ──
-                        $newIndicator = QuestionUnitIndicator::create($data);
-                        $indicator['indicator_id'] = $newIndicator->id;
-                        $configIndicatorIds[] = $newIndicator->id;
-                        $created++;
-                    }
-                }
-
-                // ── DELETE master indicators no longer in the config ──
-                $toDelete = array_diff($masterIndicatorIds, $configIndicatorIds);
-                if (! empty($toDelete)) {
-                    QuestionUnitIndicator::whereIn('id', $toDelete)->delete();
-                    $deleted += count($toDelete);
-                }
-
-                // Update the reference back
-                $unitConfig['indicators'] = array_values($unitConfig['indicators'] ?? []);
-            }
-
-            // Note: $configs is passed by value, but we need to return the updated version
-            // We'll handle this outside the transaction
-        });
-
-        return ['updated' => $updated, 'created' => $created, 'deleted' => $deleted];
+        return ['configs' => $cleanConfigs];
     }
 
     /**
-     * Sync indicators to master AND update the package JSON with fresh indicator_ids.
-     * This is the main entry point used by the Save button.
+     * Reset a single unit's indicators back to the current master data template.
      *
-     * @return array{configs: array, updated: int, created: int, deleted: int}
+     * Useful when the admin wants to revert per-package customisations
+     * for one specific unit without running a full sync.
+     *
+     * @return array Updated full unit_scoring_configs after the reset.
      */
-    public function saveWithMasterSync(ExamPackage $package, array $configs): array
+    public function resetUnitToMaster(ExamPackage $package, int $unitId): array
     {
-        $updated = 0;
-        $created = 0;
-        $deleted = 0;
+        $unit = QuestionUnit::with('indicators')->find($unitId);
 
-        $configs = DB::transaction(function () use ($configs, &$updated, &$created, &$deleted): array {
-            foreach ($configs as &$unitConfig) {
-                $unitId = (int) ($unitConfig['question_unit_id'] ?? 0);
-                if ($unitId === 0) {
-                    continue;
-                }
+        if (!$unit) {
+            return $package->unit_scoring_configs ?? [];
+        }
 
-                // Get current master indicators for this unit
-                $masterIndicatorIds = QuestionUnitIndicator::where('question_unit_id', $unitId)
-                    ->pluck('id')
-                    ->toArray();
+        $template = self::buildTemplateForUnit($unit);
+        // Strip indicator_ids from per-package storage
+        $template['indicators'] = array_map(
+            fn(array $ind): array => array_diff_key($ind, ['indicator_id' => true]),
+            $template['indicators']
+        );
 
-                $configIndicatorIds = [];
-                $sortOrder = 0;
+        $configs = collect($package->unit_scoring_configs ?? [])
+            ->map(function (array $existing) use ($unitId, $template): array {
+                return ((int) ($existing['question_unit_id'] ?? 0)) === $unitId
+                    ? $template
+                    : $existing;
+            })
+            ->values()
+            ->toArray();
 
-                $indicators = array_values($unitConfig['indicators'] ?? []);
-                foreach ($indicators as &$indicator) {
-                    $indicatorId = ! empty($indicator['indicator_id']) ? (int) $indicator['indicator_id'] : null;
-                    $sortOrder++;
+        $package->update(['unit_scoring_configs' => $configs]);
 
-                    $data = [
-                        'question_unit_id' => $unitId,
-                        'name'             => $indicator['name'] ?? 'Indikator',
-                        'min_score'        => (int) ($indicator['min_score'] ?? 0),
-                        'max_score'        => (int) ($indicator['max_score'] ?? 0),
-                        'is_passing'       => (bool) ($indicator['is_passing'] ?? false),
-                        'sort_order'       => $sortOrder,
-                    ];
-
-                    if ($indicatorId && in_array($indicatorId, $masterIndicatorIds)) {
-                        // ── UPDATE existing master record ──
-                        QuestionUnitIndicator::where('id', $indicatorId)->update($data);
-                        $configIndicatorIds[] = $indicatorId;
-                        $updated++;
-                    } else {
-                        // ── CREATE new master record ──
-                        $newIndicator = QuestionUnitIndicator::create($data);
-                        $indicator['indicator_id'] = $newIndicator->id;
-                        $configIndicatorIds[] = $newIndicator->id;
-                        $created++;
-                    }
-                }
-
-                // ── DELETE master indicators no longer in the config ──
-                $toDelete = array_diff($masterIndicatorIds, $configIndicatorIds);
-                if (! empty($toDelete)) {
-                    QuestionUnitIndicator::whereIn('id', $toDelete)->delete();
-                    $deleted += count($toDelete);
-                }
-
-                $unitConfig['indicators'] = $indicators;
-            }
-
-            return $configs;
-        });
-
-        // Persist the updated JSON (with new indicator_ids) to the package
-        $cleanConfigs = array_values($configs);
-        $package->update(['unit_scoring_configs' => $cleanConfigs]);
-
-        return [
-            'configs' => $cleanConfigs,
-            'updated' => $updated,
-            'created' => $created,
-            'deleted' => $deleted,
-        ];
+        return $configs;
     }
 
     /**
