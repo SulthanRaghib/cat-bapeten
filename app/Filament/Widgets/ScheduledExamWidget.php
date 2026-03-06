@@ -180,6 +180,27 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->label('Nama Ujian')
+                    ->description(
+                        fn(ExamPackage $record): string =>
+                        $record->examType?->name ?? '\u2014'
+                    )
+                    ->weight('semibold')
+                    ->wrap()
+                    ->alignment('left'),
+
+                Tables\Columns\TextColumn::make('examType.name')
+                    ->label('Tipe')
+                    ->badge()
+                    ->icon(fn($record): string => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'heroicon-m-check-badge',
+                        'weighted'      => 'heroicon-m-chart-bar',
+                        default         => 'heroicon-m-question-mark-circle',
+                    })
+                    ->color(fn($record): string => match ($record->examType?->evaluation_method) {
+                        'correct_wrong' => 'info',
+                        'weighted'      => 'primary',
+                        default         => 'gray',
+                    })
                     ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('start_time')
@@ -206,7 +227,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                 Tables\Columns\TextColumn::make('participants_count')
                     ->label('Peserta')
                     ->formatStateUsing(function (ExamPackage $record) {
-                        $total = $record->participants_count ?? 0;
+                        $total    = $record->participants_count ?? 0;
                         $finished = $record->participants_finished_count ?? 0;
                         $percentage = $total > 0 ? round(($finished / $total) * 100) : 0;
 
@@ -257,6 +278,12 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                         ]);
                     }),
             ])
+            ->striped()
+            ->recordClasses(fn(ExamPackage $record): string => match ($record->examType?->evaluation_method) {
+                'correct_wrong' => 'border-s-4 border-info-400',
+                'weighted'      => 'border-s-4 border-violet-500',
+                default         => '',
+            })
             ->emptyStateHeading('Belum ada ujian terjadwal.')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
