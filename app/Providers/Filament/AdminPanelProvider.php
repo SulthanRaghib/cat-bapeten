@@ -288,6 +288,35 @@ class AdminPanelProvider extends PanelProvider
                         })();
                     </script>
                 HTML)
+            )
+            ->renderHook(
+                'panels::footer',
+                fn(): string => Blade::render(<<<'HTML'
+                    <footer style="
+                        text-align: center;
+                        padding: 1rem 1.5rem;
+                        font-size: 0.75rem;
+                        color: #94a3b8;
+                        border-top: 1px solid #e2e8f0;
+                        background: #f8fafc;
+                        line-height: 1.6;
+                    ">
+                        <span style="display:inline-flex;align-items:center;gap:0.4rem;">
+                            <!-- <svg style="width:0.875rem;height:0.875rem;color:#f59e0b;flex-shrink:0;" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                            </svg>
+                            &copy; {{ date('Y') }} CAT BAPETEN &nbsp;&mdash;&nbsp;
+                            Dikembangkan oleh -->
+                            &copy; {{ date('Y') }}
+                            <strong style="color:#64748b;">Sulthan Raghib Fillah</strong>
+                            &amp;
+                            <strong style="color:#64748b;">Tahta Anugrah Ananda P</strong>
+                        </span>
+                        <!-- <span style="display:block;margin-top:0.2rem;font-size:0.6875rem;color:#cbd5e1;">
+                            Hak Cipta Dilindungi &mdash; Sistem Computer Assisted Test
+                        </span> -->
+                    </footer>
+                HTML)
             );
     }
 }
