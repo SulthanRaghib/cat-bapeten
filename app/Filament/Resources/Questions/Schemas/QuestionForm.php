@@ -243,6 +243,7 @@ class QuestionForm
                                 'medium' => 'Sedang',
                                 'hard'   => 'Sulit',
                             ])
+                            ->live()
                             ->visible(fn(Get $get) => self::getEvaluationMethod($get) === 'correct_wrong')
                             ->required(fn(Get $get) => self::getEvaluationMethod($get) === 'correct_wrong')
                             ->columnSpan(4)
@@ -257,6 +258,7 @@ class QuestionForm
                         RichEditor::make('question_text')
                             ->label('Pertanyaan')
                             ->required()
+                            ->live(debounce: '1500ms')
                             ->fileAttachmentsDisk('public')
                             ->fileAttachmentsDirectory('question-images')
                             ->columnSpanFull(),
@@ -276,10 +278,13 @@ class QuestionForm
                     ->icon('heroicon-o-list-bullet')
                     ->schema([
                         Repeater::make('options')
+                            ->live()
+                            ->afterStateUpdated(function () {})
                             ->schema([
                                 RichEditor::make('answer_text')
                                     ->label('Teks Jawaban')
                                     ->required()
+                                    ->live(debounce: '2000ms')
                                     ->fileAttachmentsDisk('public')
                                     ->fileAttachmentsDirectory('question-images')
                                     ->columnSpanFull(),
@@ -297,6 +302,7 @@ class QuestionForm
                                 TextInput::make('score')
                                     ->label('Bobot Nilai')
                                     ->numeric()
+                                    ->live(onBlur: true)
                                     ->visible(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'weighted')
                                     ->required(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'weighted'),
 
@@ -307,7 +313,7 @@ class QuestionForm
                             ->defaultItems(4)
                             // ->grid(2)
                             ->collapsible()
-                            ->itemLabel(fn(array $state): ?string => strip_tags($state['answer_text'] ?? null))
+                            ->itemLabel(fn(array $state): ?string => is_string($state['answer_text'] ?? null) ? strip_tags($state['answer_text']) : null)
                             ->reorderableWithButtons(),
                     ]),
 

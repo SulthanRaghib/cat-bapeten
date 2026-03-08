@@ -1,13 +1,56 @@
 {{-- ===================================================================
      Komponen Pratinjau Soal Langsung (Live Question Preview)
-     Teknologi : Alpine.js 3 + $wire (Livewire 3) — tidak perlu server call
-     Cara kerja: polling $wire.data setiap 400ms setelah perubahan terdeteksi
+     Teknologi : Server-side Blade rendering via $get() dari Filament Schema
+     Cara kerja: Field ->live() memicu Livewire re-render, $get() membaca state terbaru
      ================================================================== --}}
 
 @php
     use App\Models\ExamType;
-    // Embed exam type → method map so Alpine can resolve labels client-side
-    $examTypeMap = ExamType::pluck('evaluation_method', 'id')->toArray();
+    use Filament\Forms\Components\RichEditor\RichContentRenderer;
+
+    // ── Helper: konversi TipTap JSON → HTML ──
+    // RichEditor di Filament v5 menyimpan state sebagai TipTap JSON (array),
+    // bukan HTML string. Saat dibaca via $get() dalam konteks Repeater,
+    // nilainya tetap berupa array. Kita konversi ke HTML pakai RichContentRenderer.
+    $tiptapToHtml = function ($value): string {
+        if (is_string($value)) {
+            return $value; // sudah HTML
+        }
+        if (is_array($value) && isset($value['type'])) {
+            try {
+                return RichContentRenderer::make($value)->toHtml();
+            } catch (\Throwable $e) {
+                return '';
+            }
+        }
+        return '';
+    };
+
+    // ── Baca state form via Filament $get() utility ──
+    $rawQuestionText = $get('question_text');
+    $questionText = $tiptapToHtml($rawQuestionText);
+    $examTypeId = $get('exam_type_id');
+    $category = $get('category');
+
+    // Options: Repeater->getState() mengembalikan UUID-keyed array
+    $rawOptions = $get('options');
+    $allOptions = is_array($rawOptions) ? array_values($rawOptions) : [];
+
+    // Resolve evaluation method
+    $evalMethod = $examTypeId ? ExamType::find($examTypeId)?->evaluation_method ?? 'correct_wrong' : null;
+
+    // Cek apakah ada konten (strip HTML tags untuk deteksi teks asli)
+    $hasContent = strlen(trim(strip_tags($questionText))) > 0;
+
+    // Hitung opsi yang sudah punya teks
+    $filledCount = count(
+        array_filter($allOptions, function ($opt) use ($tiptapToHtml) {
+            $html = $tiptapToHtml($opt['answer_text'] ?? '');
+            return strlen(trim(strip_tags($html))) > 0;
+        }),
+    );
+
+    $letters = range('A', 'Z');
 @endphp
 
 @once
@@ -436,9 +479,9 @@
     </style>
 @endonce
 
-<div x-data="questionPreview(@js($examTypeMap))" x-init="init()" class="qp-root">
-    {{-- ── Empty state ─────────────────────────────────────────────────── --}}
-    <template x-if="!hasContent">
+<div class="qp-root" wire:key="qp-{{ md5(serialize([$questionText, $allOptions, $category, $evalMethod])) }}">
+    @if (!$hasContent)
+        {{-- ── Empty state ─────────────────────────────────────────────── --}}
         <div class="qp-empty">
             <svg class="qp-empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -450,10 +493,8 @@
                 untuk melihat tampilan soal secara langsung seperti yang dilihat peserta.
             </p>
         </div>
-    </template>
-
-    {{-- ── Live preview card ───────────────────────────────────────────── --}}
-    <template x-if="hasContent">
+    @else
+        {{-- ── Live preview card ───────────────────────────────────────── --}}
         <div class="qp-card">
 
             {{-- Header ─────────────────────────────────────────────────── --}}
@@ -478,16 +519,15 @@
 
             {{-- Meta badges ─────────────────────────────────────────────── --}}
             <div class="qp-meta">
-                <template x-if="category === 'easy'">
+                @if ($category === 'easy')
                     <span class="qp-badge qp-badge-easy">● Mudah</span>
-                </template>
-                <template x-if="category === 'medium'">
+                @elseif ($category === 'medium')
                     <span class="qp-badge qp-badge-medium">◑ Sedang</span>
-                </template>
-                <template x-if="category === 'hard'">
+                @elseif ($category === 'hard')
                     <span class="qp-badge qp-badge-hard">◆ Sulit</span>
-                </template>
-                <template x-if="evalMethod === 'correct_wrong'">
+                @endif
+
+                @if ($evalMethod === 'correct_wrong')
                     <span class="qp-badge qp-badge-teknis">
                         <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -495,8 +535,7 @@
                         </svg>
                         Teknis
                     </span>
-                </template>
-                <template x-if="evalMethod === 'weighted'">
+                @elseif ($evalMethod === 'weighted')
                     <span class="qp-badge qp-badge-mansoskul">
                         <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -504,7 +543,7 @@
                         </svg>
                         Mansoskul
                     </span>
-                </template>
+                @endif
             </div>
 
             {{-- Body ────────────────────────────────────────────────────── --}}
@@ -515,239 +554,97 @@
                     <span class="qp-dot" style="background:#f59e0b"></span>
                     Pertanyaan
                 </div>
-                <div class="qp-question-text prose prose-sm max-w-none" x-html="qText"></div>
+                <div class="qp-question-text prose prose-sm max-w-none">{!! $questionText !!}</div>
 
                 {{-- Options ──────────────────────────────────────────── --}}
                 <div class="qp-section-label">
                     <span class="qp-dot" style="background:#3b82f6"></span>
                     Pilihan Jawaban
-                    <span
-                        style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.625rem;color:#94a3b8;margin-left:.25rem"
-                        x-show="visibleOptions.length > 0" x-text="'(' + visibleOptions.length + ' opsi terisi)'">
-                    </span>
+                    @if (count($allOptions) > 0)
+                        <span
+                            style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.625rem;color:#94a3b8;margin-left:.25rem">
+                            ({{ $filledCount }}/{{ count($allOptions) }} opsi terisi)
+                        </span>
+                    @endif
                 </div>
 
-                {{-- Has visible options ──────────────────────────────── --}}
-                <template x-if="visibleOptions.length > 0">
+                @if (count($allOptions) > 0)
                     <div>
-                        <template x-for="(opt, idx) in visibleOptions" :key="idx">
-                            <div class="qp-option"
-                                :class="{
-                                    'correct': evalMethod === 'correct_wrong' && opt.is_correct,
-                                    'weighted-has-score': evalMethod === 'weighted' && opt.score !== null && opt
-                                        .score !== ''
-                                }">
-                                <div class="qp-letter" x-text="optionLabel(idx)"></div>
+                        @foreach ($allOptions as $idx => $opt)
+                            @php
+                                $answerHtml = $tiptapToHtml($opt['answer_text'] ?? '');
+                                $hasText = strlen(trim(strip_tags($answerHtml))) > 0;
+                                $isCorrect = $evalMethod === 'correct_wrong' && !empty($opt['is_correct']);
+                                $hasScore =
+                                    $evalMethod === 'weighted' &&
+                                    isset($opt['score']) &&
+                                    $opt['score'] !== '' &&
+                                    $opt['score'] !== null;
+                                $optClasses = 'qp-option';
+                                if ($isCorrect) {
+                                    $optClasses .= ' correct';
+                                }
+                                if ($hasScore) {
+                                    $optClasses .= ' weighted-has-score';
+                                }
+                            @endphp
+                            <div class="{{ $optClasses }}">
+                                <div class="qp-letter">{{ $letters[$idx] ?? '?' }}</div>
                                 <div class="qp-option-content">
-                                    <div class="qp-option-body prose prose-sm max-w-none"
-                                        x-html="opt.answer_text || '&mdash;'">
-                                    </div>
-                                    <template x-if="evalMethod === 'correct_wrong' && opt.is_correct">
-                                        <span class="qp-option-tag qp-tag-correct">
-                                            ✓ Kunci Jawaban
-                                        </span>
-                                    </template>
-                                    <template
-                                        x-if="evalMethod === 'weighted' && opt.score !== null && opt.score !== ''">
-                                        <span class="qp-option-tag qp-tag-score"
-                                            x-text="'Bobot: ' + opt.score + ' poin'">
-                                        </span>
-                                    </template>
+                                    @if ($hasText)
+                                        <div class="qp-option-body prose prose-sm max-w-none">
+                                            {!! $answerHtml !!}
+                                        </div>
+                                    @else
+                                        <div class="qp-option-body"
+                                            style="color:#94a3b8;font-style:italic;font-size:0.8125rem">
+                                            Menunggu teks jawaban...
+                                        </div>
+                                    @endif
+                                    @if ($isCorrect)
+                                        <span class="qp-option-tag qp-tag-correct">✓ Kunci Jawaban</span>
+                                    @endif
+                                    @if ($hasScore)
+                                        <span class="qp-option-tag qp-tag-score">Bobot: {{ $opt['score'] }} poin</span>
+                                    @endif
                                 </div>
                             </div>
-                        </template>
-
-                        {{-- Hidden (empty) options hint ──────────────── --}}
-                        <template x-if="(options.length - visibleOptions.length) > 0">
-                            <div class="qp-more">
-                                + <span x-text="options.length - visibleOptions.length"></span>
-                                pilihan lainnya belum diisi
-                            </div>
-                        </template>
+                        @endforeach
                     </div>
-                </template>
-
-                {{-- No filled options yet ────────────────────────────── --}}
-                <template x-if="visibleOptions.length === 0">
+                @else
                     <div class="qp-no-options">
-                        Pilihan jawaban belum diisi — tambahkan teks pada opsi di bagian <strong>Jawaban</strong> di
-                        atas
+                        Pilihan jawaban belum ditambahkan — klik <strong>Tambahkan ke options</strong> di bagian Jawaban
                     </div>
-                </template>
+                @endif
 
             </div>
         </div>
-    </template>
+    @endif
 </div>
 
-{{-- ── Alpine component registration ─────────────────────────────────── --}}
-<script>
-    (function() {
-        function registerQuestionPreview() {
-            if (typeof Alpine === 'undefined') return;
-            if (Alpine._data && Alpine._data['questionPreview']) return;
+@once
+    <script>
+        document.addEventListener('livewire:init', () => {
+            function renderQpMath() {
+                document.querySelectorAll('.qp-root').forEach(el => {
+                    if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                        MathJax.typesetClear([el]);
+                        MathJax.typesetPromise([el]).catch(() => {});
+                    }
+                });
+            }
 
-            Alpine.data('questionPreview', function(examTypeMap) {
-                return {
-                    qText: '',
-                    options: [],
-                    evalMethod: 'correct_wrong',
-                    category: null,
-                    hasContent: false,
-
-                    // Only return options whose answer_text is non-empty
-                    get visibleOptions() {
-                        return this.options.filter(function(opt) {
-                            return ((opt.answer_text || '').replace(/<[^>]*>/g, '').trim()
-                                .length > 0);
-                        });
-                    },
-
-                    init() {
-                        const self = this;
-
-                        // ── Find the wire:id element (Livewire root) ─────────
-                        // In Livewire 3 / Filament, the page component element
-                        // has wire:id="xxx" and Alpine data includes $wire proxy.
-                        // We find it once and use Alpine.evaluate() against it.
-                        this._wireEl = null;
-                        let el = this.$el;
-                        while (el) {
-                            if (el.hasAttribute && el.hasAttribute('wire:id')) {
-                                this._wireEl = el;
-                                break;
-                            }
-                            el = el.parentElement;
-                        }
-
-                        // Initial sync
-                        self._sync();
-
-                        // ── Poll for changes every 400ms ─────────────────────
-                        let prevSnapshot = '';
-                        setInterval(function() {
-                            try {
-                                // Re-find if not found on init
-                                if (!self._wireEl) {
-                                    let el = self.$el;
-                                    while (el) {
-                                        if (el.hasAttribute && el.hasAttribute('wire:id')) {
-                                            self._wireEl = el;
-                                            break;
-                                        }
-                                        el = el.parentElement;
-                                    }
-                                }
-                                if (!self._wireEl) return;
-
-                                const d = self._readData();
-                                const snap = JSON.stringify(d);
-                                if (snap !== prevSnapshot) {
-                                    prevSnapshot = snap;
-                                    self._sync();
-                                }
-                            } catch (e) {}
-                        }, 400);
-                    },
-
-                    /**
-                     * Read form data using Alpine.evaluate against the
-                     * Livewire component element. This preserves the
-                     * Alpine magic context so $wire is properly resolved.
-                     */
-                    _readData() {
-                        try {
-                            const wireEl = this._wireEl;
-                            if (!wireEl) return {};
-
-                            // Use Alpine.evaluate to run in the correct magic scope
-                            const data = Alpine.evaluate(wireEl, '$wire.data');
-                            if (!data) return {};
-
-                            return {
-                                question_text: data.question_text || '',
-                                options: data.options || {},
-                                exam_type_id: data.exam_type_id,
-                                category: data.category,
-                            };
-                        } catch (e) {
-                            return {};
-                        }
-                    },
-
-                    _sync() {
-                        try {
-                            const d = this._readData();
-
-                            this.qText = d.question_text || '';
-                            this.category = d.category || null;
-
-                            // Repeater stores items keyed by UUID → convert to array
-                            const raw = d.options || {};
-                            this.options = (typeof raw === 'object' && !Array.isArray(raw)) ?
-                                Object.values(raw) :
-                                (Array.isArray(raw) ? raw : []);
-
-                            // Resolve evaluation method from embedded exam-type map
-                            const etId = d.exam_type_id;
-                            if (etId && examTypeMap[etId]) {
-                                this.evalMethod = examTypeMap[etId];
-                            }
-
-                            // Has real content (ignore empty paragraph from TipTap: <p></p>)
-                            const stripped = this.qText.replace(/<[^>]*>/g, '').trim();
-                            this.hasContent = stripped.length > 0;
-
-                            // Re-render KaTeX if loaded
-                            this.$nextTick(function() {
-                                if (typeof renderMathInElement !== 'undefined') {
-                                    try {
-                                        renderMathInElement(this.$el, {
-                                            delimiters: [{
-                                                    left: '$$',
-                                                    right: '$$',
-                                                    display: true
-                                                },
-                                                {
-                                                    left: '$',
-                                                    right: '$',
-                                                    display: false
-                                                },
-                                                {
-                                                    left: '\\(',
-                                                    right: '\\)',
-                                                    display: false
-                                                },
-                                                {
-                                                    left: '\\[',
-                                                    right: '\\]',
-                                                    display: true
-                                                },
-                                            ],
-                                            throwOnError: false,
-                                        });
-                                    } catch (e) {
-                                        /* ignore */
-                                    }
-                                }
-                            }.bind(this));
-
-                        } catch (e) {
-                            /* not ready */
-                        }
-                    },
-
-                    optionLabel(index) {
-                        return String.fromCharCode(65 + index);
-                    },
-                };
+            // Render setelah setiap Livewire commit selesai (morph DOM)
+            Livewire.hook('commit', ({
+                succeed
+            }) => {
+                succeed(() => {
+                    requestAnimationFrame(() => renderQpMath());
+                });
             });
-        }
 
-        if (window.Alpine) {
-            registerQuestionPreview();
-        }
-        document.addEventListener('alpine:init', registerQuestionPreview);
-        document.addEventListener('alpine:initialized', registerQuestionPreview);
-    }());
-</script>
+            // Render pertama kali saat halaman dimuat
+            requestAnimationFrame(() => renderQpMath());
+        });
+    </script>
+@endonce
