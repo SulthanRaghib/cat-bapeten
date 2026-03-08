@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Questions\Pages;
 
 use App\DTOs\Question\CreateQuestionDTO;
+use App\Filament\Actions\ValidateCorrectAnswerAction;
 use App\Filament\Resources\Questions\QuestionResource;
-use App\Models\ExamType;
 use App\Services\QuestionService;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,38 +18,12 @@ class CreateQuestion extends CreateRecord
     protected static ?string $title = 'Tambah Soal';
 
     /**
-     * Validate correct answer exists for Teknis type — runs after standard
-     * validation so the page does NOT scroll away on error.
+     * Validate correct answer exists for Teknis type — delegates to the
+     * shared Action so this rule is never duplicated across pages.
      */
     protected function afterValidate(): void
     {
-        $data       = $this->form->getState();
-        $examTypeId = $data['exam_type_id'] ?? null;
-        $method     = $examTypeId ? ExamType::find($examTypeId)?->evaluation_method : null;
-
-        if ($method !== 'correct_wrong') {
-            return;
-        }
-
-        $options    = $data['options'] ?? [];
-        $hasCorrect = false;
-        foreach ($options as $opt) {
-            if (is_array($opt) && ! empty($opt['is_correct'])) {
-                $hasCorrect = true;
-                break;
-            }
-        }
-
-        if (! $hasCorrect) {
-            Notification::make()
-                ->title('Kunci Jawaban Belum Dipilih')
-                ->body('Soal tipe Teknis wajib memiliki minimal 1 jawaban yang ditandai sebagai Kunci Jawaban (Benar).')
-                ->danger()
-                ->persistent()
-                ->send();
-
-            $this->halt();
-        }
+        ValidateCorrectAnswerAction::run($this);
     }
 
     public function getBreadcrumb(): string
