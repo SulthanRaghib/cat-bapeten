@@ -33,23 +33,20 @@ final readonly class UpdateQuestionDTO
      */
     public static function fromFormData(array $data): self
     {
-        $options = array_map(
-            static fn(array $row): QuestionOptionData => QuestionOptionData::fromArray($row),
-            (array) ($data['options'] ?? []),
-        );
+        $fields = QuestionFormDataMapper::extract($data);
 
         return new self(
-            examTypeId: (int) ($data['exam_type_id']      ?? 0),
-            questionText: (string) ($data['question_text']       ?? ''),
-            options: $options,
-            explanation: (string) ($data['explanation']         ?? ''),
-            questionUnitId: isset($data['question_unit_id']) ? (int) $data['question_unit_id'] : null,
-            questionSubUnitId: isset($data['question_sub_unit_id']) ? (int) $data['question_sub_unit_id'] : null,
-            unit: (string) ($data['unit']                ?? ''),
-            subUnit: (string) ($data['sub_unit']            ?? ''),
-            category: (string) ($data['category']            ?? ''),
-            competenceArea: (string) ($data['competence_area']     ?? ''),
-            competenceSubArea: (string) ($data['competence_sub_area'] ?? ''),
+            examTypeId: $fields['examTypeId'],
+            questionText: $fields['questionText'],
+            options: $fields['options'],
+            explanation: $fields['explanation'],
+            questionUnitId: $fields['questionUnitId'],
+            questionSubUnitId: $fields['questionSubUnitId'],
+            unit: $fields['unit'],
+            subUnit: $fields['subUnit'],
+            category: $fields['category'],
+            competenceArea: $fields['competenceArea'],
+            competenceSubArea: $fields['competenceSubArea'],
         );
     }
 }
