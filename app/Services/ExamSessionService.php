@@ -77,6 +77,30 @@ final class ExamSessionService
     public function saveAnswer(SaveAnswerDTO $dto): ExamAnswer
     {
         return DB::transaction(function () use ($dto): ExamAnswer {
+            // SECURITY — IDOR guard + Race condition prevention:
+            // Kunci baris session dulu sebelum membaca answers_meta.
+            // Ini sekaligus mencegah dua request paralel memanipulasi sesi yang sama.
+            $session = ExamSession::where('id', $dto->examSessionId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // SECURITY — Pastikan sesi masih aktif sebelum menerima jawaban.
+            if ($session->status !== 'ongoing') {
+                throw new \RuntimeException(
+                    "Session #{$dto->examSessionId} is not ongoing (status: {$session->status}).",
+                );
+            }
+
+            // SECURITY — IDOR guard: verifikasi bahwa questionId benar-benar
+            // ada di answers_meta sesi ini (daftar yang di-shuffle server-side).
+            // Ini mencegah penyerang menyimpan jawaban untuk soal dari paket lain.
+            $allowedQuestionIds = $session->answers_meta ?? [];
+            if (! in_array($dto->questionId, $allowedQuestionIds, true)) {
+                throw new \RuntimeException(
+                    "Question #{$dto->questionId} does not belong to session #{$dto->examSessionId}.",
+                );
+            }
+
             /** @var ExamAnswer $answer */
             $answer = ExamAnswer::updateOrCreate(
                 [

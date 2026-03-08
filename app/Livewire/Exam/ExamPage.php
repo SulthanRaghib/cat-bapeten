@@ -17,6 +17,7 @@ use App\Services\ExamSessionService;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
@@ -24,27 +25,42 @@ use Livewire\Component;
 class ExamPage extends Component
 {
     // == Sesi & Identitas ====================================================
+    // #[Locked] — nilai ditetapkan server; frontend TIDAK boleh memanipulasi.
+    #[Locked]
     public ?int    $examSessionId      = null;
-    /** Di-cache agar startExam() tidak perlu membaca ulang PHP session. */
+
+    #[Locked]
     public ?int    $examParticipantId  = null;
 
     // == Navigasi Soal ============================================================
+    // #[Locked] — urutan soal hanya boleh ditentukan server (hasil shuffle saat start).
+    #[Locked]
     public int     $currentQuestionIndex = 0;
+
+    #[Locked]
     public array   $questionIds          = [];
+
+    #[Locked]
     public int     $totalQuestions       = 0;
 
     // == State Soal yang Sedang Ditampilkan ================================================
+    // currentAnswer SENGAJA tidak di-Locked — terikat ke wire:model untuk input peserta.
     public string  $currentAnswer   = '';
     public bool    $currentDoubtful = false;
 
     // == Data Bulk untuk JavaScript =================================================
-    /** Semua soal yang diserialisasi untuk JS - dimuat sekali saat sesi dimulai/dilanjutkan. */
+    /** Semua soal yang diserialisasi untuk JS — TANPA is_correct/score (anti data-exposure). */
+    #[Locked]
     public array   $questionsJson  = [];
+
     /** Status jawaban awal per soal, dipakai JS untuk inisialisasi tampilan. */
+    #[Locked]
     public array   $initialAnswers = [];
 
     // == Alur Kerja (Tahap Ujian) ==============================================================
-    /** Tahap aktif: verification | rules | exam | result */
+    /** Tahap aktif: verification | rules | exam | result
+     * #[Locked] — transisi hanya boleh terjadi melalui aksi server, bukan DevTools. */
+    #[Locked]
     public string  $step        = 'rules';
     public bool    $cameraValid = true;
     public bool    $rulesAgreed = false;
@@ -58,18 +74,40 @@ class ExamPage extends Component
     public ?string $candidateIdentifier  = null;
 
     // == Timer (string ISO 8601 - di-serialize Livewire sebagai JSON ke frontend) ==
+    // #[Locked] — KRITIS: jika tidak dikunci, penyerang bisa set endTime=2099 via DevTools.
+    #[Locked]
     public int     $durationMinutes = 0;
+
+    #[Locked]
     public ?string $startedAt       = null;
+
+    #[Locked]
     public ?string $endTime         = null;
 
     // == Hasil Ujian ===============================================================
+    #[Locked]
     public bool    $showResults = false;
+
+    #[Locked]
     public array   $resultStats = [];
 
     // == Pemantauan Keamanan ===================================================
+    #[Locked]
     public int     $violationCount     = 0;
     public bool    $showViolationModal = false;
     public string  $violationMessage   = '';
+
+    /** Daftar nilai opsi jawaban yang sah. Digunakan di saveAnswerClient() untuk validasi input. */
+    private const VALID_ANSWER_OPTIONS = ['A', 'B', 'C', 'D', 'E', ''];
+
+    /** Whitelist aksi proctoring yang diizinkan masuk ke log. Mencegah injection string sembarang. */
+    private const ALLOWED_PROCTORING_ACTIONS = [
+        'tab_switch',
+        'window_blur',
+        'copy_attempt',
+        'paste_attempt',
+        'right_click',
+    ];
 
     // =========================================================================
     // SIKLUS HIDUP KOMPONEN
@@ -206,6 +244,17 @@ class ExamPage extends Component
             return;
         }
 
+        // SECURITY — Input validation: tolak nilai opsi yang tidak dikenali.
+        if (! in_array($option, self::VALID_ANSWER_OPTIONS, true)) {
+            return;
+        }
+
+        // SECURITY — IDOR guard: pastikan questionId memang bagian dari sesi ini.
+        // $questionIds bersifat #[Locked] sehingga tidak bisa dimanipulasi dari DevTools.
+        if (! in_array($questionId, $this->questionIds, true)) {
+            return;
+        }
+
         if ($this->hasTimeExpired()) {
             $this->handleTimeExpiry();
             return;
@@ -224,6 +273,11 @@ class ExamPage extends Component
     public function toggleDoubtfulClient(int $questionId, bool $status): void
     {
         if ($this->showResults || ! $this->examSessionId) {
+            return;
+        }
+
+        // SECURITY — IDOR guard: pastikan questionId memang bagian dari sesi ini.
+        if (! in_array($questionId, $this->questionIds, true)) {
             return;
         }
 
@@ -422,6 +476,17 @@ class ExamPage extends Component
             return;
         }
 
+        // SECURITY — Whitelist validation: tolak aksi yang tidak dikenali.
+        // Mencegah injection string sembarang ke kolom exam_activity_logs.action.
+        if (! in_array($action, self::ALLOWED_PROCTORING_ACTIONS, true)) {
+            return;
+        }
+
+        // SECURITY — Severity whitelist: nilai di luar daftar diabaikan.
+        if (! in_array($severity, ['warning', 'danger', 'critical'], true)) {
+            return;
+        }
+
         // VALIDASI: Hanya catat log jika ujian masih berstatus 'ongoing'
         // Mencegah log palsu setelah ujian selesai tetapi peserta masih di halaman result.
         $session = ExamSession::find($this->examSessionId);
@@ -437,13 +502,12 @@ class ExamPage extends Component
             'right_click'   => 'Percobaan klik kanan (Context Menu).',
         ];
 
-        $logMessage = $message ?? ($messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.');
+        // SECURITY — Gunakan hanya pesan dari whitelist server; abaikan pesan bebas dari client.
+        $logMessage = $messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.';
 
-        if (in_array($severity, ['warning', 'danger', 'critical'], true)) {
-            $this->violationCount++;
-            $this->violationMessage   = $logMessage;
-            $this->showViolationModal = true;
-        }
+        $this->violationCount++;
+        $this->violationMessage   = $logMessage;
+        $this->showViolationModal = true;
 
         ExamActivityLog::create([
             'exam_session_id' => $this->examSessionId,
@@ -627,10 +691,24 @@ class ExamPage extends Component
                     }
                 }
 
+                // SECURITY — Data Exposure Prevention:
+                // Strip semua field sensitif sebelum dikirim ke frontend.
+                // Field 'is_correct', 'score', 'scoring_config' TIDAK BOLEH sampai ke client
+                // karena akan terlihat jelas di browser DevTools / Livewire payload.
+                $safeOptions = is_array($options)
+                    ? array_values(array_map(
+                        static fn(mixed $opt): array => [
+                            'answer_text' => is_array($opt) ? ($opt['answer_text'] ?? '') : (string) $opt,
+                            'is_active'   => is_array($opt) ? (bool) ($opt['is_active'] ?? true) : true,
+                        ],
+                        $options,
+                    ))
+                    : [];
+
                 return [
                     'id'            => $q->id,
                     'question_text' => (string) $q->question_text,
-                    'options'       => $options,
+                    'options'       => $safeOptions,
                 ];
             })
             ->filter()
