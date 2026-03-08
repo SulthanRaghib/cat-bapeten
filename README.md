@@ -13,6 +13,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Security](https://img.shields.io/badge/Security-Zero--Trust-DC2626?style=for-the-badge&logo=shield&logoColor=white)
 
 <br>
 
@@ -35,7 +36,8 @@
 - [👥 Peran & Akses](#-peran--akses)
 - [📤 Ekspor Data](#-ekspor-data)
 - [🏗️ Arsitektur](#️-arsitektur)
-- [🔐 Akses Default](#-akses-default)
+- [� Keamanan & Zero-Trust](#-keamanan--zero-trust)
+- [�🔐 Akses Default](#-akses-default)
 - [👨‍💻 Pengembang](#-pengembang)
 
 ---
@@ -392,7 +394,89 @@ Filament Pages / Livewire Components
 
 ---
 
-## 🔐 Akses Default
+## � Keamanan & Zero-Trust
+
+Sistem ini dirancang dengan prinsip **Zero-Trust Architecture** — tidak ada input dari client yang dipercaya tanpa verifikasi ulang di sisi server.
+
+### Lapisan Perlindungan
+
+#### 1. 🚫 Data Exposure Prevention (`ExamPage` — `initializeClientData`)
+
+Field sensitif **distrip sebelum dikirim ke frontend**. `questionsJson` yang diterima browser hanya berisi teks soal dan teks pilihan — **tanpa** `is_correct`, `score`, atau `scoring_config`.
+
+```php
+// ❌ SEBELUM — is_correct bocor ke DevTools
+'options' => $q->options,
+
+// ✅ SESUDAH — hanya teks yang dikirim ke client
+'options' => array_map(static fn ($opt) => [
+    'answer_text' => $opt['answer_text'] ?? '',
+    'is_active'   => $opt['is_active'] ?? true,
+], $options),
+```
+
+#### 2. 🔐 State Tampering Prevention (`#[Locked]` Properties)
+
+Semua properti Livewire yang bersifat **server-only** dikunci dengan `#[Locked]`. Penyerang tidak dapat memanipulasinya via `$wire.property = nilai` di DevTools.
+
+| Properti           | Risiko Jika Tidak Dikunci                                |
+| ------------------ | -------------------------------------------------------- |
+| `$examSessionId`   | Bisa ditarget ke sesi milik peserta lain                 |
+| `$endTime`         | Bisa diset ke tahun 2099 → waktu ujian tidak habis       |
+| `$durationMinutes` | Bisa diperbesar → perpanjang waktu                       |
+| `$questionIds`     | Bisa dimanipulasi → merusak IDOR guard                   |
+| `$step`            | Bisa di-skip langsung ke `result` tanpa mengerjakan soal |
+| `$resultStats`     | Bisa dipalsukan untuk tampilkan nilai berbeda            |
+
+#### 3. 🛡️ IDOR Prevention (`saveAnswerClient`, `toggleDoubtfulClient`)
+
+Setiap `questionId` yang datang dari browser **divalidasi** bahwa soal tersebut memang berada di daftar soal sesi peserta yang bersangkutan.
+
+```php
+// Cegah penyerang kirim jawaban untuk soal dari paket lain
+if (! in_array($questionId, $this->questionIds, true)) {
+    return; // Ditolak diam-diam
+}
+```
+
+#### 4. ⚡ IDOR + Race Condition Prevention (`ExamSessionService::saveAnswer`)
+
+Verifikasi ganda di layer Service menggunakan **`lockForUpdate()`** agar tidak ada dua request paralel yang memanipulasi sesi secara bersamaan.
+
+```php
+$session = ExamSession::where('id', $dto->examSessionId)
+    ->lockForUpdate()      // ← Cegah race condition
+    ->firstOrFail();
+
+// Pastikan questionId ada di answers_meta session ini
+if (! in_array($dto->questionId, $session->answers_meta ?? [], true)) {
+    throw new \RuntimeException('IDOR attempt rejected.');
+}
+```
+
+#### 5. 📝 Input Whitelist Validation
+
+Dua whitelist konstan mencegah injection data sembarang:
+
+```php
+// Hanya nilai opsi ini yang valid
+private const VALID_ANSWER_OPTIONS = ['A', 'B', 'C', 'D', 'E', ''];
+
+// Hanya aksi proctoring ini yang diizinkan masuk log
+private const ALLOWED_PROCTORING_ACTIONS = [
+    'tab_switch', 'window_blur', 'copy_attempt', 'paste_attempt', 'right_click',
+];
+```
+
+Pesan log juga sepenuhnya dibuat di sisi server dari `$messageMap` — **pesan bebas dari client diabaikan**.
+
+#### 6. 🔄 ACID Compliance
+
+Seluruh operasi mutasi data (save answer, start session, finish session) dibungkus dalam `DB::transaction()` sehingga partial write tidak bisa terjadi meski ada network failure.
+
+---
+
+## �🔐 Akses Default
 
 Setelah menjalankan `php artisan migrate --seed` atau `composer setup`:
 
