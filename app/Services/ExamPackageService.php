@@ -33,17 +33,8 @@ final class ExamPackageService
      */
     public function create(CreateExamPackageDTO $dto): ExamPackage
     {
-        return DB::transaction(static function () use ($dto): ExamPackage {
-            return ExamPackage::create([
-                'title'                     => $dto->title,
-                'exam_type_id'              => $dto->examTypeId,
-                'passing_grade'             => $dto->passingGrade,
-                'duration_minutes'          => $dto->durationMinutes,
-                'is_active'                 => $dto->isActive,
-                'start_time'                => $dto->startTime,
-                'end_time'                  => $dto->endTime,
-                'technical_scoring_config'  => $dto->technicalScoringConfig,
-            ]);
+        return DB::transaction(function () use ($dto): ExamPackage {
+            return ExamPackage::create($this->mapToAttributes($dto));
         });
     }
 
@@ -54,17 +45,8 @@ final class ExamPackageService
      */
     public function update(ExamPackage $package, CreateExamPackageDTO $dto): ExamPackage
     {
-        return DB::transaction(static function () use ($package, $dto): ExamPackage {
-            $package->update([
-                'title'                     => $dto->title,
-                'exam_type_id'              => $dto->examTypeId,
-                'passing_grade'             => $dto->passingGrade,
-                'duration_minutes'          => $dto->durationMinutes,
-                'is_active'                 => $dto->isActive,
-                'start_time'                => $dto->startTime,
-                'end_time'                  => $dto->endTime,
-                'technical_scoring_config'  => $dto->technicalScoringConfig,
-            ]);
+        return DB::transaction(function () use ($package, $dto): ExamPackage {
+            $package->update($this->mapToAttributes($dto));
 
             return $package->fresh();
         });
@@ -142,5 +124,30 @@ final class ExamPackageService
 
             return $participant->fresh();
         });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Convert a Create/Update DTO into the plain attribute array accepted
+     * by ExamPackage::create() and ExamPackage::update().
+     * Centralised here so the two methods above never drift apart.
+     *
+     * @return array<string, mixed>
+     */
+    private function mapToAttributes(CreateExamPackageDTO $dto): array
+    {
+        return [
+            'title'                    => $dto->title,
+            'exam_type_id'             => $dto->examTypeId,
+            'passing_grade'            => $dto->passingGrade,
+            'duration_minutes'         => $dto->durationMinutes,
+            'is_active'                => $dto->isActive,
+            'start_time'               => $dto->startTime,
+            'end_time'                 => $dto->endTime,
+            'technical_scoring_config' => $dto->technicalScoringConfig,
+        ];
     }
 }

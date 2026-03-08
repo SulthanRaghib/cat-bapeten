@@ -133,37 +133,23 @@ final class ExamSessionService
                 ($session->examPackage?->examType?->evaluation_method === 'correct_wrong')
                 && ((bool) ($technicalConfig['has_stages'] ?? false) || (bool) ($technicalConfig['has_interview'] ?? false));
 
-            if ($hasStages) {
-                // Await selection stages: store CBT score provisionally, final score TBD.
-                $session->update([
-                    'status'      => 'awaiting_interview',
-                    'finished_at' => $dto->finishedAt,
-                    'cbt_score'   => $cbtScore,
-                    'total_score' => $cbtScore,
-                ]);
+            // Resolve the terminal status — early assignment removes the if/else duplication.
+            $newStatus = $hasStages ? 'awaiting_interview' : 'completed';
 
-                Log::info('Exam awaiting selection stages', [
-                    'session_id'  => $session->id,
-                    'participant' => $dto->examParticipantId,
-                    'cbt_score'   => $cbtScore,
-                    'finished_at' => $dto->finishedAt,
-                ]);
-            } else {
-                // No interview: exam is fully completed.
-                $session->update([
-                    'status'      => 'completed',
-                    'finished_at' => $dto->finishedAt,
-                    'cbt_score'   => $cbtScore,
-                    'total_score' => $cbtScore,
-                ]);
+            $session->update([
+                'status'      => $newStatus,
+                'finished_at' => $dto->finishedAt,
+                'cbt_score'   => $cbtScore,
+                'total_score' => $cbtScore,
+            ]);
 
-                Log::info('Exam finished', [
-                    'session_id'  => $session->id,
-                    'participant' => $dto->examParticipantId,
-                    'total_score' => $cbtScore,
-                    'finished_at' => $dto->finishedAt,
-                ]);
-            }
+            Log::info('Exam finished', [
+                'session_id'  => $session->id,
+                'participant' => $dto->examParticipantId,
+                'status'      => $newStatus,
+                'cbt_score'   => $cbtScore,
+                'finished_at' => $dto->finishedAt,
+            ]);
 
             // Business rule: once an exam is submitted the participant's
             // is_active flag is turned off so they cannot start again.

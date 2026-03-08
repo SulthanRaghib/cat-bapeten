@@ -41,10 +41,8 @@ class Question extends Model
     //   1. retrieved event  — sanitizes attributes immediately after DB hydration
     //   2. toArray() override — final safety net before any JSON serialization
 
-    protected static function boot(): void
+    protected static function booted(): void
     {
-        parent::boot();
-
         static::retrieved(function (self $model): void {
             // Sanitize plain-text / HTML string columns
             foreach (['question_text', 'explanation', 'competence_area', 'competence_sub_area', 'unit', 'sub_unit'] as $col) {
