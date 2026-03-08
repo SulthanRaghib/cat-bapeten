@@ -98,16 +98,20 @@ class CustomLogin extends BaseLogin
                         ]);
                     }
 
-                    // Jika sudah tidak aktif, berikan pesan yang lebih informatif
+                    // SECURITY — Task 3: Token Reuse Prevention.
+                    // Cek sesi selesai harus SEBELUM cek is_active, karena is_active bisa gagal
+                    // dinonaktifkan (misal: crash saat finish). Jika ada sesi 'completed' atau
+                    // 'awaiting_interview', token ini sudah tidak boleh digunakan lagi.
+                    $latestSession = $participant->examSessions()->latest()->first();
+
+                    if ($latestSession && in_array($latestSession->status, ['completed', 'awaiting_interview'], true)) {
+                        throw ValidationException::withMessages([
+                            'data.login_id' => 'Akses Ditolak: Anda sudah menyelesaikan ujian ini. Token hanya dapat digunakan satu kali.',
+                        ]);
+                    }
+
+                    // Jika sudah tidak aktif tanpa riwayat sesi selesai (misal: dinonaktifkan manual)
                     if (! $participant->is_active) {
-                        $session = $participant->examSessions()->latest()->first();
-
-                        if ($session && $session->status === 'completed') {
-                            throw ValidationException::withMessages([
-                                'data.login_id' => 'Anda sudah menyelesaikan ujian ini. Token hanya dapat digunakan satu kali.',
-                            ]);
-                        }
-
                         throw ValidationException::withMessages([
                             'data.login_id' => 'Akses ujian Anda sudah dinonaktifkan. Silakan hubungi panitia ujian.',
                         ]);

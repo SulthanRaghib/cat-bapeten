@@ -695,11 +695,13 @@ class ExamPage extends Component
                 // Strip semua field sensitif sebelum dikirim ke frontend.
                 // Field 'is_correct', 'score', 'scoring_config' TIDAK BOLEH sampai ke client
                 // karena akan terlihat jelas di browser DevTools / Livewire payload.
+                // 'image_links' dipertahankan karena dibutuhkan untuk rendering opsi bergambar.
                 $safeOptions = is_array($options)
                     ? array_values(array_map(
                         static fn(mixed $opt): array => [
                             'answer_text' => is_array($opt) ? ($opt['answer_text'] ?? '') : (string) $opt,
                             'is_active'   => is_array($opt) ? (bool) ($opt['is_active'] ?? true) : true,
+                            'image_links' => is_array($opt) ? (array) ($opt['image_links'] ?? []) : [],
                         ],
                         $options,
                     ))

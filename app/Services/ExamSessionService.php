@@ -101,6 +101,28 @@ final class ExamSessionService
                 );
             }
 
+            // SECURITY — Defence-in-Depth IDOR guard (pivot-table level):
+            // Verifikasi langsung ke database bahwa soal ini memang terdaftar
+            // di paket ujian yang terkait dengan sesi ini.
+            // Ini berfungsi sebagai lapisan kedua yang independen dari answers_meta,
+            // sehingga bahkan jika answers_meta entah bagaimana dikompromi,
+            // serangan IDOR tetap terblokir di level DB.
+            $packageId = $session->examParticipant?->exam_package_id
+                ?? ExamParticipant::find($session->exam_participant_id)?->exam_package_id;
+
+            if ($packageId === null) {
+                abort(403, 'Akses Ilegal: Paket ujian tidak ditemukan.');
+            }
+
+            $questionBelongsToPackage = \Illuminate\Support\Facades\DB::table('exam_package_question')
+                ->where('exam_package_id', $packageId)
+                ->where('question_id', $dto->questionId)
+                ->exists();
+
+            if (! $questionBelongsToPackage) {
+                abort(403, 'Akses Ilegal: Soal tidak valid.');
+            }
+
             /** @var ExamAnswer $answer */
             $answer = ExamAnswer::updateOrCreate(
                 [
