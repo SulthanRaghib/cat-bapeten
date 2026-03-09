@@ -60,7 +60,7 @@ class ExamResultsExcelExport extends ExcelExport
     {
         $this->modifyQueryUsing(function ($query) {
             // Always eager-load relationships needed by columns
-            $query->with(['user', 'examPackage', 'examParticipant', 'answers', 'activityLogs']);
+            $query->with(['user', 'examPackage.examType', 'examParticipant', 'answers', 'activityLogs']);
 
             // Only completed sessions
             $query->where('status', 'completed');
@@ -180,10 +180,21 @@ class ExamResultsExcelExport extends ExcelExport
                         ],
                         'alignment' => [
                             'vertical' => Alignment::VERTICAL_CENTER,
+                            'wrapText' => true,
                         ],
                     ]);
                     for ($row = 2; $row <= $lastRow; $row++) {
-                        $sheet->getRowDimension($row)->setRowHeight(18);
+                        // Auto-set row height based on line count in any cell
+                        $maxLines = 1;
+                        for ($c = 1; $c <= $colCount; $c++) {
+                            $letter  = Coordinate::stringFromColumnIndex($c);
+                            $val     = (string) $sheet->getCell("{$letter}{$row}")->getValue();
+                            $lines   = max(1, substr_count($val, "\n") + 1);
+                            if ($lines > $maxLines) {
+                                $maxLines = $lines;
+                            }
+                        }
+                        $sheet->getRowDimension($row)->setRowHeight($maxLines > 1 ? $maxLines * 15 : 18);
                     }
 
                     // ── 6. NIP column: force explicit STRING type per cell ────────
@@ -205,7 +216,50 @@ class ExamResultsExcelExport extends ExcelExport
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
-                    // ── 7. Per-column formatting & colouring ────────────────────
+                    // ── 8. Column widths ────────────────────────────────────────────
+                    // Width map by partial match on heading text
+                    $widthMap = [
+                        'Nama Lengkap'                    => 28,
+                        'NIP'                             => 20,
+                        'Nama Ujian'                      => 30,
+                        'Tipe Ujian'                      => 16,
+                        'Tanggal'                         => 14,
+                        'Waktu Mulai'                     => 13,
+                        'Waktu Selesai'                   => 13,
+                        'Durasi'                          => 14,
+                        'Benar'                           => 8,
+                        'Salah'                           => 8,
+                        'Tidak Dijawab'                   => 13,
+                        'Unit Kompeten'                   => 13,
+                        'Pelanggaran'                     => 13,
+                        'Skor'                            => 12,
+                        'Indikator'                       => 28,
+                        'Skor CBT'                        => 12,
+                        'Nilai '                          => 18,
+                        'Nilai Akhir'                     => 16,
+                        'Nilai Ambang Batas'              => 18,
+                        'NAB'                             => 10,
+                        'Keterangan'                      => 14,
+                        'Rincian Tahap Seleksi'           => 30,
+                        'Rincian Unit Penilaian'          => 55,
+                    ];
+
+                    for ($c = 1; $c <= $colCount; $c++) {
+                        $letter  = Coordinate::stringFromColumnIndex($c);
+                        $heading = (string) $sheet->getCell("{$letter}1")->getValue();
+                        $width   = null;
+                        foreach ($widthMap as $pattern => $w) {
+                            if (str_contains($heading, $pattern)) {
+                                $width = $w;
+                                break;
+                            }
+                        }
+                        if ($width !== null) {
+                            $sheet->getColumnDimension($letter)->setWidth($width);
+                        } else {
+                            $sheet->getColumnDimension($letter)->setAutoSize(true);
+                        }
+                    }
                     if ($isMansoskul) {
                         // ── MANSOSKUL layout ──────────────────────────────────────
                         // A-G: base cols (1-7)

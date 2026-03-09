@@ -33,8 +33,8 @@ class ExamPage extends Component
     public ?int    $examParticipantId  = null;
 
     // == Navigasi Soal ============================================================
-    // #[Locked] — urutan soal hanya boleh ditentukan server (hasil shuffle saat start).
-    #[Locked]
+    // Tidak di-Locked — Alpine.js perlu menulis via @entangle untuk navigasi client-side.
+    // Keamanan urutan soal dijaga oleh $questionIds yang tetap #[Locked].
     public int     $currentQuestionIndex = 0;
 
     #[Locked]
@@ -98,7 +98,7 @@ class ExamPage extends Component
     public string  $violationMessage   = '';
 
     /** Daftar nilai opsi jawaban yang sah. Digunakan di saveAnswerClient() untuk validasi input. */
-    private const VALID_ANSWER_OPTIONS = ['A', 'B', 'C', 'D', 'E', ''];
+    private const VALID_ANSWER_OPTIONS = ['0', '1', '2', '3', '4', ''];
 
     /** Whitelist aksi proctoring yang diizinkan masuk ke log. Mencegah injection string sembarang. */
     private const ALLOWED_PROCTORING_ACTIONS = [
@@ -224,6 +224,16 @@ class ExamPage extends Component
     public function updatedCurrentAnswer(string $value): void
     {
         $this->saveAnswer($value);
+    }
+
+    /** Dipanggil otomatis Livewire saat Alpine mengubah currentQuestionIndex via @entangle.
+     *  Menyimpan posisi soal ke PHP session agar bertahan saat halaman di-refresh. */
+    #[Renderless]
+    public function updatedCurrentQuestionIndex(): void
+    {
+        if ($this->examSessionId) {
+            $this->persistNavigationIndex();
+        }
     }
 
     #[Renderless]
@@ -648,6 +658,9 @@ class ExamPage extends Component
 
         // Pulihkan nomor soal terakhir dari PHP session (bertahan meski halaman di-refresh).
         $this->currentQuestionIndex = session("exam_question_index_{$this->examSessionId}", 0);
+
+        // Pulihkan jumlah pelanggaran dari DB agar tidak reset saat refresh.
+        $this->violationCount = ExamActivityLog::where('exam_session_id', $session->id)->count();
 
         $this->initializeClientData();
 

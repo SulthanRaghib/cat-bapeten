@@ -102,8 +102,8 @@ class ParticipantsRelationManager extends RelationManager
                         $examPackage = $this->getOwnerRecord();
                         $existingParticipantIds = $examPackage->participants()->pluck('users.id')->toArray();
 
-                        return $query->whereNotIn('id', $existingParticipantIds)
-                            ->where('role', 'user'); // Hanya tampilkan user biasa, bukan admin
+                        return $query->whereNotIn('users.id', $existingParticipantIds)
+                            ->where('users.role', 'user'); // Hanya tampilkan user biasa, bukan admin
                     }),
             ])
             ->recordActions([

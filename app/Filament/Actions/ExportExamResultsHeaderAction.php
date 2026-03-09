@@ -261,6 +261,11 @@ class ExportExamResultsHeaderAction
             Column::make('examPackage.title')
                 ->heading('Nama Ujian / Paket'),
 
+            Column::make('tipe_ujian')
+                ->heading('Tipe Ujian')
+                ->getStateUsing(fn(ExamSession $record): string =>
+                $record->examPackage?->examType?->name ?? '-'),
+
             Column::make('tgl_ujian')
                 ->heading('Tanggal Pelaksanaan')
                 ->getStateUsing(fn(ExamSession $record): string =>
@@ -422,6 +427,28 @@ class ExportExamResultsHeaderAction
                             $parts[] = $label . ': ' . (is_numeric($score) ? number_format((float) $score, 1, '.', '') : $score);
                         }
                         return implode(' | ', $parts);
+                    });
+
+                // ── Unit indicator summary for Mansoskul rows ──────────────
+                $columns[] = Column::make('rincian_unit_mansoskul')
+                    ->heading('Rincian Unit Penilaian (Mansoskul)')
+                    ->getStateUsing(function (ExamSession $record): string {
+                        $evalMethod = $record->examPackage?->examType?->evaluation_method ?? 'correct_wrong';
+                        if ($evalMethod !== 'weighted') {
+                            return '—';
+                        }
+                        $units = app(\App\Services\ExamSessionService::class)->calculateWeightedResult($record);
+                        if (empty($units)) {
+                            return '—';
+                        }
+                        $parts = [];
+                        foreach ($units as $unit) {
+                            $status    = $unit['is_passing'] ? 'KOMPETEN' : 'BELUM KOMPETEN';
+                            $indikator = $unit['achieved_indicator'] ?: '—';
+                            $skor      = number_format((float) ($unit['total_score'] ?? 0), 2, '.', '');
+                            $parts[]   = $unit['unit_name'] . ': ' . $skor . ' | ' . $indikator . ' [' . $status . ']';
+                        }
+                        return implode("\n", $parts);
                     });
 
                 $columns[] = Column::make('total_score')

@@ -385,6 +385,7 @@
                         <td class="text-left">{{ $row['nama'] }}</td>
                         <td class="text-left">{{ $row['nip'] }}</td>
                         <td class="text-left">{{ $row['paket_ujian'] }}</td>
+                        <td class="text-center">{{ $row['tipe_ujian'] ?? '-' }}</td>
                         <td class="text-center">{{ $row['tanggal'] }}</td>
                         <td class="text-center">{{ $row['waktu_mulai'] }}</td>
                         <td class="text-center">{{ $row['waktu_selesai'] }}</td>
@@ -470,7 +471,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $includeStatistics ? ($has_staged_teknis ? 16 : 15) : ($has_staged_teknis ? 13 : 12) }}"
+                        colspan="{{ $includeStatistics ? ($has_staged_teknis ? 17 : 16) : ($has_staged_teknis ? 14 : 13) }}"
                             class="text-center" style="padding: 12px; color: #999;">
                             Tidak ada data ujian teknis.
                         </td>
@@ -496,6 +497,7 @@
                     <th>Nama Lengkap</th>
                     <th>NIP</th>
                     <th>Paket Ujian</th>
+                    <th>Tipe Ujian</th>
                     <th>Tanggal</th>
                     <th>Mulai</th>
                     <th>Selesai</th>
@@ -514,6 +516,7 @@
                         <td class="text-left">{{ $row['nama'] }}</td>
                         <td class="text-left">{{ $row['nip'] }}</td>
                         <td class="text-left">{{ $row['paket_ujian'] }}</td>
+                        <td class="text-center">{{ $row['tipe_ujian'] ?? '-' }}</td>
                         <td class="text-center">{{ $row['tanggal'] }}</td>
                         <td class="text-center">{{ $row['waktu_mulai'] }}</td>
                         <td class="text-center">{{ $row['waktu_selesai'] }}</td>
@@ -577,7 +580,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="13" class="text-center" style="padding: 12px; color: #999;">
+                        colspan="14" class="text-center" style="padding: 12px; color: #999;">
                             Tidak ada data ujian mansoskul.
                         </td>
                     </tr>
