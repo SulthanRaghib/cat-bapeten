@@ -1,0 +1,122 @@
+name: 🚀 Deploy via SSH
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: 🚧 Build & Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Ambil Kodingan Terbaru
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup PHP & Composer
+      # Composer install di runner SEBELUM npm build karena Filament
+      # butuh file CSS dari vendor/ untuk Vite manifest
+      - name: 🔵 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: 🧶 Install Composer Dependencies (Local)
+        run: composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts --no-dev --optimize-autoloader
+
+      # 3. Build Frontend (Vite + Tailwind)
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 📦 Install NPM & Build Assets
+        run: |
+          npm install
+          npm run build
+
+      # 4. Validasi Secrets
+      - name: 🔍 Validate Secrets
+        run: |
+          if [ -z "${{ secrets.SSH_HOST }}" ];        then echo "❌ SSH_HOST is empty";        exit 1; fi
+          if [ -z "${{ secrets.SSH_USER }}" ];        then echo "❌ SSH_USER is empty";        exit 1; fi
+          if [ -z "${{ secrets.SSH_PORT }}" ];        then echo "❌ SSH_PORT is empty";        exit 1; fi
+          if [ -z "${{ secrets.TARGET_DIR }}" ];      then echo "❌ TARGET_DIR is empty";      exit 1; fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then echo "❌ SSH_PRIVATE_KEY is empty"; exit 1; fi
+          echo "✅ All secrets present!"
+
+      # 5. Siapkan SSH Key
+      - name: 🔑 Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          head -n 1 ~/.ssh/deploy_key
+          tail -n 1 ~/.ssh/deploy_key
+
+      # 6. Upload File via Rsync
+      - name: 📤 Rsync Deploy to Server
+        run: |
+          echo "🚀 Testing SSH connection..."
+          ssh -p ${{ secrets.SSH_PORT }} \
+            -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "echo '✅ SSH OK'"
+
+          echo "📦 Uploading files..."
+          rsync -avz --delete \
+            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.env' \
+            --exclude='.env.example' \
+            --exclude='node_modules/' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/cache/*' \
+            --exclude='storage/framework/views/*' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/app/public/*' \
+            --exclude='public/storage' \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.TARGET_DIR }}
+
+      # 7. Jalankan Perintah Laravel di Server
+      - name: 🚀 Run Remote Laravel Commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.TARGET_DIR }}
+
+            # --- PATH PHP di DirectAdmin ---
+            PHP_BIN="/usr/local/php83/bin/php"
+
+            echo "🔥 Clearing bootstrap cache..."
+            rm -f bootstrap/cache/config.php
+            rm -f bootstrap/cache/packages.php
+            rm -f bootstrap/cache/services.php
+            rm -f bootstrap/cache/routes-v7.php
+
+            # Vendor di-upload via Rsync, SKIP composer install di server
+            # untuk menghindari OOM (Out of Memory / Exit 137)
+
+            echo "🚀 Running Migrations..."
+            $PHP_BIN artisan migrate --force
+
+            echo "🧹 Rebuilding Cache..."
+            $PHP_BIN artisan optimize:clear
+            $PHP_BIN artisan config:cache
+            $PHP_BIN artisan event:cache
+            $PHP_BIN artisan route:cache
+            $PHP_BIN artisan view:cache
+            $PHP_BIN artisan filament:optimize
+
+            echo "🔗 Storage Link..."
+            $PHP_BIN artisan storage:link || true
+
+            echo "✅ Deployment Finished!"
