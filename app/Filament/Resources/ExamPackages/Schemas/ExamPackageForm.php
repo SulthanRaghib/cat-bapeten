@@ -59,14 +59,20 @@ class ExamPackageForm
                                 DateTimePicker::make('start_time')
                                     ->label('Waktu Mulai')
                                     ->required()
+                                    ->native(false)
+                                    ->displayFormat('d F Y H:i')
                                     ->seconds(false)
+                                    ->timezone('Asia/Jakarta')
                                     ->helperText('Kapan ujian ini mulai bisa diakses.')
                                     ->columnSpan(1),
 
                                 DateTimePicker::make('end_time')
                                     ->label('Waktu Selesai')
                                     ->required()
+                                    ->native(false)
+                                    ->displayFormat('d F Y H:i')
                                     ->seconds(false)
+                                    ->timezone('Asia/Jakarta')
                                     ->helperText('Batas akhir akses ujian.')
                                     ->after('start_time')
                                     ->columnSpan(1),
