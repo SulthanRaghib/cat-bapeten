@@ -168,9 +168,7 @@ class ExamResultsPdfExportService
         $m     = intdiv($total % 3600, 60);
         $s     = $total % 60;
 
-        if ($h > 0) return "{$h}j {$m}m {$s}d";
-        if ($m > 0) return "{$m}m {$s}d";
-        return "{$s}d";
+        return sprintf('%02d:%02d:%02d', $h, $m, $s);
     }
 
     private function buildFilenameSlug(array $filterMeta): string

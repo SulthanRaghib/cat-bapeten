@@ -16,6 +16,7 @@
             font-size: 9px;
             color: #1a1a1a;
             line-height: 1.4;
+            margin-bottom: 24px;
         }
 
         .header {
@@ -279,12 +280,24 @@
         }
 
         .footer {
-            margin-top: 8px;
-            padding-top: 6px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 4px 10px;
             border-top: 1px solid #ddd;
             font-size: 7px;
             color: #999;
             text-align: center;
+            background: #fff;
+        }
+
+        .page-num::after {
+            content: counter(page);
+        }
+
+        .page-count::after {
+            content: counter(pages);
         }
 
         .page-break {
@@ -348,9 +361,12 @@
          BAGIAN 1 : UJIAN TEKNIS (Benar / Salah)
     ════════════════════════════════════════════════════ --}}
     @if ($teknis_results->isNotEmpty())
+        @php $teknisGroups = $teknis_results->groupBy('tipe_ujian') @endphp
+        @foreach ($teknisGroups as $tipeName => $groupRows)
+        @php $groupHasStaged = $groupRows->contains('has_stages', true) @endphp
         <div class="section-heading teknis">
-            UJIAN TEKNIS — Penilaian Benar / Salah{{ $has_staged_teknis ? ' + Tahap Seleksi Lanjutan' : '' }}
-            ({{ $teknis_results->count() }} peserta)
+            UJIAN TEKNIS — {{ $tipeName }}{{ $groupHasStaged ? ' + Tahap Seleksi Lanjutan' : '' }}
+            ({{ $groupRows->count() }} peserta)
         </div>
 
         <table class="data-table">
@@ -360,26 +376,27 @@
                     <th>Nama Lengkap</th>
                     <th>NIP</th>
                     <th>Paket Ujian</th>
+                    <th>Tipe Ujian</th>
                     <th>Tanggal</th>
-                    <th>Mulai</th>
-                    <th>Selesai</th>
+                    <th style="width: 52px; white-space: nowrap;">Mulai</th>
+                    <th style="width: 52px; white-space: nowrap;">Selesai</th>
                     <th>Durasi</th>
                     @if ($includeStatistics)
                         <th>Benar</th>
                         <th>Salah</th>
                         <th>Kosong</th>
                     @endif
-                    <th>Pelanggaran</th>
-                    <th>Nilai</th>
+                    <th style="width: 1%; white-space: nowrap;">Pelanggaran</th>
+                    <th style="min-width: 60px;">Nilai</th>
                     <th>NAB</th>
-                    <th>Status</th>
-                    @if ($has_staged_teknis)
+                    <th style="width: 1%; white-space: nowrap;">Status</th>
+                    @if ($groupHasStaged)
                         <th style="min-width:200px;">Rincian Tahap Seleksi</th>
                     @endif
                 </tr>
             </thead>
             <tbody>
-                @forelse($teknis_results as $index => $row)
+                @foreach($groupRows as $index => $row)
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td class="text-left">{{ $row['nama'] }}</td>
@@ -387,8 +404,8 @@
                         <td class="text-left">{{ $row['paket_ujian'] }}</td>
                         <td class="text-center">{{ $row['tipe_ujian'] ?? '-' }}</td>
                         <td class="text-center">{{ $row['tanggal'] }}</td>
-                        <td class="text-center">{{ $row['waktu_mulai'] }}</td>
-                        <td class="text-center">{{ $row['waktu_selesai'] }}</td>
+                        <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_mulai'] }}</td>
+                        <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_selesai'] }}</td>
                         <td class="text-center">{{ $row['durasi'] }}</td>
                         @if ($includeStatistics)
                             <td class="text-center stat-correct">{{ $row['benar'] ?? 0 }}</td>
@@ -406,7 +423,7 @@
                                 {{ $row['status'] }}
                             </span>
                         </td>
-                        @if ($has_staged_teknis)
+                        @if ($groupHasStaged)
                             <td>
                                 @if (!empty($row['has_stages']) && !empty($row['stages_config']))
                                     @php
@@ -469,25 +486,27 @@
                             </td>
                         @endif
                     </tr>
-                @empty
-                    <tr>
-                        colspan="{{ $includeStatistics ? ($has_staged_teknis ? 17 : 16) : ($has_staged_teknis ? 14 : 13) }}"
-                            class="text-center" style="padding: 12px; color: #999;">
-                            Tidak ada data ujian teknis.
-                        </td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
+        @if (!$loop->last)
+            <div class="page-break"></div>
+        @endif
+        @endforeach
     @endif
 
     {{-- ════════════════════════════════════════════════════
          BAGIAN 2 : UJIAN MANSOSKUL (Pembobotan per Unit)
     ════════════════════════════════════════════════════ --}}
+    @if ($teknis_results->isNotEmpty() && $mansoskul_results->isNotEmpty())
+        <div class="page-break"></div>
+    @endif
     @if ($mansoskul_results->isNotEmpty())
+        @php $mansoskulGroups = $mansoskul_results->groupBy('tipe_ujian') @endphp
+        @foreach ($mansoskulGroups as $tipeName => $groupRows)
         <div class="section-heading mansoskul">
-            UJIAN MANSOSKUL — Penilaian Pembobotan Nilai per Unit
-            ({{ $mansoskul_results->count() }} peserta)
+            UJIAN MANSOSKUL — {{ $tipeName }}
+            ({{ $groupRows->count() }} peserta)
         </div>
 
         <table class="data-table mansoskul">
@@ -499,18 +518,19 @@
                     <th>Paket Ujian</th>
                     <th>Tipe Ujian</th>
                     <th>Tanggal</th>
-                    <th>Mulai</th>
-                    <th>Selesai</th>
-                    <th>Pelanggaran</th>
-                    <th>Nilai Total</th>
+                    <th style="width: 52px; white-space: nowrap;">Mulai</th>
+                    <th style="width: 52px; white-space: nowrap;">Selesai</th>
+                    <th>Durasi</th>
+                    <th style="width: 1%; white-space: nowrap;">Pelanggaran</th>
+                    <th style="min-width: 60px;">Nilai Total</th>
                     <th>NAB</th>
                     <th>Unit Kompeten</th>
-                    <th>Status</th>
+                    <th style="width: 1%; white-space: nowrap;">Status</th>
                     <th style="min-width:220px;">Rincian Nilai per Unit</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($mansoskul_results as $index => $row)
+                @foreach($groupRows as $index => $row)
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td class="text-left">{{ $row['nama'] }}</td>
@@ -518,8 +538,9 @@
                         <td class="text-left">{{ $row['paket_ujian'] }}</td>
                         <td class="text-center">{{ $row['tipe_ujian'] ?? '-' }}</td>
                         <td class="text-center">{{ $row['tanggal'] }}</td>
-                        <td class="text-center">{{ $row['waktu_mulai'] }}</td>
-                        <td class="text-center">{{ $row['waktu_selesai'] }}</td>
+                        <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_mulai'] }}</td>
+                        <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_selesai'] }}</td>
+                        <td class="text-center">{{ $row['durasi'] }}</td>
                         <td class="text-center"
                             style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">
                             {{ $row['pelanggaran'] ?? 0 }}
@@ -578,15 +599,13 @@
                             @endif
                         </td>
                     </tr>
-                @empty
-                    <tr>
-                        colspan="14" class="text-center" style="padding: 12px; color: #999;">
-                            Tidak ada data ujian mansoskul.
-                        </td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
+        @if (!$loop->last)
+            <div class="page-break"></div>
+        @endif
+        @endforeach
     @endif
 
     {{-- Show generic table only if both result sets are empty (backward-compat fallback) --}}
@@ -600,7 +619,7 @@
     <div class="footer">
         Dokumen ini digenerate secara otomatis oleh Sistem CAT BAPETEN &mdash;
         {{ now()->format('d F Y H:i:s') }} WIB
-        &bull; Halaman {PAGE_NUM} dari {PAGE_COUNT}
+        &bull; Halaman <span class="page-num"></span>
     </div>
 
 </body>
