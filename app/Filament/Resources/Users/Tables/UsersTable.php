@@ -11,6 +11,7 @@ use Filament\Support\Enums\Size;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Spatie\Permission\Models\Role;
 
 class UsersTable
 {
@@ -38,20 +39,33 @@ class UsersTable
                 TextColumn::make('role')
                     ->label('Peran')
                     ->badge()
-                    ->icon(fn(string $state): string => match ($state) {
-                        'admin' => 'heroicon-m-shield-check',
-                        'user'  => 'heroicon-m-user',
-                        default => 'heroicon-m-question-mark-circle',
+                    ->icon(static function (string $state): string {
+                        return match ($state) {
+                            'super_admin' => 'heroicon-m-shield-exclamation',
+                            'admin'       => 'heroicon-m-shield-check',
+                            'observer'    => 'heroicon-m-eye',
+                            'user'        => 'heroicon-m-user',
+                            default       => 'heroicon-m-adjustments-horizontal',
+                        };
                     })
-                    ->color(fn(string $state): string => match ($state) {
-                        'admin' => 'danger',
-                        'user'  => 'info',
-                        default => 'gray',
+                    ->color(static function (string $state): string {
+                        return match ($state) {
+                            'super_admin' => 'warning',
+                            'admin'       => 'danger',
+                            'observer'    => 'success',
+                            'user'        => 'info',
+                            default       => 'gray',
+                        };
                     })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'admin' => 'Administrator',
-                        'user'  => 'Pengguna',
-                        default => $state,
+                    ->formatStateUsing(static function (string $state): string {
+                        $labels = [
+                            'super_admin' => 'Super Admin',
+                            'admin'       => 'Administrator',
+                            'observer'    => 'Pengawas Ujian',
+                            'user'        => 'Peserta Ujian',
+                        ];
+
+                        return $labels[$state] ?? ucwords(str_replace('_', ' ', $state));
                     }),
 
                 TextColumn::make('email')
@@ -70,10 +84,22 @@ class UsersTable
             ->filters([
                 SelectFilter::make('role')
                     ->label('Peran')
-                    ->options([
-                        'admin' => 'Administrator',
-                        'user'  => 'Pengguna',
-                    ]),
+                    ->options(static function (): array {
+                        $labels = [
+                            'super_admin' => 'Super Admin',
+                            'admin'       => 'Administrator',
+                            'observer'    => 'Pengawas Ujian',
+                            'user'        => 'Peserta Ujian',
+                        ];
+
+                        return Role::query()
+                            ->where('guard_name', 'web')
+                            ->pluck('name')
+                            ->mapWithKeys(fn(string $name): array => [
+                                $name => $labels[$name] ?? ucwords(str_replace('_', ' ', $name)),
+                            ])
+                            ->toArray();
+                    }),
             ])
             ->recordActions([
                 ActionGroup::make([

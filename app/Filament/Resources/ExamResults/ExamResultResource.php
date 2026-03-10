@@ -7,7 +7,9 @@ use App\Filament\Resources\ExamResults\Pages\EditExamResult;
 use App\Filament\Resources\ExamResults\Pages\ListExamResults;
 use App\Filament\Resources\ExamResults\Schemas\ExamResultForm;
 use App\Filament\Resources\ExamResults\Tables\ExamResultsTable;
+use App\Models\ExamResult;
 use App\Models\ExamSession;
+use App\Models\User;
 use BackedEnum;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
@@ -18,11 +20,12 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class ExamResultResource extends Resource
 {
-    protected static ?string $model = ExamSession::class;
+    protected static ?string $model = ExamResult::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-presentation-chart-line';
 
@@ -33,6 +36,23 @@ class ExamResultResource extends Resource
     protected static ?string $navigationLabel = 'Hasil Ujian';
 
     protected static string|UnitEnum|null $navigationGroup = 'Laporan & Hasil';
+
+    /**
+     * Gunakan permission ViewAny:ExamResult (terpisah dari ViewAny:ExamSession).
+     * Shield UI akan menampilkan "Hasil Ujian" dan "Monitoring Ujian" sebagai
+     * dua section independen — cukup centang/uncentang dari UI tanpa hardcode role.
+     */
+    public static function canViewAny(): bool
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $user->can('ViewAny:ExamResult');
+    }
 
     public static function getEloquentQuery(): Builder
     {
