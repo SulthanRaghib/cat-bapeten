@@ -257,11 +257,10 @@
 
         /* LEGEND */
         .legend {
-            display: flex;
-            gap: 18px;
-            align-items: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 18px;
             margin-bottom: 15px;
-            flex-wrap: wrap;
         }
 
         .legend-item {
@@ -292,6 +291,10 @@
 
         .status-jawab {
             background: #2e7d32;
+        }
+
+        .status-aktif {
+            background: #1976d2;
         }
 
         /* ================= DAFTAR SOAL ================= */

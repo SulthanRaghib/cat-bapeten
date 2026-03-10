@@ -75,6 +75,7 @@
                 <div class="legend-item"><span class="box status-belum"></span><span class="text">Belum</span></div>
                 <div class="legend-item"><span class="box status-ragu"></span><span class="text">Ragu</span></div>
                 <div class="legend-item"><span class="box status-jawab"></span><span class="text">Dijawab</span></div>
+                <div class="legend-item"><span class="box status-aktif"></span><span class="text">Sedang dikerjakan</span></div>
             </div>
 
             <div class="question-list">

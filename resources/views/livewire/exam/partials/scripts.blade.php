@@ -15,6 +15,7 @@
 
             var mathRenderDebounce = null;
             var fiveMinuteWarningShown = false;
+            var tenMinuteWarningShown = false;
 
             // ============================================================
             // HELPERS
@@ -76,6 +77,12 @@
                 }
 
                 timerEl.textContent = formatRemaining(remaining);
+
+                // 10-minute warning
+                if (remaining <= 10 * 60 * 1000 && !tenMinuteWarningShown) {
+                    tenMinuteWarningShown = true;
+                    showTenMinuteWarning();
+                }
 
                 // 5-minute warning
                 if (remaining <= 5 * 60 * 1000 && !fiveMinuteWarningShown) {
@@ -150,6 +157,44 @@
                 setTimeout(function() {
                     initTimerWithRetry(attempt + 1);
                 }, delay);
+            }
+
+            // ============================================================
+            // 10-MINUTE WARNING POPUP
+            // ============================================================
+            function showTenMinuteWarning() {
+                var warningDiv = document.createElement('div');
+                warningDiv.id = 'timer-warning-10min';
+                warningDiv.innerHTML =
+                    `
+                    <div style="
+                        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                        background: #f9a825; color: #333; padding: 16px 24px;
+                        border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                        z-index: 9999; display: flex; align-items: center; gap: 16px;
+                        min-width: 320px; animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    ">
+                        <span style="background: rgba(0,0,0,0.1); padding: 8px; border-radius: 50%;">
+                            <svg style="width: 24px; height: 24px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        <div style="flex: 1;">
+                            <strong style="display: block; font-size: 16px; margin-bottom: 4px;">Sisa Waktu 10 Menit!</strong>
+                            <span style="font-size: 14px; opacity: 0.8;">Pastikan semua soal sudah dijawab.</span>
+                        </div>
+                        <button onclick="document.getElementById('timer-warning-10min').remove()" style="
+                            background: none; border: none; color: #333; padding: 4px;
+                            cursor: pointer; opacity: 0.6; transition: opacity 0.2s;">
+                            <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>`;
+                document.body.appendChild(warningDiv);
+                setTimeout(function() {
+                    if (document.body.contains(warningDiv)) warningDiv.remove();
+                }, 10000);
             }
 
             // ============================================================
@@ -410,10 +455,10 @@
                     let answered = 0, doubtful = 0;
                     let total = this.totalQuestions;
                     Object.values(this.answersMap).forEach(a => {
+                        if (a.answer !== null && a.answer !== '') answered++;
                         if (a.doubtful) doubtful++;
-                        else if (a.answer !== null && a.answer !== '') answered++;
                     });
-                    return { answered, doubtful, unanswered: total - answered - doubtful };
+                    return { answered, doubtful, unanswered: total - answered };
                 },
 
                 isAnswerSelected(val) {
