@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\ExamMonitors\ExamMonitorResource;
+use App\Filament\Resources\ExamPackages\ExamPackageResource;
 use App\Models\ExamPackage;
 use App\Models\ExamSession;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -10,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 class ExamStatsOverview extends BaseWidget
 {
+    protected static ?int $sort = 1;
     protected ?string $pollingInterval = '15s';
 
     protected function getStats(): array
@@ -68,8 +71,9 @@ class ExamStatsOverview extends BaseWidget
             Stat::make('Peserta Sedang Ujian', (string) $liveCount)
                 ->description($liveCount > 0 ? 'Sedang mengerjakan ujian saat ini' : 'Tidak ada sesi aktif')
                 ->descriptionIcon($liveCount > 0 ? 'heroicon-m-signal' : 'heroicon-m-users')
-                ->color($liveCount > 0 ? 'danger' : 'gray')
-                ->chart($liveChart),
+                ->color($liveCount > 0 ? 'warning' : 'gray')
+                ->chart($liveChart)
+                ->url(ExamMonitorResource::getUrl('index')),
 
             Stat::make('Selesai Hari Ini', (string) $todayCompletions)
                 ->description(
@@ -78,7 +82,8 @@ class ExamStatsOverview extends BaseWidget
                         : ($deltaToday < 0 ? "{$deltaToday} dibanding kemarin" : 'Sama dengan kemarin')
                 )
                 ->descriptionIcon($deltaToday >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
-                ->color($deltaToday >= 0 ? 'success' : 'warning'),
+                ->color($deltaToday >= 0 ? 'success' : 'warning')
+                ->url(ExamMonitorResource::getUrl('index')),
 
             Stat::make('Paket Ujian Aktif', (string) $activePackages)
                 ->description(
@@ -87,7 +92,8 @@ class ExamStatsOverview extends BaseWidget
                         : ($activePackages > 0 ? 'Berlangsung saat ini' : 'Tidak ada ujian berlangsung')
                 )
                 ->descriptionIcon('heroicon-m-rectangle-stack')
-                ->color($activePackages > 0 ? 'primary' : 'gray'),
+                ->color($activePackages > 0 ? 'primary' : 'gray')
+                ->url(ExamPackageResource::getUrl('index')),
 
             Stat::make('Tingkat Kelulusan Hari Ini', $passRateFormatted)
                 ->description(

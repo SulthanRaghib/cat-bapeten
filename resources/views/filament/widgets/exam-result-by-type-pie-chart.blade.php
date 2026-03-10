@@ -1,10 +1,15 @@
 <x-filament-widgets::widget>
     <x-filament::section>
-        <x-slot name="heading">Distribusi Hasil Ujian per Tipe Ujian</x-slot>
-        <x-slot name="description">Berdasarkan seluruh sesi ujian yang tercatat di sistem</x-slot>
+        <x-slot name="heading">
+            <div class="flex items-center gap-2">
+                <x-filament::icon icon="heroicon-m-chart-pie" class="h-5 w-5 text-primary-500" />
+                Distribusi Hasil Ujian per Tipe
+            </div>
+        </x-slot>
+        <x-slot name="description">Persentase kelulusan berdasarkan sesi ujian yang telah selesai</x-slot>
 
         {{-- Filter Periode --}}
-        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-gray-100 dark:border-gray-700">
 
             {{-- Tombol periode --}}
             <div class="flex flex-wrap gap-2">
@@ -20,7 +25,7 @@
                 @endforeach
             </div>
 
-            {{-- Tombol filter custom (ikon corong + popover) --}}
+            {{-- Tombol filter custom --}}
             <div x-data="{
                     open: false,
                     btnRect: {},
@@ -30,7 +35,6 @@
                     }
                  }">
 
-                {{-- Tombol --}}
                 <button type="button"
                         x-ref="btn"
                         @click="toggle()"
@@ -48,7 +52,6 @@
                     @endif
                 </button>
 
-                {{-- Popover di-teleport ke body agar tidak tertabrak elemen lain --}}
                 <template x-teleport="body">
                     <div x-show="open"
                          x-transition:enter="transition ease-out duration-150"
@@ -57,7 +60,7 @@
                          x-transition:leave="transition ease-in duration-100"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         :style="`position:fixed; top:${btnRect.bottom + 8}px; right:${window.innerWidth - btnRect.right}px; z-index:9999;`"
+                         :style="(() => { const spaceBelow = window.innerHeight - btnRect.bottom; const popH = 280; const top = spaceBelow >= popH + 8 ? btnRect.bottom + 8 : btnRect.top - popH - 8; return `position:fixed; top:${top}px; right:${window.innerWidth - btnRect.right}px; z-index:9999;`; })()"
                          @click.outside="open = false"
                          class="w-72 origin-top-right rounded-xl border border-gray-200 bg-white p-4 shadow-xl
                                 dark:border-gray-700 dark:bg-gray-900"
@@ -102,59 +105,79 @@
         </div>
 
         @if (empty($chartData))
-            <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
-                <svg class="mb-3 h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                </svg>
-                <p class="text-sm">Tidak ada data ujian pada periode ini.</p>
+            <div class="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+                <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                    <x-filament::icon icon="heroicon-o-chart-pie" class="h-8 w-8 opacity-50" />
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tidak ada data ujian pada periode ini</p>
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Coba pilih periode yang berbeda</p>
             </div>
         @else
-            <div class="grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
                 @foreach ($chartData as $data)
                     @php
-                        $total      = $data['lulus'] + $data['tidakLulus'];
-                        $passRate   = $total > 0 ? round(($data['lulus'] / $total) * 100) : 0;
-                        $rateColor  = $passRate >= 70 ? 'text-emerald-600 dark:text-emerald-400'
-                                    : ($passRate >= 40 ? 'text-amber-500 dark:text-amber-400'
-                                    : 'text-red-500 dark:text-red-400');
+                        $total     = $data['lulus'] + $data['tidakLulus'];
+                        $passRate  = $total > 0 ? round(($data['lulus'] / $total) * 100) : 0;
+
+                        // Color palette based on pass rate
+                        if ($passRate >= 70) {
+                            $accentColor   = '#10b981'; // emerald
+                            $badgeBg       = 'bg-emerald-50 dark:bg-emerald-950';
+                            $badgeText     = 'text-emerald-700 dark:text-emerald-300';
+                            $rateTextColor = 'text-emerald-600 dark:text-emerald-400';
+                        } elseif ($passRate >= 40) {
+                            $accentColor   = '#f59e0b'; // amber
+                            $badgeBg       = 'bg-amber-50 dark:bg-amber-950';
+                            $badgeText     = 'text-amber-700 dark:text-amber-300';
+                            $rateTextColor = 'text-amber-500 dark:text-amber-400';
+                        } else {
+                            $accentColor   = '#ef4444'; // red
+                            $badgeBg       = 'bg-red-50 dark:bg-red-950';
+                            $badgeText     = 'text-red-700 dark:text-red-300';
+                            $rateTextColor = 'text-red-500 dark:text-red-400';
+                        }
                     @endphp
 
-                    <div class="flex flex-col rounded-2xl border border-gray-100 bg-white shadow-sm
-                                dark:border-gray-700 dark:bg-gray-900 overflow-hidden">
+                    <div class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm
+                                dark:border-gray-700 dark:bg-gray-900 transition hover:shadow-md">
 
-                        {{-- Header kartu --}}
-                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-5 py-3">
-                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                {{ $data['name'] }}
+                        {{-- Colored accent bar --}}
+                        <div class="h-1 w-full" style="background-color: {{ $accentColor }};"></div>
+
+                        {{-- Card header --}}
+                        <div class="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{{ $data['name'] }}</p>
+                                <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{{ $total }} peserta selesai</p>
+                            </div>
+                            <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold {{ $badgeBg }} {{ $badgeText }}">
+                                {{ $passRate }}%
                             </span>
                         </div>
 
-                        {{-- Pie chart: wire:key berubah setiap kali periode berubah, memaksa Alpine re-init --}}
+                        {{-- Pie chart --}}
                         <div class="flex items-center justify-center px-6 py-4">
                             <div wire:key="pie-{{ $period }}-{{ $loop->index }}"
                                  x-data
                                  x-init="$nextTick(() => window.examPieInit($el.querySelector('canvas'), {{ json_encode([$data['lulus'], $data['tidakLulus']]) }}))"
-                                 style="width: 200px; height: 200px; position: relative;">
+                                 style="width: 190px; height: 190px; position: relative;">
                                 <canvas></canvas>
                             </div>
                         </div>
 
-                        {{-- Statistik bawah --}}
-                        <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                        {{-- Footer stats --}}
+                        <div class="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700 mt-auto">
                             <div class="flex flex-col items-center py-3 px-2">
-                                <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ $data['lulus'] }}</span>
-                                <span class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Lulus</span>
+                                <span class="text-base font-bold text-emerald-600 dark:text-emerald-400">{{ $data['lulus'] }}</span>
+                                <span class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Lulus</span>
                             </div>
                             <div class="flex flex-col items-center py-3 px-2">
-                                <span class="text-lg font-bold text-red-500 dark:text-red-400">{{ $data['tidakLulus'] }}</span>
-                                <span class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Tidak Lulus</span>
+                                <span class="text-base font-bold text-red-500 dark:text-red-400">{{ $data['tidakLulus'] }}</span>
+                                <span class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Tidak Lulus</span>
                             </div>
                             <div class="flex flex-col items-center py-3 px-2">
-                                <span class="text-lg font-bold {{ $rateColor }}">{{ $passRate }}%</span>
-                                <span class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Pass Rate</span>
+                                <span class="text-base font-bold {{ $rateTextColor }}">{{ $passRate }}%</span>
+                                <span class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Pass Rate</span>
                             </div>
                         </div>
                     </div>

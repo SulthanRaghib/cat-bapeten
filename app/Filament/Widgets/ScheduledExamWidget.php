@@ -24,7 +24,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithForms;
 
-    protected static ?int $sort = 2; // Position below stats overview
+    protected static ?int $sort = 2; // After stats, before charts
     protected int | string | array $columnSpan = 'full';
 
     public function getHeading(): string
