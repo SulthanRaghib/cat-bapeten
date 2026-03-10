@@ -19,11 +19,10 @@ class BlockParticipantsFromAdmin
         if (Auth::check()) {
             $user = Auth::user();
 
-            // Check if user is strictly a Participant (not Admin)
-            // Logic: Not role 'admin' AND does not have official email
-            $isAdmin = $user->role === 'admin' || str_ends_with($user->email ?? '', '@bapeten.go.id');
+            // Hanya super_admin, admin, observer yang boleh akses panel admin
+            $isPanel = in_array($user->role, ['super_admin', 'admin', 'observer'], true);
 
-            if (!$isAdmin) {
+            if (!$isPanel) {
                 // If they are trying to access admin panel routes
                 if ($request->is('admin*')) {
                     return redirect('/ujian');

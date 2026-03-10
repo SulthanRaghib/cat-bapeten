@@ -2,13 +2,14 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserForm
 {
@@ -39,14 +40,39 @@ class UserForm
 
                         Select::make('role')
                             ->label('Peran')
-                            ->options([
-                                'admin' => 'Administrator',
-                                'user'  => 'Pengguna',
-                            ])
+                            ->options(static function (): array {
+                                $labels = [
+                                    'super_admin' => 'Super Admin',
+                                    'admin'       => 'Administrator',
+                                    'observer'    => 'Pengawas Ujian',
+                                    'user'        => 'Peserta Ujian',
+                                ];
+
+                                /** @var \App\Models\User|null $currentUser */
+                                $currentUser = Auth::user();
+                                $isSuperAdmin = $currentUser instanceof \App\Models\User
+                                    && $currentUser->hasRole('super_admin');
+
+                                // Load Spatie roles, filter super_admin jika bukan super_admin
+                                $options = Role::query()
+                                    ->where('guard_name', 'web')
+                                    ->when(! $isSuperAdmin, fn($q) => $q->where('name', '!=', 'super_admin'))
+                                    ->pluck('name')
+                                    ->mapWithKeys(fn(string $name): array => [
+                                        $name => $labels[$name] ?? ucwords(str_replace('_', ' ', $name)),
+                                    ])
+                                    ->toArray();
+
+                                // 'user' bukan Spatie role, tambahkan manual di akhir
+                                $options['user'] = 'Peserta Ujian';
+
+                                return $options;
+                            })
                             ->default('user')
                             ->required()
                             ->native(false)
-                            ->helperText('Administrator memiliki akses penuh ke seluruh fitur sistem.'),
+                            ->searchable()
+                            ->helperText('Super Admin: akses penuh. Administrator: kelola ujian. Pengawas: hanya monitoring. Peserta: ikut ujian.'),
 
                         DateTimePicker::make('email_verified_at')
                             ->label('Tanggal Verifikasi Email')
