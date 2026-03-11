@@ -27,7 +27,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
     protected static ?int $sort = 2; // After stats, before charts
     protected int | string | array $columnSpan = 'full';
 
-    public function getHeading(): string
+    protected function getTableHeading(): string|\Illuminate\Contracts\Support\Htmlable|null
     {
         return 'Daftar Ujian Terjadwal';
     }
