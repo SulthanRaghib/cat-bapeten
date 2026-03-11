@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 class ExamResultByTypePieChart extends Widget
 {
     protected string $view = 'filament.widgets.exam-result-by-type-pie-chart';
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 10;
     protected int|string|array $columnSpan = 'full';
 
     /** Filter periode yang dipilih admin */

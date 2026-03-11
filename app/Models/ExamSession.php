@@ -155,7 +155,7 @@ class ExamSession extends Model
      */
     public function answers(): HasMany
     {
-        return $this->hasMany(ExamAnswer::class);
+        return $this->hasMany(ExamAnswer::class, 'exam_session_id');
     }
 
     /**
@@ -163,7 +163,7 @@ class ExamSession extends Model
      */
     public function activityLogs(): HasMany
     {
-        return $this->hasMany(ExamActivityLog::class);
+        return $this->hasMany(ExamActivityLog::class, 'exam_session_id');
     }
 
     // ==================== HELPER METHODS ====================
