@@ -35,7 +35,7 @@ class SelectionStageTypesTable
 
                 // Icon preview
                 IconColumn::make('icon')
-                    ->label('Icon')
+                    ->label('Ikon')
                     ->icon(function (?string $state): string {
                         if (! $state) {
                             return 'heroicon-o-tag';

@@ -130,7 +130,7 @@ class QuestionForm
                                 return $action
                                     ->label('Edit Unit')
                                     ->modalHeading('Ubah Data Unit')
-                                    ->modalSubmitActionLabel('Update')
+                                    ->modalSubmitActionLabel('Perbarui')
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-pencil')
                                     ->color('warning');
@@ -210,7 +210,7 @@ class QuestionForm
                                 return $action
                                     ->label('Edit Sub Unit')
                                     ->modalHeading('Ubah Data Sub Unit')
-                                    ->modalSubmitActionLabel('Update')
+                                    ->modalSubmitActionLabel('Perbarui')
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-pencil')
                                     ->color('warning');

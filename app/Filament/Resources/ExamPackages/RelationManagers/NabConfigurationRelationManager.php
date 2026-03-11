@@ -238,7 +238,7 @@ class NabConfigurationRelationManager extends RelationManager
                                                         ->columnSpan(1),
 
                                                     TextInput::make('max_score')
-                                                        ->label('Skor Max')
+                                                        ->label('Skor Maks')
                                                         ->numeric()
                                                         ->required()
                                                         ->columnSpan(1),

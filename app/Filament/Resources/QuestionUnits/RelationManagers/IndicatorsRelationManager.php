@@ -97,7 +97,7 @@ class IndicatorsRelationManager extends RelationManager
                     ->alignCenter(),
 
                 TextColumn::make('max_score')
-                    ->label('Max')
+                    ->label('Maks')
                     ->numeric()
                     ->alignCenter(),
 
