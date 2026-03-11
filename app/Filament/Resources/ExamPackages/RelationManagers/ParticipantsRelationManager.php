@@ -104,7 +104,7 @@ class ParticipantsRelationManager extends RelationManager
 
                         return $query->whereNotIn('users.id', $existingParticipantIds)
                             ->where('users.role', 'user'); // Hanya tampilkan user biasa, bukan admin
-                    }),
+                    })
             ])
             ->recordActions([
                 ActionGroup::make([

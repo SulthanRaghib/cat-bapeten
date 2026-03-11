@@ -22,6 +22,7 @@ class QuestionSubUnitForm
                     ->schema([
                         Select::make('question_unit_id')
                             ->label('Unit Soal')
+                            ->validationAttribute('Unit Soal')
                             ->options(fn() => QuestionUnit::query()
                                 ->where('is_active', true)
                                 ->orderBy('name')
@@ -38,6 +39,7 @@ class QuestionSubUnitForm
 
                         TextInput::make('name')
                             ->label('Nama Sub Unit')
+                            ->validationAttribute('Nama Sub Unit')
                             ->placeholder('cth: Dosimetri, Keselamatan Transportasi')
                             ->required()
                             ->maxLength(255),

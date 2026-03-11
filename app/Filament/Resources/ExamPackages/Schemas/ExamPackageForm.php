@@ -27,6 +27,7 @@ class ExamPackageForm
                     ->schema([
                         TextInput::make('title')
                             ->label('Judul Paket Ujian')
+                            ->validationAttribute('Judul Paket Ujian')
                             ->required()
                             ->columnSpanFull()
                             ->placeholder('Contoh: Ujian Kompetensi Teknis Batch 1'),
@@ -35,6 +36,7 @@ class ExamPackageForm
                             ->schema([
                                 Select::make('exam_type_id')
                                     ->label('Tipe Ujian')
+                                    ->validationAttribute('Tipe Ujian')
                                     ->relationship('examType', 'name')
                                     ->preload()
                                     ->required()
@@ -43,6 +45,7 @@ class ExamPackageForm
 
                                 TextInput::make('passing_grade')
                                     ->label('Nilai Ambang Batas (Passing Grade)')
+                                    ->validationAttribute('Nilai Ambang Batas')
                                     ->numeric()
                                     ->required()
                                     ->helperText('Contoh: Jika 100 soal x 1 poin = 100 Max. Passing grade bisa 70.'),
@@ -50,6 +53,7 @@ class ExamPackageForm
 
                         TextInput::make('duration_minutes')
                             ->label('Durasi Pengerjaan')
+                            ->validationAttribute('Durasi Pengerjaan')
                             ->suffix('Menit')
                             ->numeric()
                             ->required(),
@@ -58,12 +62,14 @@ class ExamPackageForm
                             ->schema([
                                 CustomDateTimePicker::make('start_time')
                                     ->label('Waktu Mulai')
+                                    ->validationAttribute('Waktu Mulai')
                                     ->required()
                                     ->helperText('Kapan ujian ini mulai bisa diakses.')
                                     ->columnSpan(1),
 
                                 CustomDateTimePicker::make('end_time')
                                     ->label('Waktu Selesai')
+                                    ->validationAttribute('Waktu Selesai')
                                     ->required()
                                     ->helperText('Batas akhir akses ujian.')
                                     ->rule('after:start_time')
@@ -72,6 +78,7 @@ class ExamPackageForm
 
                         Select::make('is_active')
                             ->label('Status Ketersediaan')
+                            ->validationAttribute('Status Ketersediaan')
                             ->options([
                                 1 => 'Aktif — Peserta dapat mengakses ujian ini',
                                 0 => 'Nonaktif — Paket ditutup untuk peserta',
@@ -108,6 +115,7 @@ class ExamPackageForm
                                 // ── Bobot CBT ──
                                 TextInput::make('technical_scoring_config.cbt_weight')
                                     ->label('Bobot CBT (%)')
+                                    ->validationAttribute('Bobot CBT')
                                     ->numeric()
                                     ->minValue(1)
                                     ->maxValue(99)
@@ -140,6 +148,7 @@ class ExamPackageForm
                                             ->schema([
                                                 Select::make('label')
                                                     ->label('Nama Tahap')
+                                                    ->validationAttribute('Nama Tahap Seleksi')
                                                     ->options(fn(): array => SelectionStageType::active()->pluck('name', 'name')->toArray())
                                                     ->searchable()
                                                     ->createOptionForm([
@@ -167,6 +176,7 @@ class ExamPackageForm
 
                                                 TextInput::make('weight')
                                                     ->label('Bobot (%)')
+                                                    ->validationAttribute('Bobot Tahap Seleksi')
                                                     ->numeric()
                                                     ->minValue(1)
                                                     ->maxValue(99)
