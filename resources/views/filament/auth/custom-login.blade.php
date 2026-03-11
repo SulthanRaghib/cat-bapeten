@@ -18,7 +18,7 @@
             align-items: center !important;
             min-height: 100vh !important;
         }
-        
+
         /* Hide default header/logo provided by Filament layout */
         .fi-simple-header {
             display: none !important;
@@ -98,7 +98,7 @@
             gap: 0.75rem;
             margin-bottom: 1.5rem;
         }
-        
+
         /* Force logo sizing */
         .brand-logo-img {
             height: 40px !important; /* Smaller logo */
@@ -106,13 +106,13 @@
             max-width: 100px;
             object-fit: contain;
         }
-        
+
         .brand-text-group {
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
-        
+
         .brand-title {
             font-size: 1.25rem;
             font-weight: 800;
@@ -120,7 +120,7 @@
             line-height: 1.1;
             letter-spacing: -0.02em;
         }
-        
+
         .brand-subtitle {
             font-size: 0.55rem;
             text-transform: uppercase;
@@ -153,6 +153,10 @@
             color: #94a3b8;
             line-height: 1.4;
         }
+        .dark .footer-text {
+            border-top-color: #374151;
+            color: #6b7280;
+        }
 
         /* Visual Side Specifics */
         .visual-heading {
@@ -165,7 +169,7 @@
             z-index: 2;
             color: white;
         }
-        
+
         .visual-highlight {
             background-image: linear-gradient(to right, #fbbf24, #fcd34d);
             background-clip: text;
@@ -206,7 +210,7 @@
         }
         .deco-1 { top: -20%; right: -20%; width: 400px; height: 400px; background: #fbbf24; }
         .deco-2 { bottom: -20%; left: -20%; width: 400px; height: 400px; background: #3b82f6; }
-        
+
         /* Grid Pattern */
         .grid-bg {
             position: absolute;
@@ -258,12 +262,12 @@
             {{-- Content --}}
             <div style="position: relative; z-index: 5;">
                 <div style="width: 50px; height: 5px; background: #f59e0b; margin-bottom: 2rem; border-radius: 4px;"></div>
-                
+
                 <h3 class="visual-heading">
                     Integritas, Kualitas, <br>
                     <span class="visual-highlight">& Keamanan Ujian</span>
                 </h3>
-    
+
                 <div class="visual-desc">
                     <p style="margin: 0 0 1rem 0;">
                         Platform Computer Assisted Test (CAT) resmi BAPETEN untuk memastikan proses seleksi yang <strong>transparan</strong>, <strong>akuntabel</strong>, dan <strong>bebas intervensi</strong>.
@@ -272,7 +276,7 @@
                         "Menjamin standar kompetensi tinggi melalui sistem evaluasi terpercaya."
                     </p>
                 </div>
-    
+
                 <div class="secure-badge">
                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
