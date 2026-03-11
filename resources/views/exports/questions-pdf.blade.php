@@ -395,75 +395,70 @@
         .opt-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #f1f5f9;
+            border: 1px solid #e2e8f0;
             background: #ffffff;
         }
 
-        .opt-table tr {
-            border-bottom: 1px solid #f1f5f9;
+        .opt-table td {
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .opt-table tr:nth-child(even) {
-            background: #fcfdff;
-        }
-
-        .opt-table tr:last-child {
+        .opt-table tr:last-child td {
             border-bottom: none;
         }
 
-        .opt-correct-row {
-            background: #f0fdf4;
+        .opt-table tr:nth-child(even) td.opt-text-cell,
+        .opt-table tr:nth-child(even) td.opt-info-cell {
+            background: #f8fafc;
+        }
+
+        .opt-correct-row td.opt-text-cell,
+        .opt-correct-row td.opt-info-cell {
+            background: #f0fdf4 !important;
         }
 
         .opt-label-cell {
-            width: 26px;
+            width: 24px;
             text-align: center;
-            vertical-align: top;
-            padding: 4px 3px;
-        }
-
-        .opt-label {
-            width: 18px;
-            height: 18px;
-            border-radius: 4px;
-            display: inline-block;
-            line-height: 18px;
-            text-align: center;
-            font-size: 8.5px;
-            font-weight: 700;
-            color: #fff;
+            vertical-align: middle;
+            padding: 5px 3px;
+            border-right: 1px solid #e2e8f0;
             background: #64748b;
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: 700;
         }
 
         .opt-label-correct {
-            background: #15803d;
+            background: #15803d !important;
         }
 
         .opt-text-cell {
             font-size: 8.9px;
             color: #1f2937;
-            padding: 4px 4px;
-            vertical-align: top;
+            padding: 5px 8px;
+            vertical-align: middle;
         }
 
         .opt-info-cell {
-            width: 62px;
-            text-align: right;
-            vertical-align: top;
-            font-size: 8px;
+            width: 60px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 7.5px;
             color: #475569;
-            padding: 4px 7px 4px 0;
+            padding: 5px 6px;
+            border-left: 1px solid #e2e8f0;
         }
 
         .opt-tag {
-            display: inline-block;
+            display: block;
             background: #15803d;
             color: #fff;
             font-size: 7px;
             font-weight: 700;
-            padding: 1px 4px;
-            border-radius: 2px;
-            margin-bottom: 1px;
+            padding: 2px 4px;
+            margin-bottom: 2px;
+            text-align: center;
         }
 
         /* Answer key */
@@ -739,10 +734,7 @@
                                 $optImgLinks = $opt['image_links'] ?? [];
                             @endphp
                             <tr class="{{ $includeAnswerKey && $isCorrect ? 'opt-correct-row' : '' }}">
-                                <td class="opt-label-cell">
-                                    <span
-                                        class="opt-label {{ $includeAnswerKey && $isCorrect ? 'opt-label-correct' : '' }}">{{ $letter }}</span>
-                                </td>
+                                <td class="opt-label-cell {{ $includeAnswerKey && $isCorrect ? 'opt-label-correct' : '' }}">{{ $letter }}</td>
                                 <td class="opt-text-cell">
                                     {{ $opt['answer_text'] ?? '' }}
 
