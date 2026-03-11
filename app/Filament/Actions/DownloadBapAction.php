@@ -23,7 +23,7 @@ class DownloadBapAction
     public static function make(): Action
     {
         return Action::make('downloadBap')
-            ->label('Download BAP')
+            ->label('Unduh BAP')
             ->icon('heroicon-o-document-arrow-down')
             ->color('primary')
             ->modalHeading('Buat Berita Acara Pelaksanaan (BAP)')

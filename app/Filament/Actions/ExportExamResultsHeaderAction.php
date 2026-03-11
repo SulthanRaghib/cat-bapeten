@@ -90,7 +90,7 @@ class ExportExamResultsHeaderAction
             ->color('success')
             ->modalHeading('Unduh Laporan Hasil Ujian')
             ->modalDescription('Atur filter dan format export yang diinginkan.')
-            ->modalSubmitActionLabel('Download')
+            ->modalSubmitActionLabel('Unduh')
             ->modalWidth('lg')
             ->schema([
                 Section::make('Filter Data')
