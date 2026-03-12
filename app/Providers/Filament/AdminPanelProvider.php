@@ -387,7 +387,7 @@ class AdminPanelProvider extends PanelProvider
                             .dark .cat-app-footer {
                                 color: #6b7280;
                                 border-top-color: #374151;
-                                background: #111827;
+                                background: #050b10 !important;
                             }
                             .cat-app-footer strong {
                                 color: var(--color-primary-600);

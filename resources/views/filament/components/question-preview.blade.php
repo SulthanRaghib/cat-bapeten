@@ -75,7 +75,7 @@
 
         .dark .qp-empty {
             border-color: #334155;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            background: #2f2f32 !important;
         }
 
         .qp-empty-icon {
@@ -118,15 +118,15 @@
         }
 
         .dark .qp-card {
-            background: #1e293b;
+            background: #242427;
             border-color: #334155;
             box-shadow: 0 2px 12px rgba(0, 0, 0, .3);
         }
 
         /* ══ Card header ═══════════════════════════════════════════════════════ */
         .qp-header {
-            background: linear-gradient(135deg, #f59e0b15 0%, #fbbf2415 100%);
-            border-bottom: 1px solid #fde68a;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary-500, #f59e0b) 10%, transparent) 0%, color-mix(in srgb, var(--color-primary-400, #fbbf24) 16%, transparent) 100%);
+            border-bottom: 1.5px solid color-mix(in srgb, var(--color-primary-400, #fbbf24) 45%, transparent);
             padding: 0.875rem 1.25rem;
             display: flex;
             align-items: center;
@@ -134,8 +134,8 @@
         }
 
         .dark .qp-header {
-            background: linear-gradient(135deg, #78350f20 0%, #92400e20 100%);
-            border-bottom-color: #78350f;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary-800, #92400e) 20%, transparent) 0%, color-mix(in srgb, var(--color-primary-700, #b45309) 15%, transparent) 100%);
+            border-bottom-color: color-mix(in srgb, var(--color-primary-700, #b45309) 60%, transparent);
         }
 
         .qp-header-icon {
@@ -143,12 +143,12 @@
             width: 2rem;
             height: 2rem;
             border-radius: 0.5rem;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, var(--color-primary-500, #f59e0b), var(--color-primary-600, #d97706));
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
-            box-shadow: 0 2px 6px rgba(245, 158, 11, .35);
+            box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primary-500, #f59e0b) 35%, transparent);
         }
 
         .qp-header-meta {
@@ -158,21 +158,21 @@
         .qp-header-title {
             font-size: 0.85rem;
             font-weight: 700;
-            color: #92400e;
+            color: #1e293b;
         }
 
         .dark .qp-header-title {
-            color: #fcd34d;
+            color: var(--color-primary-300, #fcd34d);
         }
 
         .qp-header-sub {
             font-size: 0.7rem;
-            color: #b45309;
+            color: #64748b;
             margin-top: 1px;
         }
 
         .dark .qp-header-sub {
-            color: #d97706;
+            color: var(--color-primary-400, #fbbf24);
         }
 
         /* ══ Live pulse indicator ════════════════════════════════════════════ */
@@ -224,19 +224,19 @@
             align-items: center;
             gap: 0.375rem;
             padding: 0.5rem 1.25rem;
-            background: #fffbeb;
-            border-bottom: 1px solid #fef3c7;
+            background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 4%, transparent);
+            border-bottom: 1px solid color-mix(in srgb, var(--color-primary-400, #fbbf24) 20%, transparent);
             min-height: 2.25rem;
         }
 
         .dark .qp-meta {
-            background: #1e293b;
+            background: #242427;
             border-bottom-color: #334155;
         }
 
         .qp-badge {
             display: inline-flex;
-            align-items: center;
+            .dark .qp-option align-items: center;
             gap: 0.25rem;
             font-size: 0.6875rem;
             font-weight: 600;
@@ -275,6 +275,36 @@
             border-color: #ddd6fe;
         }
 
+        .dark .qp-badge-easy {
+            background: #052e16;
+            color: #4ade80;
+            border-color: #166534;
+        }
+
+        .dark .qp-badge-medium {
+            background: #451a03;
+            color: #fbbf24;
+            border-color: #92400e;
+        }
+
+        .dark .qp-badge-hard {
+            background: #450a0a;
+            color: #f87171;
+            border-color: #991b1b;
+        }
+
+        .dark .qp-badge-teknis {
+            background: #1e1b4b;
+            color: #818cf8;
+            border-color: #3730a3;
+        }
+
+        .dark .qp-badge-mansoskul {
+            background: #2e1065;
+            color: #a78bfa;
+            border-color: #5b21b6;
+        }
+
         /* ══ Body ══════════════════════════════════════════════════════════════ */
         .qp-body {
             padding: 1.125rem 1.25rem 1.25rem;
@@ -288,16 +318,21 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: #94a3b8;
+            color: #64748b;
             margin-bottom: 0.65rem;
             user-select: none;
         }
 
+        .dark .qp-section-label {
+            color: #94a3b8;
+        }
+
         .qp-dot {
-            width: 0.4375rem;
-            height: 0.4375rem;
+            width: 0.5rem;
+            height: 0.5rem;
             border-radius: 50%;
             flex-shrink: 0;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500, #f59e0b) 20%, transparent);
         }
 
         /* ══ Question content ══════════════════════════════════════════════════ */
@@ -338,7 +373,7 @@
         }
 
         .dark .qp-option {
-            background: #0f172a;
+            background: #18181b;
             border-color: #1e293b;
         }
 
@@ -487,10 +522,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
-            <p class="qp-empty-title">Pratinjau akan muncul di sini</p>
+            <p class="qp-empty-title">{{ __('Preview will appear here') }}</p>
             <p class="qp-empty-sub">
-                Mulai ketik teks pertanyaan di bagian <strong>Isi Soal &amp; Pembahasan</strong>
-                untuk melihat tampilan soal secara langsung seperti yang dilihat peserta.
+                {{ __('Start typing the question text in the') }}
+                <strong>{{ __('Question Content & Discussion') }}</strong>
+                {{ __('to see a live preview as participants will see it.') }}
             </p>
         </div>
     @else
@@ -508,8 +544,8 @@
                     </svg>
                 </div>
                 <div class="qp-header-meta">
-                    <p class="qp-header-title">Tampilan Peserta</p>
-                    <p class="qp-header-sub">Begini soal ini terlihat saat ujian berlangsung</p>
+                    <p class="qp-header-title">{{ __('Participant View') }}</p>
+                    <p class="qp-header-sub">{{ __('This is how the question looks during the exam') }}</p>
                 </div>
                 <span class="qp-live">
                     <span class="qp-live-dot"></span>
@@ -520,11 +556,11 @@
             {{-- Meta badges ─────────────────────────────────────────────── --}}
             <div class="qp-meta">
                 @if ($category === 'easy')
-                    <span class="qp-badge qp-badge-easy">● Mudah</span>
+                    <span class="qp-badge qp-badge-easy">● {{ __('Easy') }}</span>
                 @elseif ($category === 'medium')
-                    <span class="qp-badge qp-badge-medium">◑ Sedang</span>
+                    <span class="qp-badge qp-badge-medium">◑ {{ __('Medium') }}</span>
                 @elseif ($category === 'hard')
-                    <span class="qp-badge qp-badge-hard">◆ Sulit</span>
+                    <span class="qp-badge qp-badge-hard">◆ {{ __('Hard') }}</span>
                 @endif
 
                 @if ($evalMethod === 'correct_wrong')
@@ -533,7 +569,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Teknis
+                        {{ __('Technical') }}
                     </span>
                 @elseif ($evalMethod === 'weighted')
                     <span class="qp-badge qp-badge-mansoskul">
@@ -541,7 +577,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        Mansoskul
+                        {{ __('Mansoskul') }}
                     </span>
                 @endif
             </div>
@@ -551,19 +587,19 @@
 
                 {{-- Question text ─────────────────────────────────────── --}}
                 <div class="qp-section-label">
-                    <span class="qp-dot" style="background:#f59e0b"></span>
-                    Pertanyaan
+                    <span class="qp-dot" style="background: var(--color-primary-500, #f59e0b)"></span>
+                    {{ __('Question') }}
                 </div>
                 <div class="qp-question-text prose prose-sm max-w-none">{!! $questionText !!}</div>
 
                 {{-- Options ──────────────────────────────────────────── --}}
                 <div class="qp-section-label">
                     <span class="qp-dot" style="background:#3b82f6"></span>
-                    Pilihan Jawaban
+                    {{ __('Answer Options') }}
                     @if (count($allOptions) > 0)
                         <span
                             style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.625rem;color:#94a3b8;margin-left:.25rem">
-                            ({{ $filledCount }}/{{ count($allOptions) }} opsi terisi)
+                            ({{ $filledCount }}/{{ count($allOptions) }} {{ __('options filled') }})
                         </span>
                     @endif
                 </div>
@@ -598,14 +634,15 @@
                                     @else
                                         <div class="qp-option-body"
                                             style="color:#94a3b8;font-style:italic;font-size:0.8125rem">
-                                            Menunggu teks jawaban...
+                                            {{ __('Waiting for answer text...') }}
                                         </div>
                                     @endif
                                     @if ($isCorrect)
-                                        <span class="qp-option-tag qp-tag-correct">✓ Kunci Jawaban</span>
+                                        <span class="qp-option-tag qp-tag-correct">✓ {{ __('Answer Key') }}</span>
                                     @endif
                                     @if ($hasScore)
-                                        <span class="qp-option-tag qp-tag-score">Bobot: {{ $opt['score'] }} poin</span>
+                                        <span class="qp-option-tag qp-tag-score">{{ __('Weight:') }}
+                                            {{ $opt['score'] }} {{ __('pts') }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -613,7 +650,8 @@
                     </div>
                 @else
                     <div class="qp-no-options">
-                        Pilihan jawaban belum ditambahkan — klik <strong>Tambahkan ke options</strong> di bagian Jawaban
+                        {{ __('Answer options not yet added — click') }} <strong>{{ __('Add to options') }}</strong>
+                        {{ __('in the Answers section') }}
                     </div>
                 @endif
 
