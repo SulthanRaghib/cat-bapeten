@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\CustomLogin;
 use App\Http\Middleware\BlockParticipantsFromAdmin;
+use App\Http\Middleware\SetLocale;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -51,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
                 AuthenticateSession::class,
+                SetLocale::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
@@ -293,6 +295,10 @@ class AdminPanelProvider extends PanelProvider
                         })();
                     </script>
                 HTML)
+            )
+            ->renderHook(
+                'panels::user-menu.before',
+                fn() => view('filament.locale-switcher'),
             )
             ->renderHook(
                 'panels::footer',

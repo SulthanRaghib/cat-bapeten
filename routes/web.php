@@ -29,6 +29,15 @@ Route::get('/admin/bap/download', [\App\Http\Controllers\BapController::class, '
     ->middleware('auth')
     ->name('bap.download');
 
+// Language / locale switcher — sets session locale then redirects back
+Route::get('/lang/{locale}', function (string $locale) {
+    $supported = ['id', 'en'];
+    if (in_array($locale, $supported, strict: true)) {
+        session(['locale' => $locale]);
+    }
+    return redirect()->back(fallback: '/admin');
+})->name('lang.switch');
+
 Route::get('/debug-user-exam/{nip}', function ($nip) {
     $user = \App\Models\User::where('nip', $nip)->first();
     if (!$user) return "User with NIP $nip not found";
