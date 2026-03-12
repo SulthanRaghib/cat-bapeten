@@ -38,10 +38,9 @@
         <div class="medt-panel-header">
             <div class="medt-panel-icon" aria-hidden="true">∑</div>
             <div>
-                <p class="medt-panel-title">Bantuan Rumus Matematika</p>
+                <p class="medt-panel-title">{{ __('Math Formula Helper') }}</p>
                 <p class="medt-panel-desc">
-                    Klik rumus di bawah untuk langsung menyalin, atau buka
-                    <strong>Editor Lengkap</strong> untuk menyusun rumus sendiri.
+                    {{ __('Click a formula below to copy it instantly, or open the Full Editor to build your own.') }}
                 </p>
             </div>
         </div>
@@ -62,14 +61,13 @@
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <path d="M8 12h8M12 8v8" />
                 </svg>
-                Editor Lengkap
+                {{ __('Full Editor') }}
             </button>
         </div>
 
         <p class="medt-panel-tip">
             <span class="medt-tip-badge">INFO</span>&nbsp;
-            Klik chip → salin otomatis → <kbd>Ctrl+V</kbd> di editor teks.
-            Format: <code>\( rumus \)</code>
+            {{ __('Click formula → auto-copy → Ctrl+V in editor. Format: \( formula \)') }}
         </p>
     </div>
 
@@ -86,9 +84,9 @@
             <div class="medt-dialog-head">
                 <div class="medt-dialog-title">
                     <span class="medt-dialog-icon" aria-hidden="true">∑</span>
-                    Editor Rumus Matematika
+                    {{ __('Math Formula Helper') }}
                 </div>
-                <button type="button" class="medt-close" @click.stop="closeEditor()" title="Tutup (Esc)">
+                <button type="button" class="medt-close" @click.stop="closeEditor()" title="{{ __('Close (Esc)') }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round">
                         <path d="M18 6L6 18M6 6l12 12" />
@@ -161,12 +159,12 @@
                             </button>
                             {{-- Hapus --}}
                             <button type="button" class="medt-btn-clear" @click.prevent="clearInput()"
-                                title="Hapus semua">
+                                title="{{ __('Clear all') }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round">
                                     <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
                                 </svg>
-                                Hapus
+                                {{ __('Clear') }}
                             </button>
                         </div>
                     </div>
@@ -180,13 +178,13 @@
                     </p>
 
                     {{-- Pratinjau visual (KaTeX render sesungguhnya) --}}
-                    <label class="medt-label" style="margin-top:14px">🔍 Pratinjau Visual</label>
+                    <label class="medt-label" style="margin-top:14px">🔍 {{ __('Visual Preview') }}</label>
 
                     <div class="medt-preview">
                         {{-- State kosong --}}
                         <div x-show="!latexInput.trim()" class="medt-preview-empty">
                             <span class="medt-preview-empty-icon">∑</span>
-                            <span>Pratinjau rumus muncul di sini</span>
+                            <span>{{ __('Formula preview appears here') }}</span>
                         </div>
 
                         {{-- Scroll wrapper: formula bisa di-scroll horizontal jika terlalu panjang --}}
@@ -210,14 +208,13 @@
                         <div class="medt-mode-toggle">
                             <button type="button" class="medt-mode-btn"
                                 :class="{ 'is-active': displayMode === 'inline' }"
-                                @click.prevent="setMode('inline')" title="Sebaris — rumus menyatu dalam kalimat">
-                                Sebaris&nbsp;<code>\(…\)</code>
+                                @click.prevent="setMode('inline')" title="{{ __('Inline') }}">
+                                {{ __('Inline') }}&nbsp;<code>\(…\)</code>
                             </button>
                             <button type="button" class="medt-mode-btn"
                                 :class="{ 'is-active': displayMode === 'display' }"
-                                @click.prevent="setMode('display')"
-                                title="Blok — rumus berdiri sendiri di tengah halaman">
-                                Blok Tengah&nbsp;<code>\[…\]</code>
+                                @click.prevent="setMode('display')" title="{{ __('Center Block') }}">
+                                {{ __('Center Block') }}&nbsp;<code>\[…\]</code>
                             </button>
                         </div>
                     </div>
@@ -235,9 +232,9 @@
 
                     {{-- Panduan compact --}}
                     <div class="medt-steps">
-                        <span class="medt-steps-title">📋 Cara pakai:</span>
-                        <span class="medt-steps-inline">Pilih simbol kiri → cek pratinjau → <strong>Salin
-                                Rumus</strong> → <kbd>Ctrl+V</kbd> di editor.</span>
+                        <span class="medt-steps-title">📋 {{ __('How to use') }}</span>
+                        <span
+                            class="medt-steps-inline">{{ __('Select symbol → preview → Copy Formula → Ctrl+V in editor.') }}</span>
                     </div>
 
                 </div>{{-- /medt-compose --}}
@@ -264,7 +261,7 @@
             displayMode: 'inline',
             /* 'inline' | 'display' */
             activeTab: 'operators',
-            copyLabel: '📋 Salin Rumus',
+            copyLabel: '📋 ' + @js(__('Copy Formula')),
 
             /* ── undo / redo history ── */
             _history: [''],
@@ -276,17 +273,17 @@
                ──────────────────────────────────────────────── */
             quickChips: [{
                     id: 'frac',
-                    name: 'Pecahan',
+                    name: @js(__('Fraction')),
                     latex: '\\frac{a}{b}'
                 },
                 {
                     id: 'pow',
-                    name: 'Pangkat',
+                    name: @js(__('Power')),
                     latex: 'x^{2}'
                 },
                 {
                     id: 'sqrt',
-                    name: 'Akar',
+                    name: @js(__('Root')),
                     latex: '\\sqrt{x}'
                 },
                 {
@@ -321,38 +318,38 @@
                ──────────────────────────────────────────────── */
             tabs: [{
                     id: 'operators',
-                    label: '± Operator',
-                    note: 'Klik simbol untuk menyisipkan ke posisi kursor.'
+                    label: '± ' + @js(__('Operators')),
+                    note: @js(__('Click a symbol to insert at the cursor position.'))
                 },
                 {
                     id: 'structure',
-                    label: '∫ Struktur',
-                    note: 'Template siap pakai — klik untuk menyisipkan, lalu ganti huruf placeholder.'
+                    label: '∫ ' + @js(__('Structure')),
+                    note: @js(__('Ready-to-use templates — click to insert, then replace placeholder letters.'))
                 },
                 {
                     id: 'greek',
-                    label: 'α Yunani',
-                    note: 'Huruf alfabet Yunani — klik untuk menyisipkan.'
+                    label: 'α ' + @js(__('Greek')),
+                    note: @js(__('Greek alphabet letters — click to insert.'))
                 },
                 {
                     id: 'functions',
-                    label: 'sin Fungsi',
-                    note: 'Fungsi matematika standar — klik untuk menyisipkan.'
+                    label: 'sin ' + @js(__('Functions')),
+                    note: @js(__('Standard math functions — click to insert.'))
                 },
                 {
                     id: 'nuclear',
-                    label: '⚛ Nuklir',
-                    note: 'Rumus fisika dan keselamatan radiasi untuk konteks BAPETEN.'
+                    label: '⚛ ' + @js(__('Nuclear')),
+                    note: @js(__('Physics and radiation safety formulas for BAPETEN context.'))
                 },
                 {
                     id: 'atom',
-                    label: '⚗ Atom',
-                    note: 'Notasi nuklida & simbol unsur — format ᴬ_Z El. Klik untuk menyisipkan.'
+                    label: '⚗ ' + @js(__('Atom')),
+                    note: @js(__('Nuclide notation & element symbols — click to insert.'))
                 },
                 {
                     id: 'molecule',
-                    label: '🧪 Molekul',
-                    note: 'Rumus molekul & senyawa kimia — gas, cairan, asam, basa, dan radiofarmaka. Klik untuk menyisipkan.'
+                    label: '🧪 ' + @js(__('Molecule')),
+                    note: @js(__('Molecular formulas & chemical compounds — click to insert.'))
                 },
             ],
 
@@ -2152,15 +2149,15 @@
 
             doCopy(text) {
                 const onOk = () => {
-                    this.copyLabel = '✅ Tersalin!';
+                    this.copyLabel = @js(__('✅ Copied!'));
                     setTimeout(() => {
-                        this.copyLabel = '📋 Salin Rumus';
+                        this.copyLabel = '📋 ' + @js(__('Copy Formula'));
                     }, 2200);
                 };
                 const onFail = () => {
-                    this.copyLabel = '❌ Gagal menyalin';
+                    this.copyLabel = @js(__('❌ Failed to copy'));
                     setTimeout(() => {
-                        this.copyLabel = '📋 Salin Rumus';
+                        this.copyLabel = '📋 ' + @js(__('Copy Formula'));
                     }, 2200);
                 };
 
@@ -2231,10 +2228,15 @@
    PANEL KOMPAK
    ════════════════════════════════════════ */
     .medt-panel {
-        background: #f8faff;
-        border: 1px solid #c7d2fe;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-left: 3px solid rgb(var(--color-primary-500, 245 158 11));
+        border-left: 3px solid var(--color-primary-500, #f59e0b);
+        background: rgb(var(--color-primary-600, 217 119 6));
+        background: var(--color-primary-600, #d97706);
         border-radius: 12px;
         padding: 14px 16px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
     }
 
     .medt-panel-header {
@@ -2247,7 +2249,10 @@
     .medt-panel-icon {
         width: 32px;
         height: 32px;
-        background: #4f46e5;
+        background: rgb(var(--color-primary-600, 217 119 6));
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        border-color: var(--color-primary-500, #f59e0b);
+        background: rgba(var(--color-primary-500, 245 158 11), .08);
         color: #fff;
         border-radius: 8px;
         display: flex;
@@ -2262,13 +2267,13 @@
         margin: 0 0 2px;
         font-weight: 700;
         font-size: 13px;
-        color: #1e1b4b;
+        color: #111827;
     }
 
     .medt-panel-desc {
         margin: 0;
         font-size: 12px;
-        color: #4338ca;
+        color: #4b5563;
     }
 
     /* Chip cepat */
@@ -2286,7 +2291,7 @@
         gap: 4px;
         padding: 8px 10px;
         background: #fff;
-        border: 1.5px solid #c7d2fe;
+        border: 1.5px solid #d1d5db;
         border-radius: 10px;
         cursor: pointer;
         transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
@@ -2294,10 +2299,13 @@
     }
 
     .medt-chip:hover {
-        border-color: #4f46e5;
-        background: #eef2ff;
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        background: rgba(var(--color-primary-500, 245 158 11), .08);
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(79, 70, 229, .15);
+        box-shadow: 0 4px 10px rgba(var(--color-primary-500, 245 158 11), .15);
+        box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary-500, #f59e0b) 15%, transparent);
+        background: rgb(var(--color-primary-600, 217 119 6));
+        background: var(--color-primary-600, #d97706);
     }
 
     .medt-chip:active {
@@ -2307,7 +2315,7 @@
     .medt-chip-math {
         font-size: 15px;
         line-height: 1.3;
-        color: #1e1b4b;
+        color: #111827;
     }
 
     .medt-chip-math .katex {
@@ -2317,7 +2325,7 @@
     .medt-chip-name {
         font-size: 9px;
         font-weight: 700;
-        color: #4338ca;
+        color: #6b7280;
         text-transform: uppercase;
         letter-spacing: .4px;
         white-space: nowrap;
@@ -2329,7 +2337,7 @@
         align-items: center;
         gap: 6px;
         padding: 8px 14px;
-        background: #4f46e5;
+        background: rgb(var(--color-primary-600, 217 119 6));
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -2346,8 +2354,11 @@
     }
 
     .medt-open-btn:hover {
-        background: #4338ca;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, .35);
+        background: rgb(var(--color-primary-700, 180 83 9));
+        background: var(--color-primary-700, #b45309);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500, #f59e0b) 35%, transparent);
+        background: var(--color-primary-600, #d97706);
+        box-shadow: 0 4px 12px rgba(var(--color-primary-500, 245 158 11), .35);
         transform: translateY(-1px);
     }
 
@@ -2358,7 +2369,7 @@
     .medt-panel-tip {
         margin: 10px 0 0;
         font-size: 11px;
-        color: #6366f1;
+        color: #6b7280;
         display: flex;
         align-items: center;
         gap: 4px;
@@ -2366,7 +2377,10 @@
     }
 
     .medt-tip-badge {
-        background: #4f46e5;
+        background: rgb(var(--color-primary-600, 217 119 6));
+        background: var(--color-primary-600, #d97706);
+        border-color: rgb(var(--color-primary-600, 217 119 6));
+        border-color: var(--color-primary-600, #d97706);
         color: #fff;
         font-size: 9px;
         padding: 1px 6px;
@@ -2406,8 +2420,9 @@
         align-items: center;
         justify-content: space-between;
         padding: 18px 24px;
-        background: linear-gradient(135deg, #312e81, #4f46e5);
+        background: linear-gradient(135deg, rgb(var(--color-primary-800, 146 64 14)), rgb(var(--color-primary-600, 217 119 6)));
         flex-shrink: 0;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, .15);
     }
 
     .medt-dialog-title {
@@ -2486,24 +2501,24 @@
         padding: 5px 10px;
         font-size: 11.5px;
         font-weight: 600;
-        border: 1.5px solid transparent;
+        border: 1.5px solid #e5e7eb;
         border-radius: 20px;
         cursor: pointer;
-        background: transparent;
-        color: #6b7280;
+        background: #f9fafb;
+        color: #4b5563;
         transition: all .15s;
         white-space: nowrap;
     }
 
     .medt-tab:hover {
-        background: #ede9fe;
-        color: #4f46e5;
+        background: rgba(var(--color-primary-500, 245 158 11), .1);
+        color: rgb(var(--color-primary-600, 217 119 6));
     }
 
     .medt-tab.is-active {
-        background: #4f46e5;
+        background: rgb(var(--color-primary-600, 217 119 6));
         color: #fff;
-        border-color: #4f46e5;
+        border-color: rgb(var(--color-primary-600, 217 119 6));
     }
 
     .medt-tab-note {
@@ -2532,7 +2547,7 @@
         gap: 4px;
         padding: 8px 4px;
         background: #fff;
-        border: 1.5px solid #e5e7eb;
+        border: 1.5px solid #d1d5db;
         border-radius: 10px;
         cursor: pointer;
         transition: all .15s;
@@ -2540,10 +2555,16 @@
     }
 
     .medt-sym-btn:hover {
-        border-color: #4f46e5;
-        background: #eef2ff;
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        border-color: var(--color-primary-500, #f59e0b);
+        background: rgba(var(--color-primary-500, 245 158 11), .08);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 8%, transparent);
+        background: rgba(var(--color-primary-500, 245 158 11), .08);
         transform: translateY(-2px);
-        box-shadow: 0 3px 8px rgba(79, 70, 229, .15);
+        box-shadow: 0 3px 8px rgba(var(--color-primary-500, 245 158 11), .15);
+        box-shadow: 0 3px 8px color-mix(in srgb, var(--color-primary-500, #f59e0b) 15%, transparent);
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        border-color: var(--color-primary-500, #f59e0b);
     }
 
     .medt-sym-btn:active {
@@ -2693,9 +2714,12 @@
     }
 
     .medt-btn-icon:hover:not(:disabled) {
-        background: #eef2ff;
-        border-color: #4f46e5;
-        color: #4f46e5;
+        background: rgba(var(--color-primary-500, 245 158 11), .08);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 8%, transparent);
+        color: rgb(var(--color-primary-600, 217 119 6));
+        color: var(--color-primary-600, #d97706);
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        color: rgb(var(--color-primary-600, 217 119 6));
     }
 
     .medt-btn-icon:disabled {
@@ -2723,9 +2747,9 @@
 
     .medt-textarea:focus {
         outline: none;
-        border-color: #4f46e5;
+        border-color: rgb(var(--color-primary-500, 245 158 11));
         background: #fff;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-500, 245 158 11), .12);
     }
 
     .medt-input-hint {
@@ -2754,8 +2778,8 @@
     }
 
     .medt-preview {
-        background: #f8faff;
-        border: 2px solid #c7d2fe;
+        background: rgba(var(--color-primary-500, 245 158 11), .04);
+        border: 2px solid rgba(var(--color-primary-500, 245 158 11), .3);
         border-radius: 10px;
         min-height: 96px;
         max-height: 180px;
@@ -2791,7 +2815,7 @@
         flex-direction: column;
         align-items: center;
         gap: 8px;
-        color: #a5b4fc;
+        color: rgba(var(--color-primary-500, 245 158 11), .5);
         font-size: 12px;
         padding: 20px;
     }
@@ -2817,7 +2841,7 @@
         min-height: 96px;
         /* Scrollbar tipis & elegan */
         scrollbar-width: thin;
-        scrollbar-color: #c7d2fe transparent;
+        scrollbar-color: rgba(var(--color-primary-500, 245 158 11), .4) transparent;
     }
 
     .medt-preview-scroll::-webkit-scrollbar {
@@ -2830,7 +2854,7 @@
     }
 
     .medt-preview-scroll::-webkit-scrollbar-thumb {
-        background: #c7d2fe;
+        background: rgba(var(--color-primary-500, 245 158 11), .4);
         border-radius: 10px;
     }
 
@@ -2860,16 +2884,16 @@
     .medt-preview-hint {
         margin: 4px 0 10px;
         font-size: 10.5px;
-        color: #a5b4fc;
+        color: rgba(var(--color-primary-500, 245 158 11), .6);
         text-align: center;
     }
 
     .medt-preview-hint code {
-        background: #eef2ff;
+        background: rgba(var(--color-primary-500, 245 158 11), .1);
         padding: 1px 5px;
         border-radius: 3px;
         font-size: 10px;
-        color: #4f46e5;
+        color: rgb(var(--color-primary-600, 217 119 6));
     }
 
     .medt-preview-error {
@@ -2922,9 +2946,12 @@
     }
 
     .medt-mode-btn.is-active {
-        background: #4f46e5;
+        background: rgb(var(--color-primary-600, 217 119 6));
+        background: var(--color-primary-600, #d97706);
+        box-shadow: 0 1px 4px rgba(var(--color-primary-500, 245 158 11), .3);
+        box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary-500, #f59e0b) 30%, transparent);
         color: #fff;
-        box-shadow: 0 1px 4px rgba(79, 70, 229, .3);
+        box-shadow: 0 1px 4px rgba(var(--color-primary-500, 245 158 11), .3);
     }
 
     .medt-mode-btn.is-active code {
@@ -2940,7 +2967,7 @@
         width: 100%;
         margin-top: 14px;
         padding: 12px;
-        background: #4f46e5;
+        background: rgb(var(--color-primary-600, 217 119 6));
         color: #fff;
         font-size: 14px;
         font-weight: 700;
@@ -2957,8 +2984,11 @@
     }
 
     .medt-copy-btn:hover:not(:disabled) {
-        background: #4338ca;
-        box-shadow: 0 4px 16px rgba(79, 70, 229, .4);
+        background: rgb(var(--color-primary-700, 180 83 9));
+        box-shadow: 0 4px 16px rgba(var(--color-primary-500, 245 158 11), .4);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary-500, #f59e0b) 40%, transparent);
+        background: rgba(var(--color-primary-500, 245 158 11), .3);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 30%, transparent);
         transform: translateY(-1px);
     }
 
@@ -2967,7 +2997,7 @@
     }
 
     .medt-copy-btn:disabled {
-        background: #c7d2fe;
+        background: rgba(var(--color-primary-500, 245 158 11), .3);
         cursor: not-allowed;
     }
 
@@ -3042,5 +3072,497 @@
         .medt-chip-name {
             font-size: 8px;
         }
+    }
+
+    /* ════════════════════════════════════════
+       DARK MODE
+       ════════════════════════════════════════ */
+    .dark .medt-panel {
+        background: #242427 !important;
+        border-color: #374151;
+        border-left-color: rgb(var(--color-primary-500, 245 158 11));
+        border-left-color: var(--color-primary-500, #f59e0b);
+        border-color: rgba(var(--color-primary-500, 245 158 11), .25);
+        border-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 25%, transparent);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+    }
+
+    .dark .medt-panel-title {
+        color: #f3f4f6;
+    }
+
+    .dark .medt-panel-desc {
+        color: #9ca3af;
+    }
+
+    .dark .medt-chip {
+        background: #1f2937;
+        border-color: rgba(var(--color-primary-500, 245 158 11), .25);
+    }
+
+    .dark .medt-chip:hover {
+        background: rgba(var(--color-primary-500, 245 158 11), .12);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 12%, transparent);
+        color: rgb(var(--color-primary-400, 251 191 36));
+        color: var(--color-primary-400, #fbbf24);
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        border-color: var(--color-primary-500, #f59e0b);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-500, 245 158 11), .15);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #f59e0b) 15%, transparent);
+        box-shadow: 0 4px 10px rgba(var(--color-primary-500, 245 158 11), .2);
+    }
+
+    .dark .medt-chip-math {
+        color: #f3f4f6;
+    }
+
+    .dark .medt-chip-name {
+        color: #9ca3af;
+    }
+
+    .dark .medt-panel-tip {
+        color: #9ca3af;
+    }
+
+    .dark .medt-dialog {
+        background: #1f2937;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .7);
+    }
+
+    .dark .medt-sym-panel {
+        background: #111827;
+        border-right-color: #374151;
+    }
+
+    .dark .medt-tab {
+        color: #9ca3af;
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .dark .medt-tab:hover {
+        background: rgba(var(--color-primary-500, 245 158 11), .12);
+        color: rgb(var(--color-primary-400, 251 191 36));
+    }
+
+    .dark .medt-tab.is-active {
+        background: rgb(var(--color-primary-600, 217 119 6));
+        color: #fff;
+        border-color: rgb(var(--color-primary-600, 217 119 6));
+    }
+
+    .dark .medt-tab-note {
+        color: #6b7280;
+        border-bottom-color: #374151;
+    }
+
+    .dark .medt-sym-btn {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .dark .medt-sym-btn:hover {
+        background: rgba(var(--color-primary-500, 245 158 11), .1);
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        box-shadow: 0 3px 8px rgba(var(--color-primary-500, 245 158 11), .2);
+    }
+
+    .dark .medt-sym-math {
+        color: #e5e7eb;
+    }
+
+    .dark .medt-sym-name {
+        color: #9ca3af;
+    }
+
+    .dark .medt-label {
+        color: #d1d5db;
+    }
+
+    .dark .medt-label-sub {
+        color: #6b7280;
+    }
+
+    .dark .medt-btn-icon {
+        background: #374151;
+        border-color: #4b5563;
+        color: #d1d5db;
+    }
+
+    .dark .medt-btn-icon:hover:not(:disabled) {
+        background: rgba(var(--color-primary-500, 245 158 11), .12);
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        color: rgb(var(--color-primary-400, 251 191 36));
+    }
+
+    .dark .medt-btn-clear {
+        background: #374151;
+        border-color: #4b5563;
+        color: #9ca3af;
+    }
+
+    .dark .medt-btn-clear:hover {
+        background: #450a0a;
+        color: #fca5a5;
+        border-color: #7f1d1d;
+    }
+
+    .dark .medt-compose {
+        background: #1f2937;
+    }
+
+    .dark .medt-textarea {
+        background: #111827;
+        border-color: #374151;
+        color: #e5e7eb;
+    }
+
+    .dark .medt-textarea:focus {
+        background: #1f2937;
+        border-color: rgb(var(--color-primary-500, 245 158 11));
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-500, 245 158 11), .15);
+    }
+
+    .dark .medt-input-hint {
+        color: #6b7280;
+    }
+
+    .dark .medt-input-hint code,
+    .dark .medt-input-hint kbd {
+        background: #374151;
+        color: #d1d5db;
+        border-color: #4b5563;
+    }
+
+    .dark .medt-preview {
+        background: rgba(var(--color-primary-500, 245 158 11), .05);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 5%, transparent);
+        border-color: rgba(var(--color-primary-500, 245 158 11), .25);
+        border-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 25%, transparent);
+        border-color: rgba(var(--color-primary-500, 245 158 11), .25);
+    }
+
+    .dark .medt-preview-empty {
+        color: rgba(var(--color-primary-500, 245 158 11), .4);
+        color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 40%, transparent);
+        color: rgba(var(--color-primary-500, 245 158 11), .6);
+        color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 60%, transparent);
+    }
+
+    .dark .medt-preview-render {
+        color: #e5e7eb;
+    }
+
+    .dark .medt-preview-hint {
+        color: rgba(var(--color-primary-500, 245 158 11), .6);
+    }
+
+    .dark .medt-preview-hint code {
+        background: rgba(var(--color-primary-500, 245 158 11), .12);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 12%, transparent);
+        color: rgb(var(--color-primary-400, 251 191 36));
+        color: var(--color-primary-400, #fbbf24);
+        color: rgb(var(--color-primary-400, 251 191 36));
+    }
+
+    .dark .medt-mode-toggle {
+        background: #374151;
+    }
+
+    .dark .medt-mode-btn {
+        color: #9ca3af;
+    }
+
+    .dark .medt-mode-btn.is-active {
+        background: rgb(var(--color-primary-600, 217 119 6));
+        color: #fff;
+    }
+
+    .dark .medt-copy-btn:disabled {
+        background: rgba(var(--color-primary-500, 245 158 11), .2);
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 20%, transparent);
+    }
+
+    .dark .medt-steps {
+        background: #052e16;
+        border-color: #166534;
+    }
+
+    /* ════════════════════════════════════════
+       FINAL TOKEN-COMPAT OVERRIDES
+       memastikan konsisten dengan var(--color-primary-*) Filament
+       ════════════════════════════════════════ */
+    .medt-panel {
+        background: #fff !important;
+        border: 1px solid #e5e7eb !important;
+        border-left: 3px solid var(--color-primary-500, #f59e0b) !important;
+    }
+
+    .medt-panel-icon,
+    .medt-open-btn,
+    .medt-tip-badge,
+    .medt-tab.is-active,
+    .medt-mode-btn.is-active,
+    .medt-copy-btn {
+        background: var(--color-primary-600, #d97706) !important;
+    }
+
+    .medt-open-btn:hover,
+    .medt-copy-btn:hover:not(:disabled) {
+        background: var(--color-primary-700, #b45309) !important;
+    }
+
+    .medt-chip:hover,
+    .medt-sym-btn:hover,
+    .medt-tab:hover,
+    .medt-btn-icon:hover:not(:disabled) {
+        border-color: var(--color-primary-500, #f59e0b) !important;
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 8%, transparent) !important;
+        color: var(--color-primary-600, #d97706) !important;
+    }
+
+    .medt-textarea:focus {
+        border-color: var(--color-primary-500, #f59e0b) !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #f59e0b) 12%, transparent) !important;
+    }
+
+    .medt-preview {
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 4%, transparent) !important;
+        border-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 30%, transparent) !important;
+    }
+
+    .dark .medt-panel {
+        background: #242427 !important;
+        border-color: #374151 !important;
+        border-left-color: var(--color-primary-500, #f59e0b) !important;
+    }
+
+    .dark .medt-panel-title,
+    .dark .medt-chip-math {
+        color: #f3f4f6 !important;
+    }
+
+    .dark .medt-panel-desc,
+    .dark .medt-chip-name,
+    .dark .medt-panel-tip,
+    .dark .medt-tab,
+    .dark .medt-mode-btn {
+        color: #9ca3af !important;
+    }
+
+    .dark .medt-chip,
+    .dark .medt-sym-btn,
+    .dark .medt-tab {
+        background: #18181b !important;
+        border-color: #374151 !important;
+    }
+
+    .dark .medt-chip:hover,
+    .dark .medt-sym-btn:hover,
+    .dark .medt-tab:hover,
+    .dark .medt-btn-icon:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 12%, transparent) !important;
+        border-color: var(--color-primary-500, #f59e0b) !important;
+        color: var(--color-primary-400, #fbbf24) !important;
+    }
+
+    .dark .medt-tab.is-active,
+    .dark .medt-mode-btn.is-active,
+    .dark .medt-open-btn,
+    .dark .medt-copy-btn,
+    .dark .medt-tip-badge,
+    .dark .medt-panel-icon {
+        background: var(--color-primary-600, #d97706) !important;
+        color: #fff !important;
+    }
+
+    .dark .medt-open-btn:hover,
+    .dark .medt-copy-btn:hover:not(:disabled) {
+        background: var(--color-primary-700, #b45309) !important;
+    }
+
+    .dark .medt-textarea:focus {
+        border-color: var(--color-primary-500, #f59e0b) !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #f59e0b) 15%, transparent) !important;
+    }
+
+    .dark .medt-preview {
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 6%, transparent) !important;
+        border-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 25%, transparent) !important;
+    }
+
+    /* ════════════════════════════════════════
+       FULL EDITOR MODAL POLISH
+       ════════════════════════════════════════ */
+    .medt-dialog {
+        border: 1px solid #e5e7eb !important;
+        background: #ffffff !important;
+        box-shadow: 0 24px 50px -16px rgba(15, 23, 42, .35) !important;
+    }
+
+    .medt-dialog-head {
+        background: linear-gradient(135deg, var(--color-primary-700, #b45309), var(--color-primary-600, #d97706)) !important;
+        border-bottom: 1px solid color-mix(in srgb, var(--color-primary-500, #f59e0b) 40%, transparent) !important;
+    }
+
+    .medt-dialog-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    .medt-dialog-icon {
+        background: rgba(255, 255, 255, .2) !important;
+        color: #ffffff !important;
+    }
+
+    .medt-close {
+        background: rgba(255, 255, 255, .14) !important;
+        border: 1px solid rgba(255, 255, 255, .25) !important;
+        color: #ffffff !important;
+    }
+
+    .medt-close:hover {
+        background: rgba(255, 255, 255, .25) !important;
+    }
+
+    .medt-sym-panel {
+        background: #f8fafc !important;
+        border-right-color: #e5e7eb !important;
+    }
+
+    .medt-compose {
+        background: #ffffff !important;
+    }
+
+    .medt-label {
+        color: #1f2937 !important;
+    }
+
+    .medt-label-sub,
+    .medt-input-hint {
+        color: #6b7280 !important;
+    }
+
+    .medt-textarea {
+        background: #f9fafb !important;
+        border-color: #cbd5e1 !important;
+        color: #111827 !important;
+    }
+
+    .medt-btn-icon,
+    .medt-btn-clear {
+        background: #f8fafc !important;
+        border-color: #d1d5db !important;
+        color: #4b5563 !important;
+    }
+
+    .medt-preview {
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 5%, #ffffff) !important;
+        border-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 28%, #e5e7eb) !important;
+    }
+
+    .medt-mode-toggle {
+        background: #f3f4f6 !important;
+        border: 1px solid #e5e7eb !important;
+    }
+
+    .medt-mode-btn {
+        color: #4b5563 !important;
+    }
+
+    .dark .medt-dialog {
+        background: #111827 !important;
+        border-color: #374151 !important;
+        box-shadow: 0 26px 56px -18px rgba(0, 0, 0, .75) !important;
+    }
+
+    .dark .medt-dialog-head {
+        background: linear-gradient(135deg, var(--color-primary-900, #78350f), var(--color-primary-700, #b45309)) !important;
+        border-bottom-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 35%, #111827) !important;
+    }
+
+    .dark .medt-sym-panel {
+        background: #0a121e !important;
+        border-right-color: #334155 !important;
+    }
+
+    .dark .medt-compose {
+        background: #0a121e !important;
+    }
+
+    .dark .medt-label {
+        color: #e5e7eb !important;
+    }
+
+    .dark .medt-label-sub,
+    .dark .medt-input-hint {
+        color: #9ca3af !important;
+    }
+
+    .dark .medt-textarea {
+        background: #0b1220 !important;
+        border-color: #334155 !important;
+        color: #f3f4f6 !important;
+    }
+
+    .dark .medt-btn-icon,
+    .dark .medt-btn-clear {
+        background: #1f2937 !important;
+        border-color: #374151 !important;
+        color: #d1d5db !important;
+    }
+
+    .dark .medt-preview {
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 7%, #111827) !important;
+        border-color: color-mix(in srgb, var(--color-primary-500, #f59e0b) 22%, #374151) !important;
+    }
+
+    .dark .medt-mode-toggle {
+        background: #1f2937 !important;
+        border-color: #374151 !important;
+    }
+
+    /* Dark mode readability fix for left menu tabs */
+    .dark .medt-tab {
+        background: #1f2937 !important;
+        border-color: #334155 !important;
+        color: #e5e7eb !important;
+    }
+
+    .dark .medt-tab:hover {
+        background: color-mix(in srgb, var(--color-primary-500, #f59e0b) 18%, #1f2937) !important;
+        border-color: var(--color-primary-400, #fbbf24) !important;
+        color: #ffffff !important;
+    }
+
+    .dark .medt-tab.is-active {
+        background: var(--color-primary-500, #f59e0b) !important;
+        border-color: var(--color-primary-400, #fbbf24) !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary-500, #f59e0b) 45%, transparent) inset !important;
+    }
+
+    .dark .medt-tab-note {
+        color: #cbd5e1 !important;
+    }
+
+    /* Dark mode readability fix for template items in symbol list */
+    .dark .medt-sym-btn.is-tpl {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    .dark .medt-sym-btn.is-tpl .medt-sym-math {
+        background: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    .dark .medt-sym-btn.is-tpl .medt-sym-name {
+        color: #e2e8f0 !important;
+        font-weight: 700 !important;
+    }
+
+    .dark .medt-sym-btn.is-tpl:hover .medt-sym-name {
+        color: #ffffff !important;
     }
 </style>
