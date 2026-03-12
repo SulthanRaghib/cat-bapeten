@@ -17,12 +17,12 @@ class QuestionUnitForm
     {
         return $schema
             ->components([
-                Section::make('Informasi Unit Soal')
-                    ->description('Lengkapi data unit soal berikut. Unit mengelompokkan soal-soal berdasarkan kompetensi atau bidang materi.')
+                Section::make(__('Question Unit Information'))
+                    ->description(__('Complete the question unit data. Units group questions by competency or subject area.'))
                     ->icon('heroicon-o-folder')
                     ->schema([
                         Select::make('exam_type_id')
-                            ->label('Tipe Ujian')
+                            ->label(__('Exam Type'))
                             ->validationAttribute('Tipe Ujian')
                             ->options(fn() => ExamType::query()
                                 ->where('is_active', true)
@@ -32,19 +32,20 @@ class QuestionUnitForm
                             ->searchable()
                             ->preload()
                             ->native(false)
-                            ->helperText('Unit ini akan terikat pada tipe ujian yang dipilih.'),
+                            ->helperText(__('This unit will be bound to the selected exam type.')),
 
                         TextInput::make('name')
-                            ->label('Nama Unit')
+                            ->label(__('Unit Name'))
                             ->validationAttribute('Nama Unit')
-                            ->placeholder('cth: Proteksi Radiasi, Keselamatan Nuklir')
+                            ->placeholder(__('e.g. Radiation Protection, Nuclear Safety'))
                             ->required()
                             ->maxLength(255),
 
                         Toggle::make('is_active')
-                            ->label('Aktif')
+                            ->label(__('Active'))
                             ->default(true)
-                            ->helperText('Unit yang tidak aktif tidak akan muncul di pilihan soal.'),
+                            ->helperText(__('Inactive units will not appear in question selections.')),
+
                     ])
                     ->columns(2),
             ]);

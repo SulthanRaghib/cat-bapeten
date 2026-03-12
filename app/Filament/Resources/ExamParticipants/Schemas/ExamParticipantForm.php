@@ -27,29 +27,29 @@ class ExamParticipantForm
                 /* ===============================
                  * STEP 1 — PAKET UJIAN
                  * =============================== */
-                Section::make('Paket Ujian')
-                    ->description('Langkah 1: Pilih paket ujian.')
+                Section::make(__('Exam Package'))
+                    ->description(__('Step 1: Select the exam package.'))
                     ->schema([
                         Select::make('exam_package_id')
-                            ->label('Paket Ujian')
+                            ->label(__('Exam Package'))
                             ->relationship('examPackage', 'title')
                             ->searchable()
                             ->preload()
                             ->required()
                             ->live()
-                            ->placeholder('Pilih Paket Ujian...')
+                            ->placeholder(__('Select Exam Package...'))
                             ->afterStateUpdated(fn(Set $set) => $set('user_id', null)),
                     ]),
 
                 /* ===============================
                  * STEP 2 — PESERTA
                  * =============================== */
-                Section::make('Peserta Ujian')
-                    ->description('Langkah 2: Tentukan peserta ujian.')
+                Section::make(__('Exam Participant'))
+                    ->description(__('Step 2: Determine the exam participant.'))
                     ->visible(fn(Get $get) => filled($get('exam_package_id')))
                     ->schema([
                         Select::make('user_id')
-                            ->label('Peserta')
+                            ->label(__('Participant'))
                             ->searchable()
                             ->preload()
                             ->required()
@@ -57,8 +57,8 @@ class ExamParticipantForm
                             ->noOptionsMessage(
                                 fn(Get $get) =>
                                 $get('exam_package_id')
-                                    ? 'Semua peserta untuk paket ini sudah terdaftar'
-                                    : 'Pilih paket ujian terlebih dahulu'
+                                    ? __('All participants for this package are already registered')
+                                    : __('Select an exam package first')
                             )
 
                             /* 🔑 PENTING: SUPAYA EDIT TAMPIL NAMA */
@@ -87,22 +87,22 @@ class ExamParticipantForm
                             ->helperText(
                                 fn(string $operation) =>
                                 $operation === 'create'
-                                    ? 'Bisa memilih lebih dari satu peserta.'
-                                    : 'Peserta tidak dapat diubah.'
+                                    ? __('Can select more than one participant.')
+                                    : __('Participant cannot be changed.')
                             ),
                     ]),
 
                 /* ===============================
                  * STEP 3 — TOKEN & STATUS
                  * =============================== */
-                Section::make('Token & Status Ujian')
-                    ->description('Pengaturan teknis ujian.')
+                Section::make(__('Token & Exam Status'))
+                    ->description(__('Technical exam settings.'))
                     ->visibleOn('edit')
                     ->schema([
                         Grid::make(2)->schema([
 
                             TextInput::make('token')
-                                ->label('Token Ujian')
+                                ->label(__('Exam Token'))
                                 ->disabled()
                                 ->dehydrated()
                                 ->suffixActions([
@@ -111,11 +111,11 @@ class ExamParticipantForm
                                     Action::make('copyToken')
                                         ->icon('heroicon-m-clipboard')
                                         ->color('gray')
-                                        ->tooltip('Salin token ke clipboard')
+                                        ->tooltip(__('Copy token to clipboard'))
                                         ->action(function ($state) {
                                             Notification::make()
-                                                ->title('Token disalin')
-                                                ->body("Token: {$state}")
+                                                ->title(__('Token copied'))
+                                                ->body(__('Token: :token', ['token' => $state]))
                                                 ->info()
                                                 ->send();
                                         }),
@@ -124,11 +124,11 @@ class ExamParticipantForm
                                     Action::make('resetToken')
                                         ->icon('heroicon-m-arrow-path')
                                         ->color('warning')
-                                        ->tooltip('Reset token ujian')
+                                        ->tooltip(__('Reset exam token'))
                                         ->requiresConfirmation()
-                                        ->modalHeading('Reset Token Ujian')
+                                        ->modalHeading(__('Reset Exam Token'))
                                         ->modalDescription(
-                                            'Token lama akan dinonaktifkan dan diganti token baru. Peserta harus menggunakan token baru.'
+                                            __('The old token will be deactivated and replaced with a new token. The participant must use the new token.')
                                         )
                                         ->action(function ($record, Set $set) {
                                             $newToken = strtoupper(Str::random(6));
@@ -140,8 +140,8 @@ class ExamParticipantForm
                                             $set('token', $newToken);
 
                                             Notification::make()
-                                                ->title('Token berhasil diperbarui')
-                                                ->body("Token baru: {$newToken}")
+                                                ->title(__('Token successfully updated'))
+                                                ->body(__('New token: :token', ['token' => $newToken]))
                                                 ->success()
                                                 ->persistent()
                                                 ->send();
@@ -152,17 +152,17 @@ class ExamParticipantForm
                                 ->label(
                                     fn(Get $get) =>
                                     $get('is_active')
-                                        ? 'Peserta AKTIF (Boleh Ikut Ujian)'
-                                        : 'Peserta NONAKTIF (Diblokir)'
+                                        ? __('Participant ACTIVE (Can Take Exam)')
+                                        : __('Participant INACTIVE (Blocked)')
                                 )
-                                ->live() // ⬅️ WAJIB agar reactive
+                                ->live()
                                 ->onColor('success')
                                 ->offColor('danger')
                                 ->helperText(
                                     fn(Get $get) =>
                                     $get('is_active')
-                                        ? 'Peserta dapat login dan mengerjakan ujian.'
-                                        : 'Peserta tidak dapat login atau mengerjakan ujian.'
+                                        ? __('Participant can log in and take the exam.')
+                                        : __('Participant cannot log in or take the exam.')
                                 )
                                 ->afterStateUpdated(function (bool $state, $record) {
                                     // Update langsung ke database
@@ -174,13 +174,13 @@ class ExamParticipantForm
                                     Notification::make()
                                         ->title(
                                             $state
-                                                ? 'Peserta diaktifkan'
-                                                : 'Peserta dinonaktifkan'
+                                                ? __('Participant activated')
+                                                : __('Participant deactivated')
                                         )
                                         ->body(
                                             $state
-                                                ? 'Peserta sekarang bisa mengikuti ujian.'
-                                                : 'Peserta tidak dapat mengikuti ujian.'
+                                                ? __('Participant can now take the exam.')
+                                                : __('Participant cannot take the exam.')
                                         )
                                         ->color($state ? 'success' : 'danger')
                                         ->send();
@@ -189,7 +189,7 @@ class ExamParticipantForm
                         ]),
 
                         Placeholder::make('created_at')
-                            ->label('Dibuat Pada')
+                            ->label(__('Created At'))
                             ->content(
                                 fn($record) =>
                                 $record?->created_at?->translatedFormat('d F Y, H:i') ?? '-'

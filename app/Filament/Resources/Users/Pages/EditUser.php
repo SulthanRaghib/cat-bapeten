@@ -10,15 +10,20 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
-    protected static ?string $title = 'Edit Pengguna';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Edit User');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Pengguna?')
-                ->modalDescription('Data pengguna ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete User?'))
+                ->modalDescription(__('This user data will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -26,10 +31,10 @@ class EditUser extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

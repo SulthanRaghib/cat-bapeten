@@ -10,15 +10,20 @@ class EditExamParticipant extends EditRecord
 {
     protected static string $resource = ExamParticipantResource::class;
 
-    protected static ?string $title = 'Edit Peserta Ujian';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Edit Exam Participant');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Peserta Ujian?')
-                ->modalDescription('Data peserta ujian ini beserta seluruh sesi dan jawaban ujiannya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete Exam Participant?'))
+                ->modalDescription(__('This exam participant data along with all their exam sessions and answers will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -26,10 +31,10 @@ class EditExamParticipant extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

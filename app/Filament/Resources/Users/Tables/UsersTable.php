@@ -22,22 +22,22 @@ class UsersTable
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nama Pengguna')
+                    ->label(__('User Name'))
                     ->description(fn($record): string => $record->email ?? '—')
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 TextColumn::make('nip')
-                    ->label('NIP')
+                    ->label(__('NIP'))
                     ->searchable()
                     ->sortable()
                     ->copyable()
-                    ->copyMessage('NIP disalin!')
+                    ->copyMessage(__('NIP Copied!'))
                     ->copyMessageDuration(2000),
 
                 TextColumn::make('role')
-                    ->label('Peran')
+                    ->label(__('Role'))
                     ->badge()
                     ->icon(static function (string $state): string {
                         return match ($state) {
@@ -61,35 +61,35 @@ class UsersTable
                         $labels = [
                             'super_admin' => 'Super Admin',
                             'admin'       => 'Administrator',
-                            'observer'    => 'Pengawas Ujian',
-                            'user'        => 'Peserta Ujian',
+                            'observer'    => __('Exam Observer'),
+                            'user'        => __('Exam Participant'),
                         ];
 
                         return $labels[$state] ?? ucwords(str_replace('_', ' ', $state));
                     }),
 
                 TextColumn::make('email')
-                    ->label('Email')
+                    ->label(__('Email'))
                     ->searchable()
                     ->copyable()
-                    ->copyMessage('Email disalin!')
+                    ->copyMessage(__('Email Copied!'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
-                    ->label('Terdaftar Sejak')
+                    ->label(__('Registered Since'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('role')
-                    ->label('Peran')
+                    ->label(__('Role'))
                     ->options(static function (): array {
                         $labels = [
                             'super_admin' => 'Super Admin',
                             'admin'       => 'Administrator',
-                            'observer'    => 'Pengawas Ujian',
-                            'user'        => 'Peserta Ujian',
+                            'observer'    => __('Exam Observer'),
+                            'user'        => __('Exam Participant'),
                         ];
 
                         return Role::query()
@@ -104,16 +104,16 @@ class UsersTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Pengguna')
+                        ->label(__('Edit User'))
                         ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
-                        ->label('Hapus Pengguna')
+                        ->label(__('Delete User'))
                         ->icon('heroicon-m-trash')
-                        ->modalHeading('Hapus Pengguna?')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
+                        ->modalHeading(__('Delete User?'))
+                        ->modalDescription(__('Are you sure you want to delete this user? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -121,14 +121,14 @@ class UsersTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('Hapus Pengguna Terpilih')
-                        ->modalHeading('Hapus Pengguna Terpilih')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus pengguna yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected Users'))
+                        ->modalHeading(__('Delete Selected Users'))
+                        ->modalDescription(__('Are you sure you want to delete the selected users? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ])
-            ->emptyStateHeading('Belum ada pengguna')
-            ->emptyStateDescription('Tambahkan pengguna baru untuk memberikan akses ke sistem.')
+            ->emptyStateHeading(__('No users yet'))
+            ->emptyStateDescription(__('Add new users to provide access to the system.'))
             ->emptyStateIcon('heroicon-o-users');
     }
 }

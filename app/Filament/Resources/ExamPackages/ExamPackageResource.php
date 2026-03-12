@@ -24,11 +24,22 @@ class ExamPackageResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $modelLabel = 'Paket Ujian';
-    protected static ?string $pluralModelLabel = 'Paket Ujian';
-    protected static ?string $navigationLabel = 'Paket Ujian';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Manajemen Ujian';
+    public static function getModelLabel(): string
+    {
+        return __('Exam Package');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Exam Packages');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Exam Packages');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Exam Management');
+    }
 
     public static function form(Schema $schema): Schema
     {

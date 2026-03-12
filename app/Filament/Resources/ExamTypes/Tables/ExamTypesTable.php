@@ -20,14 +20,14 @@ class ExamTypesTable
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nama Tipe Ujian')
-                    ->description(fn(ExamType $record): string => 'Kode: ' . $record->code)
+                    ->label(__('Exam Type Name'))
+                    ->description(fn(ExamType $record): string => __('Code: :code', ['code' => $record->code]))
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 TextColumn::make('evaluation_method')
-                    ->label('Metode Evaluasi')
+                    ->label(__('Evaluation Method'))
                     ->badge()
                     ->icon(fn(string $state): string => match ($state) {
                         'correct_wrong' => 'heroicon-m-check-badge',
@@ -40,44 +40,44 @@ class ExamTypesTable
                         default         => 'gray',
                     })
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'correct_wrong' => 'Benar / Salah',
-                        'weighted'      => 'Berbobot',
+                        'correct_wrong' => __('Correct / Incorrect'),
+                        'weighted'      => __('Weighted'),
                         default         => $state,
                     })
                     ->sortable(),
 
                 TextColumn::make('questions_count')
-                    ->label('Jumlah Soal')
+                    ->label(__('Questions Count'))
                     ->counts('questions')
                     ->icon('heroicon-m-document-text')
                     ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('exam_packages_count')
-                    ->label('Jumlah Paket')
+                    ->label(__('Packages Count'))
                     ->counts('examPackages')
                     ->icon('heroicon-m-rectangle-stack')
                     ->alignCenter()
                     ->sortable(),
 
                 IconColumn::make('is_active')
-                    ->label('Aktif')
+                    ->label(__('Active'))
                     ->boolean()
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
+                    ->label(__('Created At'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->label('Edit Tipe Ujian')
+                    ->label(__('Edit Exam Type'))
                     ->icon('heroicon-m-pencil-square'),
             ])
-            ->emptyStateHeading('Belum ada tipe ujian')
-            ->emptyStateDescription('Tambahkan tipe ujian seperti Teknis atau Mansoskul untuk mulai mengelola paket ujian.')
+            ->emptyStateHeading(__('No exam types yet'))
+            ->emptyStateDescription(__('Add an exam type such as Technical or Mansoskul to start managing exam packages.'))
             ->emptyStateIcon('heroicon-o-academic-cap');
     }
 }

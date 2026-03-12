@@ -38,10 +38,20 @@ use Illuminate\Support\Str;
 class QuestionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'questions';
-    protected static ?string $title = 'Soal Ujian';
-    protected static ?string $modelLabel = 'Soal';
+    protected static ?string $title = null;
+    protected static ?string $modelLabel = null;
 
     // ── Helpers to detect exam type of the parent package ──
+
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('Exam Questions');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Question');
+    }
 
     protected function getPackageExamType(): ?ExamType
     {
@@ -72,23 +82,23 @@ class QuestionsRelationManager extends RelationManager
             ->recordTitleAttribute('question_text')
             ->columns([
                 TextColumn::make('questionUnit.name')
-                    ->label('Unit')
+                    ->label(__('Unit'))
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('questionSubUnit.name')
-                    ->label('Sub Unit')
+                    ->label(__('Sub Unit'))
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 // TK. Kesulitan — hanya tampil untuk Teknis (correct_wrong)
                 TextColumn::make('category')
-                    ->label('TK. Kesulitan')
+                    ->label(__('Difficulty'))
                     ->badge()
                     ->formatStateUsing(fn($state) => match ($state) {
-                        'easy'   => 'Mudah',
-                        'medium' => 'Sedang',
-                        'hard'   => 'Sulit',
+                        'easy'   => __('Easy'),
+                        'medium' => __('Medium'),
+                        'hard'   => __('Hard'),
                         default  => '-',
                     })
                     ->color(fn($state) => match ($state) {
@@ -101,14 +111,14 @@ class QuestionsRelationManager extends RelationManager
                     ->toggleable(),
 
                 TextColumn::make('question_text')
-                    ->label('Soal')
+                    ->label(__('Question'))
                     ->html()
                     ->formatStateUsing(fn($state) => Str::limit(strip_tags((string) $state), 80)),
             ])
             ->filters([
                 // Unit filter — hanya tampilkan unit yang terkait dengan tipe ujian paket ini
                 SelectFilter::make('question_unit_id')
-                    ->label('Unit')
+                    ->label(__('Unit'))
                     ->options(function (): array {
                         $examTypeId = $this->getPackageExamType()?->id;
 
@@ -122,11 +132,11 @@ class QuestionsRelationManager extends RelationManager
                             ->pluck('name', 'id')
                             ->toArray();
                     })
-                    ->placeholder('Semua Unit'),
+                    ->placeholder(__('All Units')),
 
                 // Sub-unit filter
                 SelectFilter::make('question_sub_unit_id')
-                    ->label('Sub Unit')
+                    ->label(__('Sub Unit'))
                     ->options(function (): array {
                         $examTypeId = $this->getPackageExamType()?->id;
 
@@ -140,13 +150,13 @@ class QuestionsRelationManager extends RelationManager
                             ->pluck('name', 'id')
                             ->toArray();
                     })
-                    ->placeholder('Semua Sub Unit'),
+                    ->placeholder(__('All Sub Units')),
 
                 // TK. Kesulitan — hanya tampil untuk Teknis
                 SelectFilter::make('category')
-                    ->label('TK. Kesulitan')
-                    ->options(['easy' => 'Mudah', 'medium' => 'Sedang', 'hard' => 'Sulit'])
-                    ->placeholder('Semua')
+                    ->label(__('Difficulty'))
+                    ->options(['easy' => __('Easy'), 'medium' => __('Medium'), 'hard' => __('Hard')])
+                    ->placeholder(__('All'))
                     ->visible(fn(): bool => $this->isTeknis()),
             ])
             ->headerActions([
@@ -157,32 +167,32 @@ class QuestionsRelationManager extends RelationManager
                     Action::make('view')
                         ->icon('heroicon-m-eye')
                         ->color('gray')
-                        ->label('Lihat Detail')
-                        ->modalHeading('Detail Pertanyaan')
+                        ->label(__('View Detail'))
+                        ->modalHeading(__('Question Detail'))
                         ->modalContent(fn($record) => view('filament.modals.question-detail', [
                             'record'  => $record,
                             'manager' => $this,
                         ]))
                         ->modalSubmitAction(false)
-                        ->modalCancelActionLabel('Tutup'),
+                        ->modalCancelActionLabel(__('Close')),
                     DetachAction::make()
-                        ->label('Hapus Soal')
-                        ->modalHeading('Hapus Soal dari Paket')
-                        ->modalDescription('Soal ini akan dihapus dari paket ujian, tetapi tetap ada di Bank Soal.')
-                        ->modalSubmitActionLabel('Ya, Hapus')
+                        ->label(__('Remove Question'))
+                        ->modalHeading(__('Remove Question from Package'))
+                        ->modalDescription(__('This question will be removed from the exam package but will remain in the Question Bank.'))
+                        ->modalSubmitActionLabel(__('Yes, Remove'))
                         ->after(fn() => $this->syncNabAfterChange()),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
             ])
             ->toolbarActions([
                 DetachBulkAction::make()
-                    ->label('Hapus Soal Terpilih')
-                    ->modalHeading('Hapus Soal Terpilih')
-                    ->modalDescription('Hapus soal-soal terpilih dari paket ujian ini?')
-                    ->modalSubmitActionLabel('Ya, Hapus')
+                    ->label(__('Remove Selected Questions'))
+                    ->modalHeading(__('Remove Selected Questions'))
+                    ->modalDescription(__('Remove selected questions from this exam package?'))
+                    ->modalSubmitActionLabel(__('Yes, Remove'))
                     ->after(fn() => $this->syncNabAfterChange()),
             ])
             ->reorderable('sort_order');
@@ -195,13 +205,13 @@ class QuestionsRelationManager extends RelationManager
     private function makeGenerateRandomAction(): Action
     {
         return Action::make('generate_random')
-            ->label('Acak Soal')
+            ->label(__('Random Questions'))
             ->icon('heroicon-o-arrow-path-rounded-square')
             ->color('primary')
-            ->modalHeading('Acak Soal Otomatis')
-            ->modalDescription('Tentukan jumlah soal yang ingin di-generate dari setiap unit & sub unit.')
+            ->modalHeading(__('Auto-Generate Random Questions'))
+            ->modalDescription(__('Specify the number of questions to generate from each unit & sub unit.'))
             ->modalWidth('3xl')
-            ->modalSubmitActionLabel('Acak Soal')
+            ->modalSubmitActionLabel(__('Generate Questions'))
             ->schema(fn() => $this->buildGenerateForm())
             ->action(fn(array $data) => $this->executeGenerate($data));
     }
@@ -218,7 +228,7 @@ class QuestionsRelationManager extends RelationManager
         if (! $examType) {
             return [
                 Placeholder::make('error')
-                    ->content('⚠ Paket ujian ini belum memiliki Tipe Ujian. Atur tipe ujian terlebih dahulu.')
+                    ->content(__('\u26a0 This exam package does not have an Exam Type. Please set the exam type first.'))
                     ->columnSpanFull(),
             ];
         }
@@ -243,7 +253,7 @@ class QuestionsRelationManager extends RelationManager
         $components = [];
 
         $components[] = Placeholder::make('stats_overview')
-            ->label('Ringkasan')
+            ->label(__('Summary'))
             ->content(new \Illuminate\Support\HtmlString(
                 '<div style="padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;color:#1e40af;">'
                     . '<strong>' . e($examType->name) . '</strong> &mdash; '
@@ -255,8 +265,8 @@ class QuestionsRelationManager extends RelationManager
 
         // ── Mode toggle ─────────────────────────────────────────────────
         $components[] = Toggle::make('use_unit_distribution')
-            ->label('Distribusi per Unit & Sub Unit')
-            ->helperText('Aktifkan untuk mengatur jumlah soal per unit. Nonaktifkan untuk input jumlah total saja.')
+            ->label(__('Distribute by Unit & Sub Unit'))
+            ->helperText(__('Enable to set question count per unit. Disable for a simple total count.'))
             ->default($units->isNotEmpty())
             ->live()
             ->columnSpanFull();
@@ -265,8 +275,8 @@ class QuestionsRelationManager extends RelationManager
         if ($examType->isWeighted()) {
             // Mansoskul: just total count
             $components[] = TextInput::make('total_count')
-                ->label('Jumlah Soal')
-                ->helperText("Tersedia: {$totalAvailable} soal")
+                ->label(__('Question Count'))
+                ->helperText(__('Available: :count questions', ['count' => $totalAvailable]))
                 ->numeric()
                 ->default(0)
                 ->minValue(0)
@@ -277,22 +287,22 @@ class QuestionsRelationManager extends RelationManager
             // Teknis: per category
             $catCounts = $this->getCategoryCounts($examType->id, $existingIds);
 
-            $components[] = Section::make('Jumlah per TK. Kesulitan')
-                ->description('Mode sederhana — tentukan jumlah per tingkat kesulitan.')
+            $components[] = Section::make(__('Count per Difficulty Level'))
+                ->description(__('Simple mode — specify count per difficulty level.'))
                 ->visible(fn(Get $get): bool => ! $get('use_unit_distribution'))
                 ->schema([
                     Grid::make(3)->schema([
                         TextInput::make('easy_count')
-                            ->label('Mudah')
-                            ->helperText("Tersedia: {$catCounts['easy']}")
+                            ->label(__('Easy'))
+                            ->helperText(__('Available: :count', ['count' => $catCounts['easy']]))
                             ->numeric()->default(0)->minValue(0)->maxValue($catCounts['easy']),
                         TextInput::make('medium_count')
-                            ->label('Sedang')
-                            ->helperText("Tersedia: {$catCounts['medium']}")
+                            ->label(__('Medium'))
+                            ->helperText(__('Available: :count', ['count' => $catCounts['medium']]))
                             ->numeric()->default(0)->minValue(0)->maxValue($catCounts['medium']),
                         TextInput::make('hard_count')
-                            ->label('Sulit')
-                            ->helperText("Tersedia: {$catCounts['hard']}")
+                            ->label(__('Hard'))
+                            ->helperText(__('Available: :count', ['count' => $catCounts['hard']]))
                             ->numeric()->default(0)->minValue(0)->maxValue($catCounts['hard']),
                     ]),
                 ]);
@@ -301,12 +311,12 @@ class QuestionsRelationManager extends RelationManager
         // ── UNIT DISTRIBUTION MODE ──────────────────────────────────────
         if ($units->isEmpty()) {
             $components[] = Placeholder::make('no_units_notice')
-                ->content('ℹ Belum ada Unit untuk tipe ujian ini. Buat Unit di menu Master Data terlebih dahulu.')
+                ->content(__('\u2139 No units found for this exam type. Please create units in Master Data first.'))
                 ->visible(fn(Get $get): bool => (bool) $get('use_unit_distribution'))
                 ->columnSpanFull();
         } else {
-            $components[] = Section::make('Distribusi per Unit')
-                ->description('Atur jumlah soal yang diambil dari setiap unit & sub unit.')
+            $components[] = Section::make(__('Distribute by Unit'))
+                ->description(__('Set the number of questions to draw from each unit & sub unit.'))
                 ->visible(fn(Get $get): bool => (bool) $get('use_unit_distribution'))
                 ->schema($this->buildUnitFields($examType, $units, $existingIds));
         }
@@ -318,8 +328,8 @@ class QuestionsRelationManager extends RelationManager
             ->count();
 
         if ($noUnitCount > 0) {
-            $components[] = Section::make('Soal Tanpa Unit')
-                ->description("Ada {$noUnitCount} soal yang belum ditetapkan unit-nya.")
+            $components[] = Section::make(__('Questions Without Unit'))
+                ->description(__('There are :count questions without an assigned unit.', ['count' => $noUnitCount]))
                 ->visible(fn(Get $get): bool => (bool) $get('use_unit_distribution'))
                 ->collapsed()
                 ->schema(
@@ -501,8 +511,8 @@ class QuestionsRelationManager extends RelationManager
         $this->syncNabAfterChange();
 
         Notification::make()
-            ->title('Berhasil')
-            ->body("Berhasil menambahkan {$idsToAttach->count()} soal secara acak ke paket ujian.")
+            ->title(__('Success'))
+            ->body(__(':count questions successfully added randomly to the exam package.', ['count' => $idsToAttach->count()]))
             ->success()
             ->send();
     }

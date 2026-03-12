@@ -9,24 +9,29 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
-    protected static ?string $title = 'Tambah Pengguna';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Add User');
+    }
 
     public function getBreadcrumb(): string
     {
-        return 'Tambah';
+        return __('Add');
     }
 
     protected function getFormActions(): array
     {
         return [
             $this->getCreateFormAction()
-                ->label('Simpan'),
+                ->label(__('Save')),
 
             $this->getCreateAnotherFormAction()
-                ->label('Simpan & Tambah Lagi'),
+                ->label(__('Save & Add Another')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

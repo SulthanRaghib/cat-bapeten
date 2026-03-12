@@ -35,7 +35,7 @@ class SelectionStageTypesTable
 
                 // Icon preview
                 IconColumn::make('icon')
-                    ->label('Ikon')
+                    ->label(__('Icon'))
                     ->icon(function (?string $state): string {
                         if (! $state) {
                             return 'heroicon-o-tag';
@@ -53,47 +53,47 @@ class SelectionStageTypesTable
                     ->width(60),
 
                 TextColumn::make('name')
-                    ->label('Nama Tahap')
+                    ->label(__('Stage Name'))
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 TextColumn::make('description')
-                    ->label('Keterangan')
+                    ->label(__('Description'))
                     ->placeholder('—')
                     ->limit(60)
                     ->wrap()
                     ->toggleable(),
 
                 ToggleColumn::make('is_active')
-                    ->label('Aktif')
+                    ->label(__('Active'))
                     ->alignCenter()
                     ->width(80),
 
                 TextColumn::make('updated_at')
-                    ->label('Diperbarui')
+                    ->label(__('Updated'))
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->label('Tambah Jenis Tahap')
+                    ->label(__('Add Stage Type'))
                     ->icon('heroicon-o-plus-circle'),
             ])
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Tahap')
+                        ->label(__('Edit Stage'))
                         ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
-                        ->label('Hapus Tahap')
+                        ->label(__('Delete Stage'))
                         ->icon('heroicon-m-trash')
-                        ->modalHeading('Hapus Jenis Tahap Seleksi?')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus jenis tahap ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
+                        ->modalHeading(__('Delete Selection Stage Type?'))
+                        ->modalDescription(__('Are you sure you want to delete this stage type? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -101,14 +101,14 @@ class SelectionStageTypesTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('Hapus Terpilih')
-                        ->modalHeading('Hapus Jenis Tahap Terpilih?')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus jenis tahap yang dipilih? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected'))
+                        ->modalHeading(__('Delete Selected Stage Types?'))
+                        ->modalDescription(__('Are you sure you want to delete the selected stage types? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ])
-            ->emptyStateHeading('Belum ada jenis tahap seleksi')
-            ->emptyStateDescription('Tambahkan jenis tahap seleksi yang digunakan dalam proses rekrutmen, seperti Wawancara, FGD, atau Presentasi.')
+            ->emptyStateHeading(__('No selection stage types yet'))
+            ->emptyStateDescription(__('Add selection stage types used in the recruitment process, such as Interview, FGD, or Presentation.'))
             ->emptyStateIcon('heroicon-o-queue-list');
     }
 }

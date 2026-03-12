@@ -48,13 +48,13 @@ class QuestionForm
         return $schema
             ->columns(1)
             ->components([
-                Section::make('Detail Pertanyaan')
-                    ->description('Lengkapi informasi soal berikut. Pilih tipe, unit, dan sub unit terlebih dahulu sebelum mengisi teks soal dan pilihan jawaban.')
+                Section::make(__('Question Details'))
+                    ->description(__('Fill in the question information. Select the type, unit, and sub unit first before filling in the question text and answer choices.'))
                     ->icon('heroicon-o-document-text')
                     ->columns(12)
                     ->schema([
                         Select::make('exam_type_id')
-                            ->label('Tipe Soal')
+                            ->label(__('Question Type'))
                             ->validationAttribute('Tipe Soal')
                             ->options(fn() => ExamType::query()
                                 ->where('is_active', true)
@@ -74,7 +74,7 @@ class QuestionForm
                         // ── Dynamic Unit / Sub-Unit (master-data driven) ────────
 
                         Select::make('question_unit_id')
-                            ->label('Unit (Materi/Bab)')
+                            ->label(__('Unit (Material/Chapter)'))
                             ->validationAttribute('Unit Soal')
                             ->options(fn(Get $get) => QuestionUnit::query()
                                 ->where('exam_type_id', $get('exam_type_id'))
@@ -92,7 +92,7 @@ class QuestionForm
                             ->afterStateUpdated(fn(Set $set) => $set('question_sub_unit_id', null))
                             ->createOptionForm([
                                 TextInput::make('name')
-                                    ->label('Nama Unit Baru')
+                                    ->label(__('New Unit Name'))
                                     ->required()
                                     ->maxLength(255),
                             ])
@@ -100,7 +100,7 @@ class QuestionForm
                                 $examTypeId = $get('exam_type_id');
 
                                 if (! $examTypeId) {
-                                    throw new \RuntimeException('Pilih Tipe Soal terlebih dahulu sebelum membuat Unit baru.');
+                                    throw new \RuntimeException(__('Select Question Type first before creating a new Unit.'));
                                 }
 
                                 return QuestionUnit::create([
@@ -111,28 +111,28 @@ class QuestionForm
                             })
                             ->createOptionAction(function ($action) {
                                 return $action
-                                    ->label('Tambah Unit Baru')
-                                    ->modalHeading('Buat Unit Baru')
-                                    ->modalSubmitActionLabel('Simpan Unit')
+                                    ->label(__('Add New Unit'))
+                                    ->modalHeading(__('Create New Unit'))
+                                    ->modalSubmitActionLabel(__('Save Unit'))
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-plus')
                                     ->color('primary');
                             })
                             ->editOptionForm([
                                 TextInput::make('name')
-                                    ->label('Nama Unit')
+                                    ->label(__('Unit Name'))
                                     ->required()
                                     ->maxLength(255),
                                 Toggle::make('is_active')
-                                    ->label('Aktif')
+                                    ->label(__('Active'))
                                     ->hidden()
                                     ->default(true),
                             ])
                             ->editOptionAction(function ($action) {
                                 return $action
-                                    ->label('Edit Unit')
-                                    ->modalHeading('Ubah Data Unit')
-                                    ->modalSubmitActionLabel('Perbarui')
+                                    ->label(__('Edit Unit'))
+                                    ->modalHeading(__('Edit Unit Data'))
+                                    ->modalSubmitActionLabel(__('Update'))
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-pencil')
                                     ->color('warning');
@@ -155,13 +155,13 @@ class QuestionForm
                             })
                             ->noOptionsMessage(function (Get $get): string {
                                 if (! filled($get('exam_type_id'))) {
-                                    return 'Pilih Tipe Soal terlebih dahulu';
+                                    return __('Select Question Type first');
                                 }
-                                return 'Tidak ada unit aktif untuk tipe soal ini. Silakan buat unit terlebih dahulu.';
+                                return __('No active units for this question type. Please create a unit first.');
                             }),
 
                         Select::make('question_sub_unit_id')
-                            ->label('Sub Unit (Sub-Bab)')
+                            ->label(__('Sub Unit (Sub-Chapter)'))
                             ->validationAttribute('Sub Unit Soal')
                             ->options(fn(Get $get) => QuestionSubUnit::query()
                                 ->where('question_unit_id', $get('question_unit_id'))
@@ -175,18 +175,18 @@ class QuestionForm
                             ->required(fn(Get $get) => filled($get('question_unit_id')))
                             ->visible(fn(Get $get): bool => filled($get('exam_type_id')))
                             ->disabled(fn(Get $get): bool => ! filled($get('question_unit_id')))
-                            ->helperText(fn(Get $get): ?string => ! filled($get('question_unit_id')) ? 'Pilih Unit terlebih dahulu' : null)
+                            ->helperText(fn(Get $get): ?string => ! filled($get('question_unit_id')) ? __('Select Unit first') : null)
                             ->createOptionForm([
                                 TextInput::make('name')
-                                    ->label('Nama Sub Unit Baru')
+                                    ->label(__('New Sub Unit Name'))
                                     ->required()
                                     ->maxLength(255),
                             ])
                             ->createOptionAction(function ($action) {
                                 return $action
-                                    ->label('Tambah Sub Unit Baru')
-                                    ->modalHeading('Buat Sub Unit Baru')
-                                    ->modalSubmitActionLabel('Simpan Sub Unit')
+                                    ->label(__('Add New Sub Unit'))
+                                    ->modalHeading(__('Create New Sub Unit'))
+                                    ->modalSubmitActionLabel(__('Save Sub Unit'))
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-plus')
                                     ->color('primary');
@@ -195,7 +195,7 @@ class QuestionForm
                                 $questionUnitId = $get('question_unit_id');
 
                                 if (! $questionUnitId) {
-                                    throw new \RuntimeException('Pilih Unit terlebih dahulu sebelum membuat Sub Unit baru.');
+                                    throw new \RuntimeException(__('Select Unit first before creating a new Sub Unit.'));
                                 }
 
                                 return QuestionSubUnit::create([
@@ -205,15 +205,15 @@ class QuestionForm
                             })
                             ->editOptionForm([
                                 TextInput::make('name')
-                                    ->label('Nama Sub Unit')
+                                    ->label(__('Sub Unit Name'))
                                     ->required()
                                     ->maxLength(255),
                             ])
                             ->editOptionAction(function ($action) {
                                 return $action
-                                    ->label('Edit Sub Unit')
-                                    ->modalHeading('Ubah Data Sub Unit')
-                                    ->modalSubmitActionLabel('Perbarui')
+                                    ->label(__('Edit Sub Unit'))
+                                    ->modalHeading(__('Edit Sub Unit Data'))
+                                    ->modalSubmitActionLabel(__('Update'))
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-pencil')
                                     ->color('warning');
@@ -232,20 +232,20 @@ class QuestionForm
                             })
                             ->noOptionsMessage(function (Get $get): string {
                                 if (! filled($get('question_unit_id'))) {
-                                    return 'Pilih Unit terlebih dahulu';
+                                    return __('Select Unit first');
                                 }
-                                return 'Tidak ada sub unit untuk unit ini. Silakan buat sub unit terlebih dahulu.';
+                                return __('No sub units for this unit. Please create a sub unit first.');
                             }),
 
                         // ── Conditional: Technical difficulty category ──────────
 
                         Select::make('category')
-                            ->label('Tingkat Kesulitan')
+                            ->label(__('Difficulty Level'))
                             ->validationAttribute('Tingkat Kesulitan')
                             ->options([
-                                'easy'   => 'Mudah',
-                                'medium' => 'Sedang',
-                                'hard'   => 'Sulit',
+                                'easy'   => __('Easy'),
+                                'medium' => __('Medium'),
+                                'hard'   => __('Hard'),
                             ])
                             ->live()
                             ->visible(fn(Get $get) => self::getEvaluationMethod($get) === 'correct_wrong')
@@ -255,12 +255,12 @@ class QuestionForm
 
                     ]),
 
-                Section::make('Isi Soal & Pembahasan')
+                Section::make(__('Question Content & Discussion'))
                     ->schema([
                         View::make('filament.components.math-helper'),
 
                         RichEditor::make('question_text')
-                            ->label('Pertanyaan')
+                            ->label(__('Question'))
                             ->required()
                             ->live(debounce: '1500ms')
                             ->fileAttachmentsDisk('public')
@@ -270,15 +270,15 @@ class QuestionForm
                         View::make('filament.components.image-insert-widget'),
 
                         RichEditor::make('explanation')
-                            ->label('Pembahasan Jawaban')
+                            ->label(__('Answer Discussion'))
                             ->fileAttachmentsDisk('public')
                             ->fileAttachmentsDirectory('question-images')
                             ->columnSpanFull()
                             ->hidden(),
                     ]),
 
-                Section::make('Jawaban')
-                    ->description('Tambahkan pilihan jawaban. Untuk soal Teknis, tandai satu jawaban sebagai kunci. Untuk Mansoskul, isi bobot poin tiap opsi.')
+                Section::make(__('Answers'))
+                    ->description(__('Add answer choices. For Technical questions, mark one answer as the key. For Mansoskul, fill in the point weight for each option.'))
                     ->icon('heroicon-o-list-bullet')
                     ->schema([
                         Repeater::make('options')
@@ -286,7 +286,7 @@ class QuestionForm
                             ->afterStateUpdated(function () {})
                             ->schema([
                                 RichEditor::make('answer_text')
-                                    ->label('Teks Jawaban')
+                                    ->label(__('Answer Text'))
                                     ->required()
                                     ->live(debounce: '2000ms')
                                     ->fileAttachmentsDisk('public')
@@ -297,14 +297,14 @@ class QuestionForm
 
                                 // correct_wrong: Correct/Incorrect toggle
                                 Toggle::make('is_correct')
-                                    ->label('Kunci Jawaban (Benar = 1 Poin)')
+                                    ->label(__('Answer Key (Correct = 1 Point)'))
                                     ->default(false)
                                     ->visible(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'correct_wrong')
                                     ->reactive(),
 
                                 // weighted: Explicit Score input
                                 TextInput::make('score')
-                                    ->label('Bobot Nilai')
+                                    ->label(__('Score Weight'))
                                     ->numeric()
                                     ->live(onBlur: true)
                                     ->visible(fn(Get $get) => self::getEvaluationMethod($get, '../../') === 'weighted')
@@ -322,8 +322,8 @@ class QuestionForm
                     ]),
 
                 // ── Live Preview ──────────────────────────────────────────
-                Section::make('Pratinjau Soal')
-                    ->description('Tampilan langsung seperti yang dilihat peserta saat ujian. Diperbarui otomatis setiap kali Anda mengisi form di atas.')
+                Section::make(__('Question Preview'))
+                    ->description(__('Live view as participants see during the exam. Updated automatically as you fill in the form above.'))
                     ->icon('heroicon-o-eye')
                     ->collapsible()
                     ->schema([

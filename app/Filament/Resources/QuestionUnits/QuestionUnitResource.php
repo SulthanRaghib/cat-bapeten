@@ -24,14 +24,22 @@ class QuestionUnitResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $modelLabel = 'Unit Soal';
-
-    protected static ?string $pluralModelLabel = 'Unit Soal';
-
-    protected static ?string $navigationLabel = 'Unit Soal';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Data Master';
-
+    public static function getModelLabel(): string
+    {
+        return __('Question Unit');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Question Units');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Question Units');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema

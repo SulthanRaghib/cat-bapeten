@@ -17,18 +17,18 @@ class UserForm
     {
         return $schema
             ->components([
-                Section::make('Informasi Pengguna')
-                    ->description('Lengkapi data pengguna berikut. Password hanya perlu diisi saat menambahkan pengguna baru atau ingin menggantinya.')
+                Section::make(__('User Information'))
+                    ->description(__('Complete the user data below. Password only needs to be filled when adding a new user or when changing it.'))
                     ->icon('heroicon-o-user-circle')
                     ->schema([
                         TextInput::make('name')
-                            ->label('Nama Lengkap')
+                            ->label(__('Full Name'))
                             ->validationAttribute('Nama Lengkap')
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('email')
-                            ->label('Alamat Email')
+                            ->label(__('Email Address'))
                             ->validationAttribute('Alamat Email')
                             ->email()
                             ->required()
@@ -39,17 +39,17 @@ class UserForm
                             ->validationAttribute('NIP')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->helperText('Nomor Induk Pegawai — harus unik.'),
+                            ->helperText(__('Employee ID Number — must be unique.')),
 
                         Select::make('role')
-                            ->label('Peran')
+                            ->label(__('Role'))
                             ->validationAttribute('Peran')
                             ->options(static function (): array {
                                 $labels = [
                                     'super_admin' => 'Super Admin',
                                     'admin'       => 'Administrator',
-                                    'observer'    => 'Pengawas Ujian',
-                                    'user'        => 'Peserta Ujian',
+                                    'observer'    => __('Exam Observer'),
+                                    'user'        => __('Exam Participant'),
                                 ];
 
                                 /** @var \App\Models\User|null $currentUser */
@@ -68,7 +68,7 @@ class UserForm
                                     ->toArray();
 
                                 // 'user' bukan Spatie role, tambahkan manual di akhir
-                                $options['user'] = 'Peserta Ujian';
+                                $options['user'] = __('Exam Participant');
 
                                 return $options;
                             })
@@ -76,12 +76,12 @@ class UserForm
                             ->required()
                             ->native(false)
                             ->searchable()
-                            ->helperText('Super Admin: akses penuh. Administrator: kelola ujian. Pengawas: hanya monitoring. Peserta: ikut ujian.'),
+                            ->helperText(__('Super Admin: full access. Administrator: manage exams. Observer: monitoring only. Participant: take exams.')),
 
                         DateTimePicker::make('email_verified_at')
-                            ->label('Tanggal Verifikasi Email')
+                            ->label(__('Email Verification Date'))
                             ->nullable()
-                            ->helperText('Kosongkan jika email belum diverifikasi.'),
+                            ->helperText(__('Leave empty if email is not yet verified.')),
 
                         TextInput::make('password')
                             ->label('Password')
@@ -94,7 +94,7 @@ class UserForm
                             ->dehydrated(fn(?string $state) => filled($state))
                             ->required(fn(string $operation): bool => $operation === 'create')
                             ->dehydrateStateUsing(fn(string $state): string => Hash::make($state))
-                            ->helperText('Kosongkan jika tidak ingin mengubah password.'),
+                            ->helperText(__('Leave empty if you do not want to change the password.')),
                     ])->columns(2),
             ]);
     }

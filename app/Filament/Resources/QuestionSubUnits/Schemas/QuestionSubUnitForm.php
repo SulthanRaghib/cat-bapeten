@@ -16,12 +16,12 @@ class QuestionSubUnitForm
     {
         return $schema
             ->components([
-                Section::make('Informasi Sub Unit Soal')
-                    ->description('Lengkapi data sub unit soal berikut. Sub unit merupakan klasifikasi lebih rinci di dalam sebuah unit soal.')
+                Section::make(__('Question Sub Unit Information'))
+                    ->description(__('Complete the question sub unit data. Sub units are a more detailed classification within a question unit.'))
                     ->icon('heroicon-o-folder-open')
                     ->schema([
                         Select::make('question_unit_id')
-                            ->label('Unit Soal')
+                            ->label(__('Question Unit'))
                             ->validationAttribute('Unit Soal')
                             ->options(fn() => QuestionUnit::query()
                                 ->where('is_active', true)
@@ -35,12 +35,12 @@ class QuestionSubUnitForm
                             ->searchable()
                             ->preload()
                             ->native(false)
-                            ->helperText('Sub unit ini akan terikat pada unit yang dipilih.'),
+                            ->helperText(__('This sub unit will be bound to the selected unit.')),
 
                         TextInput::make('name')
-                            ->label('Nama Sub Unit')
+                            ->label(__('Sub Unit Name'))
                             ->validationAttribute('Nama Sub Unit')
-                            ->placeholder('cth: Dosimetri, Keselamatan Transportasi')
+                            ->placeholder(__('e.g. Dosimetry, Transport Safety'))
                             ->required()
                             ->maxLength(255),
                     ])

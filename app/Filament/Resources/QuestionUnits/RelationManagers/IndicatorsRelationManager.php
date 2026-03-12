@@ -27,8 +27,18 @@ class IndicatorsRelationManager extends RelationManager
 {
     protected static string $relationship = 'indicators';
 
-    protected static ?string $title = 'Indikator NAB (Template)';
-    protected static ?string $modelLabel = 'Indikator';
+    protected static ?string $title = null;
+    protected static ?string $modelLabel = null;
+
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('NAB Indicators (Template)');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Indicator');
+    }
 
     // Hanya tampilkan tab ini untuk unit bertipe Mansoskul (weighted)
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
@@ -41,39 +51,39 @@ class IndicatorsRelationManager extends RelationManager
         return $form
             ->schema([
                 TextInput::make('name')
-                    ->label('Nama Level Indikator')
-                    ->validationAttribute('Nama Level Indikator')
-                    ->placeholder('cth: Memenuhi Standar')
+                    ->label(__('Indicator Level Name'))
+                    ->validationAttribute(__('Indicator Level Name'))
+                    ->placeholder(__('e.g. Meets Standard'))
                     ->required()
                     ->maxLength(255)
                     ->columnSpanFull(),
 
                 TextInput::make('min_score')
-                    ->label('Skor Minimum')
-                    ->validationAttribute('Skor Minimum')
+                    ->label(__('Minimum Score'))
+                    ->validationAttribute(__('Minimum Score'))
                     ->numeric()
                     ->required()
                     ->minValue(0),
 
                 TextInput::make('max_score')
-                    ->label('Skor Maksimum')
-                    ->validationAttribute('Skor Maksimum')
+                    ->label(__('Maximum Score'))
+                    ->validationAttribute(__('Maximum Score'))
                     ->numeric()
                     ->required()
                     ->minValue(0),
 
                 Toggle::make('is_passing')
-                    ->label('Termasuk Lulus NAB?')
-                    ->helperText('Tandai jika peserta dengan indikator ini dianggap lulus.')
+                    ->label(__('Passes NAB?'))
+                    ->helperText(__('Mark if participants with this indicator are considered to have passed.'))
                     ->default(false)
                     ->columnSpanFull(),
 
                 TextInput::make('sort_order')
-                    ->label('Urutan')
-                    ->validationAttribute('Urutan')
+                    ->label(__('Order'))
+                    ->validationAttribute(__('Order'))
                     ->numeric()
                     ->default(0)
-                    ->helperText('Urutan tampil — semakin kecil semakin atas.'),
+                    ->helperText(__('Display order — smaller values appear first.')),
             ])
             ->columns(2);
     }
@@ -86,63 +96,63 @@ class IndicatorsRelationManager extends RelationManager
             ->reorderable('sort_order')
             ->columns([
                 TextColumn::make('sort_order')
-                    ->label('#')
+                    ->label(__('#'))
                     ->sortable()
                     ->width('50px'),
 
                 TextColumn::make('name')
-                    ->label('Nama Indikator')
+                    ->label(__('Indicator Name'))
                     ->searchable()
                     ->weight('bold'),
 
                 TextColumn::make('min_score')
-                    ->label('Min')
+                    ->label(__('Min'))
                     ->numeric()
                     ->alignCenter(),
 
                 TextColumn::make('max_score')
-                    ->label('Maks')
+                    ->label(__('Max'))
                     ->numeric()
                     ->alignCenter(),
 
                 TextColumn::make('range')
-                    ->label('Rentang Skor')
+                    ->label(__('Score Range'))
                     ->getStateUsing(fn($record): string => "{$record->min_score} – {$record->max_score}")
                     ->badge()
                     ->color('gray'),
 
                 IconColumn::make('is_passing')
-                    ->label('Lulus?')
+                    ->label(__('Pass?'))
                     ->boolean()
                     ->alignCenter(),
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->label('Tambah Indikator')
+                    ->label(__('Add Indicator'))
                     ->icon('heroicon-o-plus')
-                    ->modalHeading('Tambah Indikator NAB')
-                    ->modalSubmitActionLabel('Simpan Indikator'),
+                    ->modalHeading(__('Add NAB Indicator'))
+                    ->modalSubmitActionLabel(__('Save Indicator')),
             ])
             ->recordActions([
                 EditAction::make()
                     ->iconButton()
-                    ->modalHeading('Ubah Data Indikator')
-                    ->modalSubmitActionLabel('Simpan Perubahan'),
+                    ->modalHeading(__('Edit Indicator Data'))
+                    ->modalSubmitActionLabel(__('Save Changes')),
                 DeleteAction::make()
                     ->iconButton()
-                    ->modalHeading('Hapus Indikator?')
-                    ->modalDescription('Apakah Anda yakin ingin menghapus indikator ini? Tindakan ini tidak dapat dibatalkan.')
-                    ->modalSubmitActionLabel('Ya, Hapus'),
+                    ->modalHeading(__('Delete Indicator?'))
+                    ->modalDescription(__('Are you sure you want to delete this indicator? This action cannot be undone.'))
+                    ->modalSubmitActionLabel(__('Yes, Delete')),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()
-                    ->label('Hapus Terpilih')
-                    ->modalHeading('Hapus Indikator Terpilih?')
-                    ->modalDescription('Apakah Anda yakin ingin menghapus indikator yang dipilih? Tindakan ini tidak dapat dibatalkan.')
-                    ->modalSubmitActionLabel('Ya, Hapus'),
+                    ->label(__('Delete Selected'))
+                    ->modalHeading(__('Delete Selected Indicators?'))
+                    ->modalDescription(__('Are you sure you want to delete the selected indicators? This action cannot be undone.'))
+                    ->modalSubmitActionLabel(__('Yes, Delete')),
             ])
-            ->emptyStateHeading('Belum ada indikator')
-            ->emptyStateDescription('Tambahkan level indikator NAB untuk unit ini. Data ini akan menjadi template default saat di-sync ke Paket Ujian.')
+            ->emptyStateHeading(__('No indicators yet'))
+            ->emptyStateDescription(__('Add NAB indicator levels for this unit. This data will be the default template when synced to Exam Packages.'))
             ->emptyStateIcon('heroicon-o-chart-bar');
     }
 }

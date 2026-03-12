@@ -14,7 +14,7 @@ class ListExamPackages extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Tambah Paket Ujian')
+                ->label(__('Add Exam Package'))
                 ->icon('heroicon-o-rectangle-stack'),
         ];
     }

@@ -27,62 +27,62 @@ class ExamParticipantsTable
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('examPackage.title')
-                    ->label('Paket Ujian')
+                    ->label(__('Exam Package'))
                     ->searchable()
                     ->sortable()
                     ->wrap(),
 
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Nama Peserta')
-                    ->description(fn(ExamParticipant $record): string => 'NIP: ' . ($record->user->nip ?? '—'))
+                    ->label(__('Participant Name'))
+                    ->description(fn(ExamParticipant $record): string => __('NIP: :nip', ['nip' => $record->user->nip ?? '—']))
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 Tables\Columns\TextColumn::make('user.nip')
-                    ->label('NIP')
+                    ->label(__('NIP'))
                     ->searchable()
                     ->copyable()
-                    ->copyMessage('NIP Disalin!')
+                    ->copyMessage(__('NIP Copied!'))
                     ->copyMessageDuration(2000)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('user.email')
-                    ->label('Email')
+                    ->label(__('Email'))
                     ->searchable()
                     ->copyable()
-                    ->copyMessage('Email Disalin!')
+                    ->copyMessage(__('Email Copied!'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('token')
-                    ->label('Token Akses')
-                    ->description('Klik untuk menyalin')
+                    ->label(__('Access Token'))
+                    ->description(__('Click to copy'))
                     ->copyable()
-                    ->copyMessage('Token Akses Disalin!')
+                    ->copyMessage(__('Access Token Copied!'))
                     ->copyMessageDuration(2000)
                     ->weight('bold')
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('status_label')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->badge()
                     ->icon(fn(ExamParticipant $record): string => $record->status_icon)
                     ->color(fn(ExamParticipant $record): string => $record->status_color),
 
                 Tables\Columns\TextColumn::make('score')
-                    ->label('Nilai Terakhir')
+                    ->label(__('Latest Score'))
                     ->state(fn(ExamParticipant $record) => $record->examSessions()->latest()->first()?->total_score ?? '—')
                     ->icon('heroicon-m-academic-cap')
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('finished_at')
-                    ->label('Selesai Pada')
+                    ->label(__('Finished At'))
                     ->state(fn(ExamParticipant $record) => $record->examSessions()->latest()->first()?->finished_at?->format('d M Y H:i') ?? '—')
                     ->icon('heroicon-m-calendar-days')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Terdaftar Pada')
+                    ->label(__('Registered At'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -92,20 +92,20 @@ class ExamParticipantsTable
                     ->relationship('examPackage', 'title')
                     ->searchable()
                     ->preload()
-                    ->label('Paket Ujian'),
+                    ->label(__('Exam Package')),
 
                 Tables\Filters\SelectFilter::make('is_active')
                     ->options([
-                        '1' => 'Aktif',
-                        '0' => 'Nonaktif',
+                        '1' => __('Active'),
+                        '0' => __('Inactive'),
                     ])
-                    ->label('Status Akses'),
+                    ->label(__('Access Status')),
 
                 Tables\Filters\Filter::make('finished_at')
-                    ->label('Tanggal Selesai')
+                    ->label(__('Completion Date'))
                     ->schema([
-                        DatePicker::make('finished_from')->label('Dari Tanggal'),
-                        DatePicker::make('finished_until')->label('Sampai Tanggal'),
+                        DatePicker::make('finished_from')->label(__('From Date')),
+                        DatePicker::make('finished_until')->label(__('Until Date')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -122,15 +122,15 @@ class ExamParticipantsTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit')
+                        ->label(__('Edit'))
                         ->icon('heroicon-m-pencil-square')
                         ->color('primary')
                         ->requiresConfirmation()
-                        ->modalHeading('Edit Peserta Ujian')
+                        ->modalHeading(__('Edit Exam Participant'))
                         ->modalWidth('md'),
 
                     Action::make('reset_attempt')
-                        ->label('Reset Ujian')
+                        ->label(__('Reset Exam'))
                         ->icon('heroicon-m-arrow-path')
                         ->color('warning')
                         ->requiresConfirmation()
@@ -142,16 +142,16 @@ class ExamParticipantsTable
                             $record->update(['is_active' => true]);
 
                             Notification::make()
-                                ->title('Ujian Direset & Status Diaktifkan')
+                                ->title(__('Exam Reset & Status Activated'))
                                 ->success()
                                 ->send();
                         })
                         ->requiresConfirmation()
-                        ->modalHeading('Reset Data Ujian')
-                        ->modalDescription('PERHATIAN: Ini akan menghapus seluruh jawaban dan riwayat ujian peserta ini. Peserta harus memulai dari awal. Lanjutkan?'),
+                        ->modalHeading(__('Reset Exam Data'))
+                        ->modalDescription(__('WARNING: This will delete all answers and exam history for this participant. The participant must start over. Continue?')),
 
                     Action::make('delete')
-                        ->label('Hapus Peserta')
+                        ->label(__('Delete Participant'))
                         ->icon('heroicon-m-trash')
                         ->color('danger')
                         ->requiresConfirmation()
@@ -159,14 +159,14 @@ class ExamParticipantsTable
                             $record->delete();
 
                             Notification::make()
-                                ->title('Peserta Dihapus')
+                                ->title(__('Participant Deleted'))
                                 ->success()
                                 ->send();
                         })
-                        ->modalHeading('Hapus Peserta')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus peserta ini? Tindakan ini tidak dapat dibatalkan.'),
+                        ->modalHeading(__('Delete Participant'))
+                        ->modalDescription(__('Are you sure you want to delete this participant? This action cannot be undone.')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -174,14 +174,14 @@ class ExamParticipantsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('Hapus Peserta Terpilih')
-                        ->modalHeading('Hapus Peserta Terpilih')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus peserta yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected Participants'))
+                        ->modalHeading(__('Delete Selected Participants'))
+                        ->modalDescription(__('Are you sure you want to delete the selected participants? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ])
-            ->emptyStateHeading('Belum ada peserta terdaftar')
-            ->emptyStateDescription('Tambahkan peserta ujian untuk memberikan akses ke paket ujian yang tersedia.')
+            ->emptyStateHeading(__('No participants registered yet'))
+            ->emptyStateDescription(__('Add exam participants to provide access to available exam packages.'))
             ->emptyStateIcon('heroicon-o-user-group');
     }
 }

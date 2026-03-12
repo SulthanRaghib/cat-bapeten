@@ -23,11 +23,22 @@ class SelectionStageTypeResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-queue-list';
 
     protected static ?string $recordTitleAttribute = 'name';
-    protected static ?string $modelLabel           = 'Jenis Tahap Seleksi';
-    protected static ?string $pluralModelLabel     = 'Jenis Tahap Seleksi';
-    protected static ?string $navigationLabel      = 'Tahap Seleksi';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Data Master';
+    public static function getModelLabel(): string
+    {
+        return __('Selection Stage Type');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Selection Stage Types');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Selection Stage');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
     protected static ?int $navigationSort = 5;
 
     public static function form(Schema $schema): Schema

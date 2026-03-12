@@ -12,14 +12,19 @@ class ListQuestions extends ListRecords
 {
     protected static string $resource = QuestionResource::class;
 
-    protected static ?string $title = 'Bank Soal';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Question Bank');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             ExportQuestionsHeaderAction::make(),
             CreateAction::make()
-                ->label('Tambah Soal')
+                ->label(__('Add Question'))
                 ->icon('heroicon-o-document-plus'),
         ];
     }

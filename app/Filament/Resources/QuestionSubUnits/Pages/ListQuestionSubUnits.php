@@ -16,7 +16,7 @@ class ListQuestionSubUnits extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Tambah Sub Unit Soal')
+                ->label(__('Add Question Sub Unit'))
                 ->icon('heroicon-o-folder-open'),
         ];
     }

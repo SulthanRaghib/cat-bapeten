@@ -37,7 +37,7 @@ class ListExamMonitors extends ListRecords
         }
 
         \Filament\Notifications\Notification::make()
-            ->title('Sesi ujian diakhiri paksa')
+            ->title(__('Exam session forcefully ended'))
             ->success()
             ->send();
     }

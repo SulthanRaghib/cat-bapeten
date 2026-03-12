@@ -22,12 +22,23 @@ class ExamParticipantResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'token';
 
-    protected static ?string $modelLabel = 'Peserta Ujian';
-    protected static ?string $pluralModelLabel = 'Peserta Ujian';
-    protected static ?string $navigationLabel = 'Peserta Ujian';
+    public static function getModelLabel(): string
+    {
+        return __('Exam Participant');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Exam Participants');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Exam Participants');
+    }
     protected static ?int $navigationSort = 3;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Manajemen Ujian';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Exam Management');
+    }
 
     public static function form(Schema $schema): Schema
     {

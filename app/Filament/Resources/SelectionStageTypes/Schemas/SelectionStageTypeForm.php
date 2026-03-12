@@ -18,37 +18,37 @@ class SelectionStageTypeForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Informasi Tahap Seleksi')
-                ->description('Data ini akan muncul sebagai pilihan saat menyusun konfigurasi paket ujian Teknis.')
+            Section::make(__('Selection Stage Information'))
+                ->description(__('This data will appear as options when configuring Technical exam packages.'))
                 ->icon('heroicon-o-queue-list')
                 ->schema([
                     TextInput::make('name')
-                        ->label('Nama Tahap')
+                        ->label(__('Stage Name'))
                         ->validationAttribute('Nama Tahap')
-                        ->placeholder('Contoh: Wawancara, FGD, Presentasi')
+                        ->placeholder(__('e.g. Interview, FGD, Presentation'))
                         ->required()
                         ->maxLength(100)
                         ->unique(ignoreRecord: true),
 
                     TextInput::make('description')
-                        ->label('Keterangan')
-                        ->placeholder('Deskripsi singkat mengenai tahap ini')
+                        ->label(__('Description'))
+                        ->placeholder(__('Brief description of this stage'))
                         ->maxLength(255),
 
                     // Pencarian Icon
                     TextInput::make('icon_search')
-                        ->label('Cari Icon')
-                        ->placeholder('Ketik nama icon... (misal: user, document, building)')
+                        ->label(__('Search Icon'))
+                        ->placeholder(__('Type icon name... (e.g. user, document, building)'))
                         ->prefixIcon('heroicon-o-magnifying-glass')
                         ->live(debounce: 500)
                         ->dehydrated(false) // Field ini tidak disimpan ke database
-                        ->helperText('Ketik untuk menampilkan pilihan icon di bawah.')
+                        ->helperText(__('Type to display icon options below.'))
                         ->hidden(true),
 
 
                     // Pilihan Icon Visual
                     ToggleButtons::make('icon')
-                        ->label('Pilih Icon (Visual)')
+                        ->label(__('Select Icon (Visual)'))
                         ->inline()
                         ->options(function (Get $get, ?string $state): array {
                             $search = (string) $get('icon_search');
@@ -60,19 +60,19 @@ class SelectionStageTypeForm
                             // Map each option key to itself as the icon name
                             return array_combine(array_keys($options), array_keys($options));
                         })
-                        ->helperText('Pilih icon yang paling menggambarkan tahap ini.'),
+                        ->helperText(__('Select the icon that best represents this stage.')),
 
                     TextInput::make('sort_order')
-                        ->label('Urutan Tampil')
+                        ->label(__('Display Order'))
                         ->validationAttribute('Urutan Tampil')
                         ->numeric()
                         ->default(0)
                         ->minValue(0)
-                        ->helperText('Angka lebih kecil tampil lebih dulu di dropdown.'),
+                        ->helperText(__('Smaller number appears first in dropdown.')),
 
                     Toggle::make('is_active')
-                        ->label('Aktif')
-                        ->helperText('Jenis tahap yang tidak aktif tidak akan muncul di dropdown pilihan paket ujian.')
+                        ->label(__('Active'))
+                        ->helperText(__('Inactive stage types will not appear in the exam package configuration dropdown.'))
                         ->default(true),
                 ]),
         ]);

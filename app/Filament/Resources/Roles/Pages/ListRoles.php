@@ -16,7 +16,7 @@ class ListRoles extends ListRecords
     {
         return [
             CreateAction::make()
-                ->label('Tambah Peran')
+                ->label(__('Add Role'))
                 ->icon('heroicon-o-shield-check'),
         ];
     }

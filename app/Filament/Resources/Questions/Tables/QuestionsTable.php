@@ -23,7 +23,7 @@ class QuestionsTable
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('examType.name')
-                    ->label('Tipe Ujian')
+                    ->label(__('Exam Type'))
                     ->badge()
                     ->icon(fn($record): string => match ($record->examType?->evaluation_method) {
                         'correct_wrong' => 'heroicon-m-check-badge',
@@ -37,7 +37,7 @@ class QuestionsTable
                     }),
 
                 TextColumn::make('question_text')
-                    ->label('Teks Soal')
+                    ->label(__('Question Text'))
                     ->html()
                     ->limit(60)
                     ->wrap()
@@ -54,7 +54,7 @@ class QuestionsTable
                     }),
 
                 TextColumn::make('category')
-                    ->label('Tingkat Kesulitan')
+                    ->label(__('Difficulty Level'))
                     ->badge()
                     ->icon(fn(?string $state): string => match ($state) {
                         'easy'   => 'heroicon-m-face-smile',
@@ -69,29 +69,29 @@ class QuestionsTable
                         default  => 'gray',
                     })
                     ->formatStateUsing(fn(?string $state): string => match ($state) {
-                        'easy'   => 'Mudah',
-                        'medium' => 'Sedang',
-                        'hard'   => 'Sulit',
+                        'easy'   => __('Easy'),
+                        'medium' => __('Medium'),
+                        'hard'   => __('Hard'),
                         default  => '\u2014',
                     })
                     ->alignCenter(),
 
                 TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
+                    ->label(__('Created At'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('exam_type_id')
-                    ->label('Tipe Ujian')
+                    ->label(__('Exam Type'))
                     ->relationship('examType', 'name'),
                 SelectFilter::make('category')
-                    ->label('Tingkat Kesulitan')
+                    ->label(__('Difficulty Level'))
                     ->options([
-                        'easy'   => 'Mudah',
-                        'medium' => 'Sedang',
-                        'hard'   => 'Sulit',
+                        'easy'   => __('Easy'),
+                        'medium' => __('Medium'),
+                        'hard'   => __('Hard'),
                     ]),
             ])
             ->recordActions([
@@ -99,19 +99,19 @@ class QuestionsTable
                     Action::make('view')
                         ->icon('heroicon-m-eye')
                         ->color('gray')
-                        ->label('Lihat Detail')
-                        ->modalHeading('Detail Soal')
+                        ->label(__('View Detail'))
+                        ->modalHeading(__('Question Detail'))
                         ->modalContent(fn($record) => view('filament.modals.question-detail', [
                             'record' => $record,
                             'manager' => new \App\Helpers\ScoringConfigFormatter(),
                         ]))
                         ->modalSubmitAction(false)
-                        ->modalCancelActionLabel('Tutup'),
+                        ->modalCancelActionLabel(__('Close')),
                     EditAction::make()
-                        ->label('Edit Soal')
+                        ->label(__('Edit Question'))
                         ->icon('heroicon-m-pencil-square'),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(\Filament\Support\Enums\Size::Small)
                     ->outlined(),
@@ -120,14 +120,14 @@ class QuestionsTable
                 BulkActionGroup::make([
                     ExportQuestionsBulkAction::make(),
                     DeleteBulkAction::make()
-                        ->label('Hapus Soal Terpilih')
-                        ->modalHeading('Hapus Soal Terpilih')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus soal-soal yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected Questions'))
+                        ->modalHeading(__('Delete Selected Questions'))
+                        ->modalDescription(__('Are you sure you want to delete the selected questions? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ])
-            ->emptyStateHeading('Belum ada soal')
-            ->emptyStateDescription('Tambahkan soal baru ke bank soal untuk digunakan dalam paket ujian.')
+            ->emptyStateHeading(__('No questions yet'))
+            ->emptyStateDescription(__('Add new questions to the question bank to be used in exam packages.'))
             ->emptyStateIcon('heroicon-o-document-text');
     }
 }

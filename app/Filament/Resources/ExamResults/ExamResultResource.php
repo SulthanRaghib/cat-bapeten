@@ -31,11 +31,22 @@ class ExamResultResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $modelLabel = 'Hasil Ujian';
-    protected static ?string $pluralModelLabel = 'Hasil Ujian';
-    protected static ?string $navigationLabel = 'Hasil Ujian';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Laporan & Hasil';
+    public static function getModelLabel(): string
+    {
+        return __('Exam Result');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Exam Results');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Exam Results');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Reports & Results');
+    }
 
     /**
      * Gunakan permission ViewAny:ExamResult (terpisah dari ViewAny:ExamSession).
@@ -80,16 +91,16 @@ class ExamResultResource extends Resource
                 ->schema([
                     // ── KIRI (1/3) ──────────────────────────────────────────────
                     Group::make([
-                        Section::make('Informasi Ujian')
+                        Section::make(__('Exam Information'))
                             ->icon('heroicon-o-information-circle')
                             ->schema([
                                 TextEntry::make('examPackage.title')
-                                    ->label('Nama Paket Ujian')
+                                    ->label(__('Exam Package Name'))
                                     ->weight('bold')
                                     ->size('lg'),
 
                                 TextEntry::make('examPackage.examType.name')
-                                    ->label('Tipe Ujian')
+                                    ->label(__('Exam Type'))
                                     ->badge()
                                     ->color(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
                                         'weighted'     => 'primary',
@@ -98,7 +109,7 @@ class ExamResultResource extends Resource
                                     }),
 
                                 TextEntry::make('exam_method_label')
-                                    ->label('Metode Penilaian')
+                                    ->label(__('Evaluation Method'))
                                     ->badge()
                                     ->state(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
                                         'weighted'     => 'Pembobotan Nilai (Mansoskul)',
@@ -108,26 +119,26 @@ class ExamResultResource extends Resource
                                     ->color(fn(string $state): string => str_contains($state, 'Mansoskul') ? 'primary' : 'info'),
 
                                 TextEntry::make('examPackage.passing_grade')
-                                    ->label('NAB (Nilai Ambang Batas)')
+                                    ->label(__('NAB (Passing Grade)'))
                                     ->badge()
                                     ->color('success'),
 
                                 TextEntry::make('user.name')
-                                    ->label('Nama Peserta'),
+                                    ->label(__('Participant Name')),
 
                                 TextEntry::make('user.nip')
                                     ->label('NIP'),
 
                                 TextEntry::make('started_at')
-                                    ->label('Waktu Mulai')
+                                    ->label(__('Start Time'))
                                     ->dateTime('d M Y, H:i'),
 
                                 TextEntry::make('finished_at')
-                                    ->label('Waktu Selesai')
+                                    ->label(__('End Time'))
                                     ->dateTime('d M Y, H:i'),
                             ]),
 
-                        Section::make('Pelanggaran Peserta')
+                        Section::make(__('Participant Violations'))
                             ->icon('heroicon-o-shield-exclamation')
                             ->schema([
                                 ViewEntry::make('violation_detail')
@@ -139,24 +150,24 @@ class ExamResultResource extends Resource
 
                     // ── KANAN (2/3) ──────────────────────────────────────────────
                     Group::make([
-                        Section::make('Statistik Hasil')
+                        Section::make(__('Result Statistics'))
                             ->columns(3)
                             ->schema([
                                 // ── Selalu tampil ──
                                 TextEntry::make('total_score')
-                                    ->label('Total Nilai')
+                                    ->label(__('Total Score'))
                                     ->size('xl')
                                     ->weight('black'),
 
                                 TextEntry::make('status_lulus')
-                                    ->label('Status Kelulusan')
+                                    ->label(__('Pass Status'))
                                     ->badge()
-                                    ->state(fn(ExamSession $record): string => $record->total_score >= ($record->examPackage->passing_grade ?? 0) ? 'Lulus' : 'Tidak Lulus')
-                                    ->color(fn(string $state): string => $state === 'Lulus' ? 'success' : 'danger')
-                                    ->icon(fn(string $state): string => $state === 'Lulus' ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle'),
+                                    ->state(fn(ExamSession $record): string => $record->total_score >= ($record->examPackage->passing_grade ?? 0) ? __('Pass') : __('Fail'))
+                                    ->color(fn(string $state): string => $state === __('Pass') ? 'success' : 'danger')
+                                    ->icon(fn(string $state): string => $state === __('Pass') ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle'),
 
                                 TextEntry::make('duration')
-                                    ->label('Durasi')
+                                    ->label(__('Duration'))
                                     ->icon('heroicon-m-clock')
                                     ->state(function (ExamSession $record): string {
                                         if (! $record->started_at || ! $record->finished_at) {
@@ -177,7 +188,7 @@ class ExamResultResource extends Resource
 
                                 // ── Hanya Teknis ──────────────────────────────
                                 TextEntry::make('jawaban_benar')
-                                    ->label('Jawaban Benar')
+                                    ->label(__('Correct Answers'))
                                     ->icon('heroicon-m-check-circle')
                                     ->iconColor('success')
                                     ->color('success')
@@ -189,7 +200,7 @@ class ExamResultResource extends Resource
                                     $record->examPackage?->examType?->evaluation_method === 'weighted'),
 
                                 TextEntry::make('jawaban_salah')
-                                    ->label('Jawaban Salah')
+                                    ->label(__('Wrong Answers'))
                                     ->icon('heroicon-m-x-circle')
                                     ->iconColor('danger')
                                     ->color('danger')
@@ -201,7 +212,7 @@ class ExamResultResource extends Resource
                                     $record->examPackage?->examType?->evaluation_method === 'weighted'),
 
                                 TextEntry::make('tidak_dijawab')
-                                    ->label('Tidak Dijawab')
+                                    ->label(__('Unanswered'))
                                     ->icon('heroicon-m-minus-circle')
                                     ->iconColor('warning')
                                     ->color('warning')
@@ -238,7 +249,7 @@ class ExamResultResource extends Resource
                                     ),
                             ]),
 
-                        Section::make('Detail Soal & Jawaban')
+                        Section::make(__('Question & Answer Detail'))
                             ->icon('heroicon-o-list-bullet')
                             ->schema([
                                 ViewEntry::make('answer_summary')

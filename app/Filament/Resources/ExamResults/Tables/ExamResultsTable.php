@@ -64,7 +64,7 @@ class ExamResultsTable
 
                 // ── 1. Peserta ───────────────────────────────────────────
                 TextColumn::make('user.name')
-                    ->label('Nama Peserta')
+                    ->label(__('Participant Name'))
                     ->description(fn(ExamSession $record): string => 'NIP: ' . ($record->user->nip ?? '-'))
                     ->searchable()
                     ->sortable()
@@ -72,14 +72,14 @@ class ExamResultsTable
 
                 // ── 2. Paket Ujian ───────────────────────────────────────
                 TextColumn::make('examPackage.title')
-                    ->label('Paket Ujian')
+                    ->label(__('Exam Package'))
                     ->sortable()
                     ->searchable()
                     ->wrap(),
 
                 // ── 2b. Tipe Ujian badge ────────────────────────────────
                 TextColumn::make('tipe_ujian')
-                    ->label('Tipe')
+                    ->label(__('Type'))
                     ->badge()
                     ->state(fn(ExamSession $record): string => match ($record->examPackage?->examType?->evaluation_method) {
                         'weighted'      => 'Mansoskul',
@@ -100,7 +100,7 @@ class ExamResultsTable
 
                 // ── 3. Tanggal & Waktu Ujian ─────────────────────────────
                 TextColumn::make('started_at')
-                    ->label('Tanggal Ujian')
+                    ->label(__('Exam Date'))
                     ->description(
                         fn(ExamSession $record): string => ($record->started_at ? $record->started_at->format('H:i') : '-')
                             . ' – '
@@ -112,7 +112,7 @@ class ExamResultsTable
 
                 // ── 4. Durasi ────────────────────────────────────────────
                 TextColumn::make('durasi')
-                    ->label('Durasi')
+                    ->label(__('Duration'))
                     ->icon('heroicon-m-clock')
                     ->state(fn(ExamSession $record): string => self::formatDuration($record))
                     ->color('gray'),
@@ -121,7 +121,7 @@ class ExamResultsTable
                 // Teknis → Benar (hijau)
                 // Mansoskul → Jumlah unit lulus (ungu)
                 TextColumn::make('jawaban_benar')
-                    ->label('Benar / Unit ✓')
+                    ->label(__('Correct / Unit ✓'))
                     ->icon(fn(ExamSession $record): string =>
                     $record->examPackage?->examType?->evaluation_method === 'weighted'
                         ? 'heroicon-m-squares-2x2'
@@ -139,7 +139,7 @@ class ExamResultsTable
                     ->description(
                         fn(ExamSession $record): ?string =>
                         $record->examPackage?->examType?->evaluation_method === 'weighted'
-                            ? 'unit kompeten'
+                            ? __('competent units')
                             : null
                     )
                     ->color(function (ExamSession $record, string $state): string {
@@ -158,7 +158,7 @@ class ExamResultsTable
 
                 // ── 6. Statistik Jawaban: Salah / Unit ✕ ──────────────────────
                 TextColumn::make('jawaban_salah')
-                    ->label('Salah / Unit ✗')
+                    ->label(__('Wrong / Unit ✗'))
                     ->icon(fn(ExamSession $record): string =>
                     $record->examPackage?->examType?->evaluation_method === 'weighted'
                         ? 'heroicon-m-x-circle'
@@ -175,7 +175,7 @@ class ExamResultsTable
                     ->description(
                         fn(ExamSession $record): ?string =>
                         $record->examPackage?->examType?->evaluation_method === 'weighted'
-                            ? 'unit belum kompeten'
+                            ? __('units not yet competent')
                             : null
                     )
                     ->color(function (ExamSession $record, string $state): string {
@@ -188,7 +188,7 @@ class ExamResultsTable
 
                 // ── 7. Statistik Jawaban: Tidak Dijawab ──────────────────
                 TextColumn::make('tidak_dijawab')
-                    ->label('Kosong')
+                    ->label(__('Blank'))
                     ->icon('heroicon-m-minus-circle')
                     ->state(function (ExamSession $record): string {
                         if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
@@ -208,7 +208,7 @@ class ExamResultsTable
 
                 // ── 8. Pelanggaran ───────────────────────────────────────
                 TextColumn::make('pelanggaran')
-                    ->label('Pelanggaran')
+                    ->label(__('Violations'))
                     ->icon('heroicon-m-exclamation-triangle')
                     ->state(
                         fn(ExamSession $record): int =>
@@ -227,7 +227,7 @@ class ExamResultsTable
 
                 // ── 9. Nilai Akhir ───────────────────────────────────────
                 TextColumn::make('total_score')
-                    ->label('Nilai')
+                    ->label(__('Score'))
                     ->badge()
                     ->color(
                         fn(ExamSession $record): string =>
@@ -252,25 +252,31 @@ class ExamResultsTable
 
                 // ── 10. Status Kelulusan ──────────────────────────────────
                 TextColumn::make('kelulusan')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->badge()
                     ->state(function (ExamSession $record): string {
                         if ($record->status === 'awaiting_interview') {
-                            return 'MENUNGGU SELEKSI';
+                            return 'AWAITING_SELECTION';
                         }
-                        return self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS';
+                        return self::isLulus($record) ? 'PASSED' : 'FAILED';
+                    })
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'PASSED'             => __('PASSED'),
+                        'FAILED'             => __('FAILED'),
+                        'AWAITING_SELECTION' => __('AWAITING SELECTION'),
+                        default              => $state,
                     })
                     ->color(fn(string $state): string => match ($state) {
-                        'LULUS'             => 'success',
-                        'TIDAK LULUS'       => 'danger',
-                        'MENUNGGU SELEKSI'  => 'warning',
-                        default             => 'gray',
+                        'PASSED'             => 'success',
+                        'FAILED'             => 'danger',
+                        'AWAITING_SELECTION' => 'warning',
+                        default              => 'gray',
                     })
                     ->icon(fn(string $state): string => match ($state) {
-                        'LULUS'             => 'heroicon-m-trophy',
-                        'TIDAK LULUS'       => 'heroicon-m-x-circle',
-                        'MENUNGGU SELEKSI'  => 'heroicon-m-clipboard-document-check',
-                        default             => 'heroicon-m-question-mark-circle',
+                        'PASSED'             => 'heroicon-m-trophy',
+                        'FAILED'             => 'heroicon-m-x-circle',
+                        'AWAITING_SELECTION' => 'heroicon-m-clipboard-document-check',
+                        default              => 'heroicon-m-question-mark-circle',
                     })
                     ->alignCenter(),
 
@@ -278,12 +284,12 @@ class ExamResultsTable
             ->filters([
 
                 SelectFilter::make('exam_package_id')
-                    ->label('Paket Ujian')
+                    ->label(__('Exam Package'))
                     ->relationship('examPackage', 'title'),
 
                 // ── Filter: Tipe Ujian (dari DB) ──────────────────────────────
                 SelectFilter::make('tipe_ujian')
-                    ->label('Tipe Ujian')
+                    ->label(__('Exam Type'))
                     ->options(
                         fn(): array =>
                         ExamType::orderBy('name')
@@ -307,10 +313,10 @@ class ExamResultsTable
                     }),
 
                 Filter::make('rentang_waktu')
-                    ->label('Rentang Tanggal Ujian')
+                    ->label(__('Exam Date Range'))
                     ->schema([
-                        DatePicker::make('dari_tanggal')->label('Dari Tanggal'),
-                        DatePicker::make('sampai_tanggal')->label('Sampai Tanggal'),
+                        DatePicker::make('dari_tanggal')->label(__('From Date')),
+                        DatePicker::make('sampai_tanggal')->label(__('Until Date')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -335,14 +341,14 @@ class ExamResultsTable
                     }),
 
                 Filter::make('status_kelulusan')
-                    ->label('Status Kelulusan')
+                    ->label(__('Pass Status'))
                     ->schema([
                         \Filament\Forms\Components\Select::make('status')
-                            ->label('Filter Status')
-                            ->placeholder('Semua Status')
+                            ->label(__('Filter Status'))
+                            ->placeholder(__('All Statuses'))
                             ->options([
-                                'lulus'       => 'Lulus',
-                                'tidak_lulus' => 'Tidak Lulus',
+                                'lulus'       => __('Pass'),
+                                'tidak_lulus' => __('Fail'),
                             ]),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -371,28 +377,30 @@ class ExamResultsTable
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make()
-                        ->label('Lihat Detail'),
+                        ->label(__('View Detail')),
 
                     // ── Input Nilai Seleksi Lanjutan (hanya untuk sesi awaiting_interview) ────
                     Action::make('inputStageScores')
-                        ->label('Input Nilai Seleksi')
+                        ->label(__('Input Selection Scores'))
                         ->icon('heroicon-o-clipboard-document-check')
                         ->color('warning')
                         ->visible(fn(ExamSession $record): bool => $record->status === 'awaiting_interview')
                         ->modalHeading(
                             fn(ExamSession $record): string =>
-                            'Input Nilai Seleksi — ' . ($record->user?->name ?? '-')
+                            __('Input Selection Scores — :name', ['name' => $record->user?->name ?? '-'])
                         )
                         ->modalDescription(
                             fn(ExamSession $record): string =>
-                            'Nilai CBT: ' . number_format((float) ($record->cbt_score ?? 0), 2)
-                                . ' poin  |  Paket: ' . ($record->examPackage?->title ?? '-')
+                            __('CBT Score: :score points  |  Package: :package', [
+                                'score' => number_format((float) ($record->cbt_score ?? 0), 2),
+                                'package' => $record->examPackage?->title ?? '-',
+                            ])
                         )
                         ->modalWidth('lg')
                         ->schema(fn(ExamSession $record): array => self::buildStageScoreSchema($record))
                         ->action(fn(ExamSession $record, array $data) => self::processStageScores($record, $data)),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -400,11 +408,11 @@ class ExamResultsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('Hapus Hasil Terpilih')
-                        ->modalHeading('Hapus Hasil Ujian Terpilih')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus hasil ujian terpilih? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected Results'))
+                        ->modalHeading(__('Delete Selected Exam Results'))
+                        ->modalDescription(__('Are you sure you want to delete the selected exam results? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ]);
     }
 
@@ -442,9 +450,11 @@ class ExamResultsTable
                 \Filament\Forms\Components\Placeholder::make('cbt_summary')
                     ->label('')
                     ->content(function () use ($record, $cbtWeight): string {
-                        return '📊 Nilai CBT: ' . number_format((float) ($record->cbt_score ?? 0), 2)
-                            . ' poin  ×  Bobot CBT: ' . $cbtWeight . '%'
-                            . '  →  Kontribusi CBT: ' . number_format((float) ($record->cbt_score ?? 0) * $cbtWeight / 100, 2) . ' poin';
+                        return '📊 ' . __('CBT Score: :score points × CBT Weight: :weight% → CBT Contribution: :contribution points', [
+                            'score' => number_format((float) ($record->cbt_score ?? 0), 2),
+                            'weight' => $cbtWeight,
+                            'contribution' => number_format((float) ($record->cbt_score ?? 0) * $cbtWeight / 100, 2),
+                        ]);
                     }),
             ]);
 
@@ -452,7 +462,7 @@ class ExamResultsTable
         if (empty($stages)) {
             $fields[] = \Filament\Forms\Components\Placeholder::make('no_stages')
                 ->label('')
-                ->content('⚠️ Tidak ada tahap seleksi yang terkonfigurasi pada paket ujian ini.');
+                ->content(__('No selection stages configured for this exam package.'));
         } else {
             foreach ($stages as $i => $stage) {
                 $label  = $stage['label'] ?? ('Tahap ' . ($i + 1));
@@ -461,12 +471,12 @@ class ExamResultsTable
 
                 $fields[] = TextInput::make("stage_scores.{$key}")
                     ->label("{$label}")
-                    ->helperText("Bobot: {$weight}% dari nilai akhir")
+                    ->helperText(__('Weight: :weight% of final score', ['weight' => $weight]))
                     ->numeric()
                     ->required()
                     ->minValue(0)
                     ->maxValue(100)
-                    ->suffix('poin')
+                    ->suffix(__('points'))
                     ->placeholder('0 – 100')
                     // Pre-fill from existing stage_scores if re-editing
                     ->default(fn() => $record->stage_scores[$key] ?? null);
@@ -524,10 +534,10 @@ class ExamResultsTable
         ]);
 
         Notification::make()
-            ->title('Nilai Seleksi Tersimpan')
+            ->title(__('Selection Scores Saved'))
             ->body(
                 implode('  +  ', $breakdown)
-                    . '  =  Nilai Akhir: ' . number_format($finalScore, 2) . ' poin'
+                    . '  =  ' . __('Final Score: :score points', ['score' => number_format($finalScore, 2)])
             )
             ->success()
             ->send();
