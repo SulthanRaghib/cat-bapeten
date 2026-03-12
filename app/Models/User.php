@@ -26,6 +26,7 @@ class User extends Authenticatable implements FilamentUser
         'nip',
         'role',
         'password',
+        'theme_color',
     ];
 
     public function canAccessPanel(Panel $panel): bool

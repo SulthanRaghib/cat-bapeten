@@ -12,8 +12,11 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Events\ServingFilament;
 use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentColor;
 use Filament\Widgets\AccountWidget;
+use Illuminate\Support\Facades\Event;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -22,9 +25,37 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\View\PanelsRenderHook;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function register(): void
+    {
+        parent::register();
+
+        Event::listen(ServingFilament::class, function (): void {
+            if (! auth()->check()) {
+                return;
+            }
+
+            FilamentColor::register([
+                'primary' => match (auth()->user()->theme_color) {
+                    'green'   => Color::Emerald,
+                    'purple'  => Color::Purple,
+                    'orange'  => Color::Orange,
+                    'red'     => Color::Rose,
+                    'sky'     => Color::Sky,
+                    'teal'    => Color::Teal,
+                    'pink'    => Color::Pink,
+                    'indigo'  => Color::Indigo,
+                    'cyan'    => Color::Cyan,
+                    'lime'    => Color::Lime,
+                    default   => Color::Amber,
+                },
+            ]);
+        });
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -316,17 +347,17 @@ class AdminPanelProvider extends PanelProvider
                                 background: #111827;
                             }
                             .cat-app-footer strong {
-                                color: #64748b;
+                                color: var(--color-primary-600);
                             }
                             .dark .cat-app-footer strong {
-                                color: #9ca3af;
+                                color: var(--color-primary-400);
                             }
                         </style>
                         <span style="display:inline-flex;align-items:center;gap:0.4rem;">
                             &copy; {{ date('Y') }}
                             <strong>Sulthan Raghib Fillah</strong>
                             &amp;
-                            <strong>Tahta Anugrah Ananda P</strong>
+                            <strong>Tahta Anugrah Ananda Putri</strong>
                         </span>
                     </footer>
                 HTML)

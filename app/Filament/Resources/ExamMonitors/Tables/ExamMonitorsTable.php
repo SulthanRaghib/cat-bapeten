@@ -15,12 +15,6 @@ class ExamMonitorsTable
             ->striped()
             ->poll('5s')
             ->recordUrl(null)
-            ->recordClasses(
-                fn(ExamSession $record): string =>
-                $record->examPackage?->examType?->evaluation_method === 'weighted'
-                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
-                    : 'border-s-[3px] border-info-400 dark:border-info-500'
-            )
             ->columns([
                 TextColumn::make('user.name')
                     ->label('Peserta')

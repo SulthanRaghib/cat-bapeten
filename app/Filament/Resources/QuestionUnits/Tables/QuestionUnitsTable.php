@@ -22,12 +22,6 @@ class QuestionUnitsTable
             ->striped()
             ->recordUrl(null)
             ->defaultSort('name')
-            ->recordClasses(
-                fn($record): string =>
-                $record->examType?->evaluation_method === 'weighted'
-                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
-                    : 'border-s-[3px] border-info-400 dark:border-info-500'
-            )
             ->columns([
                 TextColumn::make('name')
                     ->label('Nama Unit')

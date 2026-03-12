@@ -25,12 +25,6 @@ class ExamParticipantsTable
             ->striped()
             ->poll('5s')
             ->defaultSort('created_at', 'desc')
-            ->recordClasses(
-                fn(ExamParticipant $record): string =>
-                $record->examPackage?->examType?->evaluation_method === 'weighted'
-                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
-                    : 'border-s-[3px] border-info-400 dark:border-info-500'
-            )
             ->columns([
                 Tables\Columns\TextColumn::make('examPackage.title')
                     ->label('Paket Ujian')

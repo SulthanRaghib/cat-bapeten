@@ -181,11 +181,6 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->label('Nama Ujian')
-                    ->description(
-                        fn(ExamPackage $record): string =>
-                        $record->examType?->name ?? '\u2014'
-                    )
-                    ->weight('semibold')
                     ->wrap()
                     ->alignment('left'),
 
@@ -280,11 +275,6 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     }),
             ])
             ->striped()
-            ->recordClasses(fn(ExamPackage $record): string => match ($record->examType?->evaluation_method) {
-                'correct_wrong' => 'border-s-4 border-info-400',
-                'weighted'      => 'border-s-4 border-violet-500',
-                default         => '',
-            })
             ->emptyStateHeading('Belum ada ujian terjadwal.')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

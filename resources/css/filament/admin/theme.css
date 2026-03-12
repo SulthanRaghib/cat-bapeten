@@ -3,6 +3,117 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
+/* ===== Theme-aware sidebar / topbar / body accents ===== */
+
+/* Sidebar: subtle primary tint background */
+.fi-sidebar {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-50) 55%,
+        white
+    ) !important;
+    border-inline-end: 1px solid
+        color-mix(in srgb, var(--color-primary-200) 60%, transparent) !important;
+}
+
+/* Sidebar header: gentle primary gradient banner */
+.fi-sidebar-header {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--color-primary-500) 12%, white),
+        color-mix(in srgb, var(--color-primary-400) 8%, white)
+    );
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--color-primary-200) 50%, transparent);
+}
+
+/* Topbar: white with a thin primary accent line at the bottom */
+.fi-topbar {
+    border-bottom: 2px solid var(--color-primary-400) !important;
+}
+
+/* Body: very subtle primary warmth */
+.fi-body {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-50) 25%,
+        #f9fafb
+    ) !important;
+}
+
+/* Sidebar hover items: subtle primary tint on hover */
+.fi-sidebar-item-btn:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-100) 50%,
+        white
+    ) !important;
+}
+
+/* Sidebar active item: slightly stronger primary background */
+.fi-sidebar-item.fi-active .fi-sidebar-item-btn {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-100) 70%,
+        white
+    ) !important;
+}
+
+/* ---- Dark mode ---- */
+.dark .fi-sidebar {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-950) 25%,
+        #111827
+    ) !important;
+    border-inline-end-color: color-mix(
+        in srgb,
+        var(--color-primary-800) 30%,
+        #1f2937
+    ) !important;
+}
+
+.dark .fi-sidebar-header {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--color-primary-900) 30%, #111827),
+        color-mix(in srgb, var(--color-primary-800) 20%, #111827)
+    );
+    border-bottom-color: color-mix(
+        in srgb,
+        var(--color-primary-700) 30%,
+        #1f2937
+    );
+}
+
+.dark .fi-topbar {
+    border-bottom-color: var(--color-primary-600) !important;
+}
+
+.dark .fi-body {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-950) 10%,
+        #030712
+    ) !important;
+}
+
+.dark .fi-sidebar-item-btn:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-900) 40%,
+        #1f2937
+    ) !important;
+}
+
+.dark .fi-sidebar-item.fi-active .fi-sidebar-item-btn {
+    background-color: color-mix(
+        in srgb,
+        var(--color-primary-900) 55%,
+        #1f2937
+    ) !important;
+}
+
 /* Custom RichEditor enhancements */
 .fi-fo-rich-editor {
     /* Make editor container more spacious */
@@ -21,22 +132,23 @@
     }
 
     .ProseMirror img:hover {
-        border-color: #f59e0b;
+        border-color: var(--color-primary-500);
     }
 
     .ProseMirror img.ProseMirror-selectednode {
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--color-primary-500) 30%, transparent);
     }
 
     /* Code blocks for LaTeX */
     .ProseMirror pre {
-        background: #fef3c7;
+        background: color-mix(in srgb, var(--color-primary-100) 40%, white);
         padding: 8px 12px;
         border-radius: 6px;
         font-family: monospace;
         font-size: 13px;
-        border: 1px solid #fcd34d;
+        border: 1px solid var(--color-primary-300);
     }
 }
 
@@ -46,7 +158,11 @@
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(
+        135deg,
+        var(--color-primary-500) 0%,
+        var(--color-primary-600) 100%
+    );
     color: white;
     border-radius: 8px;
     font-size: 13px;
@@ -54,13 +170,19 @@
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 2px 4px
+        color-mix(in srgb, var(--color-primary-500) 30%, transparent);
 }
 
 .math-formula-btn:hover {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    background: linear-gradient(
+        135deg,
+        var(--color-primary-600) 0%,
+        var(--color-primary-700) 100%
+    );
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 4px 8px
+        color-mix(in srgb, var(--color-primary-500) 40%, transparent);
 }
 
 .math-picker-modal {
@@ -104,10 +226,15 @@
 }
 
 .math-picker-item:hover {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #f59e0b;
+    background: linear-gradient(
+        135deg,
+        var(--color-primary-100) 0%,
+        var(--color-primary-200) 100%
+    );
+    border-color: var(--color-primary-500);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--color-primary-500) 20%, transparent);
 }
 
 .math-picker-item .formula {
