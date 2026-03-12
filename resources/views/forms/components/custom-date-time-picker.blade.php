@@ -21,8 +21,8 @@
 
     /* ═══ DARK — Filament palette (gray-900/800/700) ═════════════════════ */
     .dark .cdtp-root {
-        --cdtp-bg: #1f2937;
-        --cdtp-bg-alt: #111827;
+        --cdtp-bg: #242427;
+        --cdtp-bg-alt: #18181b;
         --cdtp-bg-hover: #374151;
         --cdtp-border: #4b5563;
         --cdtp-border-input: #6b7280;
@@ -55,12 +55,12 @@
     }
 
     .cdtp-trigger:hover {
-        border-color: rgb(var(--color-primary-400, 251 146 60));
+        border-color: var(--color-primary-400, #fb923c);
     }
 
     .cdtp-trigger.open {
-        border-color: rgb(var(--color-primary-500, 249 115 22));
-        box-shadow: 0 0 0 3px rgba(var(--color-primary-500, 249 115 22), .15);
+        border-color: var(--color-primary-500, #f97316);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #f97316) 15%, transparent);
     }
 
     /* ── Pop-over panel ────────────────────────────────────────────────── */
@@ -69,7 +69,7 @@
         z-index: 9999;
         left: 0;
         border-radius: 14px;
-        background: var(--cdtp-bg);
+        background: var(--cdtp-bg) !important;
         box-shadow: var(--cdtp-panel-shadow);
         border: 1px solid var(--cdtp-border);
         overflow: hidden;
@@ -93,8 +93,9 @@
         justify-content: space-between;
         padding: 10px 14px;
         background: linear-gradient(135deg,
-                rgb(var(--color-primary-500, 249 115 22)),
-                rgb(var(--color-primary-700, 194 65 12)));
+                var(--color-primary-600, #ea580c),
+                var(--color-primary-800, #9a3412));
+        text-shadow: 0 1px 3px rgba(0, 0, 0, .2);
     }
 
     /* ── Nav arrows ────────────────────────────────────────────────────── */
@@ -130,6 +131,7 @@
         font-family: inherit;
         letter-spacing: .01em;
         transition: background .12s;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, .2);
     }
 
     .cdtp-hdr-btn:hover {
@@ -152,20 +154,20 @@
     }
 
     .cdtp-day:hover {
-        background: rgba(var(--color-primary-500, 249 115 22), .15) !important;
-        color: rgb(var(--color-primary-600, 234 88 12)) !important;
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 15%, transparent) !important;
+        color: var(--color-primary-600, #ea580c) !important;
     }
 
     .cdtp-day.selected {
-        background: rgb(var(--color-primary-500, 249 115 22)) !important;
+        background: var(--color-primary-500, #f97316) !important;
         color: #fff !important;
         font-weight: 700 !important;
-        box-shadow: 0 3px 10px rgba(var(--color-primary-500, 249 115 22), .45) !important;
+        box-shadow: 0 3px 10px color-mix(in srgb, var(--color-primary-500, #f97316) 45%, transparent) !important;
     }
 
     .cdtp-day.today:not(.selected) {
-        background: rgba(var(--color-primary-500, 249 115 22), .15) !important;
-        color: rgb(var(--color-primary-600, 234 88 12)) !important;
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 15%, transparent) !important;
+        color: var(--color-primary-600, #ea580c) !important;
         font-weight: 700 !important;
     }
 
@@ -184,15 +186,15 @@
     }
 
     .cdtp-grid:hover {
-        background: rgba(var(--color-primary-500, 249 115 22), .15) !important;
-        color: rgb(var(--color-primary-600, 234 88 12)) !important;
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 15%, transparent) !important;
+        color: var(--color-primary-600, #ea580c) !important;
     }
 
     .cdtp-grid.active {
-        background: rgb(var(--color-primary-500, 249 115 22)) !important;
+        background: var(--color-primary-500, #f97316) !important;
         color: #fff !important;
         font-weight: 700 !important;
-        box-shadow: 0 2px 8px rgba(var(--color-primary-500, 249 115 22), .4);
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500, #f97316) 40%, transparent);
     }
 
     /* ── Time spinner arrows ───────────────────────────────────────────── */
@@ -211,7 +213,9 @@
     }
 
     .cdtp-spin:hover {
-        background: var(--cdtp-bg-hover);
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 10%, transparent);
+        border-color: var(--color-primary-400, #fb923c);
+        color: var(--color-primary-600, #ea580c);
     }
 
     /* ── Time number input ─────────────────────────────────────────────── */
@@ -233,7 +237,7 @@
     }
 
     .cdtp-time:focus {
-        border-color: rgb(var(--color-primary-500, 249 115 22));
+        border-color: var(--color-primary-500, #f97316);
     }
 
     .cdtp-time::-webkit-inner-spin-button,
@@ -249,17 +253,19 @@
         padding: 7px 12px;
         border-radius: 8px;
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 700;
         font-family: inherit;
         cursor: pointer;
-        border: 1px solid rgba(var(--color-primary-500, 249 115 22), .35);
-        background: transparent;
-        color: rgb(var(--color-primary-500, 249 115 22));
-        transition: background .12s;
+        border: 1.5px solid var(--color-primary-400, #fb923c);
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 8%, transparent);
+        color: var(--color-primary-700, #c2410c);
+        transition: background .15s, border-color .15s, color .15s;
     }
 
     .cdtp-btn-now:hover {
-        background: rgba(var(--color-primary-500, 249 115 22), .1);
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 16%, transparent);
+        border-color: var(--color-primary-500, #f97316);
+        color: var(--color-primary-800, #9a3412);
     }
 
     .cdtp-btn-clear {
@@ -292,13 +298,13 @@
         cursor: pointer;
         border: none;
         color: #fff;
-        background: rgb(var(--color-primary-500, 249 115 22));
-        box-shadow: 0 2px 6px rgba(var(--color-primary-500, 249 115 22), .3);
+        background: var(--color-primary-500, #f97316);
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primary-500, #f97316) 30%, transparent);
         transition: background .12s, box-shadow .12s;
     }
 
     .cdtp-btn-ok:hover {
-        background: rgb(var(--color-primary-600, 234 88 12));
+        background: var(--color-primary-600, #ea580c);
     }
 
     .cdtp-btn-ok:disabled {
@@ -307,16 +313,84 @@
         box-shadow: none;
         cursor: not-allowed;
     }
+
+    /* ═══ DARK — interactive element overrides ═══════════════════════════ */
+    .dark .cdtp-header {
+        background: linear-gradient(135deg,
+                var(--color-primary-700, #c2410c),
+                var(--color-primary-900, #7c2d12));
+    }
+
+    .dark .cdtp-spin:hover {
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 15%, transparent);
+        border-color: var(--color-primary-400, #fb923c);
+        color: var(--color-primary-300, #fdba74);
+    }
+
+    .dark .cdtp-time:focus {
+        border-color: var(--color-primary-400, #fb923c);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #f97316) 20%, transparent);
+    }
+
+    .dark .cdtp-btn-now {
+        border-color: color-mix(in srgb, var(--color-primary-500, #f97316) 40%, transparent);
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 10%, transparent);
+        color: var(--color-primary-400, #fb923c);
+    }
+
+    .dark .cdtp-btn-now:hover {
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 20%, transparent);
+        border-color: var(--color-primary-500, #f97316);
+        color: var(--color-primary-300, #fdba74);
+    }
+
+    .dark .cdtp-btn-ok {
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500, #f97316) 40%, transparent);
+    }
+
+    .dark .cdtp-btn-clear:hover {
+        background: var(--cdtp-bg-hover);
+        color: var(--cdtp-text);
+    }
+
+    .dark .cdtp-day:hover {
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 20%, transparent) !important;
+        color: var(--color-primary-300, #fdba74) !important;
+    }
+
+    .dark .cdtp-day.today:not(.selected) {
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 20%, transparent) !important;
+        color: var(--color-primary-300, #fdba74) !important;
+    }
+
+    .dark .cdtp-grid:hover {
+        background: color-mix(in srgb, var(--color-primary-500, #f97316) 20%, transparent) !important;
+        color: var(--color-primary-300, #fdba74) !important;
+    }
+
+    .dark .cdtp-grid.active {
+        background: var(--color-primary-600, #ea580c) !important;
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500, #f97316) 50%, transparent);
+    }
+
+    .dark .cdtp-trigger:hover {
+        border-color: var(--color-primary-400, #fb923c);
+    }
+
+    .dark .cdtp-trigger.open {
+        border-color: var(--color-primary-400, #fb923c);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #f97316) 20%, transparent);
+    }
 </style>
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
-    <div class="cdtp-root" x-data="customDateTimePicker({ statePath: @js($statePath), initialValue: @js($stateValue) })" x-init="init()" @click.outside="isOpen = false"
+    <div class="cdtp-root" x-data="customDateTimePicker({ statePath: @js($statePath), initialValue: @js($stateValue), placeholder: @js(__('Pick date and time...')), locale: @js(app()->getLocale()) })" x-init="init()" @click.outside="isOpen = false"
         style="position:relative">
 
         {{-- ── TRIGGER ──────────────────────────────────────────────── --}}
         <button type="button" class="cdtp-trigger" :class="isOpen ? 'open' : ''" @click="isOpen = !isOpen">
             <svg style="width:16px;height:16px;flex-shrink:0"
-                :style="{ color: displayValue ? 'rgb(var(--color-primary-500))' : 'var(--cdtp-text-faint)' }"
+                :style="{ color: displayValue ? 'var(--color-primary-500, #f97316)' : 'var(--cdtp-text-faint)' }"
                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -328,11 +402,11 @@
                     fontWeight: displayValue ?
                         '500' : '400'
                 }"
-                x-text="displayValue || 'Pilih tanggal dan waktu...'"></span>
+                x-text="displayValue || placeholder"></span>
             <svg style="width:13px;height:13px;flex-shrink:0;transition:transform .2s"
                 :style="{
                     transform: isOpen ? 'rotate(180deg)' : '',
-                    color: isOpen ? 'rgb(var(--color-primary-500))' : 'var(--cdtp-text-faint)'
+                    color: isOpen ? 'var(--color-primary-500, #f97316)' : 'var(--cdtp-text-faint)'
                 }"
                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5"
                 stroke="currentColor">
@@ -435,7 +509,7 @@
                     style="width:154px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 12px;background:var(--cdtp-bg-alt)">
                     <div
                         style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cdtp-text-faint);margin-bottom:14px">
-                        Waktu (WIB)
+                        {{ __('Time (WIB)') }}
                     </div>
                     <div style="display:flex;align-items:center;gap:8px">
 
@@ -459,10 +533,10 @@
                                 </svg>
                             </button>
                             <span
-                                style="font-size:10px;color:var(--cdtp-text-faint);font-weight:500;margin-top:2px">Jam</span>
+                                style="font-size:10px;color:var(--cdtp-text-faint);font-weight:500;margin-top:2px">{{ __('Hour') }}</span>
                         </div>
 
-                        <div style="font-size:26px;font-weight:700;color:var(--cdtp-border);padding-bottom:22px">:
+                        <div style="font-size:26px;font-weight:700;color:var(--cdtp-text-dim);padding-bottom:22px">:
                         </div>
 
                         {{-- Minute --}}
@@ -485,7 +559,7 @@
                                 </svg>
                             </button>
                             <span
-                                style="font-size:10px;color:var(--cdtp-text-faint);font-weight:500;margin-top:2px">Menit</span>
+                                style="font-size:10px;color:var(--cdtp-text-faint);font-weight:500;margin-top:2px">{{ __('Minute') }}</span>
                         </div>
 
                     </div>
@@ -495,23 +569,23 @@
 
             {{-- ── FOOTER ───────────────────────────────────────────── --}}
             <div
-                style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--cdtp-border);background:var(--cdtp-bg-alt)">
+                style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--cdtp-border);background:var(--cdtp-bg-alt) !important">
                 <button type="button" class="cdtp-btn-now" @click="setNow(); confirm();">
                     <svg style="width:13px;height:13px" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Sekarang
+                    {{ __('Now') }}
                 </button>
-                <button type="button" class="cdtp-btn-clear" @click="clear()">Hapus</button>
+                <button type="button" class="cdtp-btn-clear" @click="clear()">{{ __('Clear') }}</button>
                 <button type="button" class="cdtp-btn-ok" style="margin-left:auto" @click="confirm()"
                     :disabled="selectedDay === null">
                     <svg style="width:13px;height:13px" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
-                    Konfirmasi
+                    {{ __('Confirm') }}
                 </button>
             </div>
 

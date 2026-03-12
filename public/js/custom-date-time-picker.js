@@ -3,6 +3,8 @@ document.addEventListener('alpine:init', () => {
         isOpen: false,
         dropDirection: 'drop-down',
         statePath: config.statePath ?? '',
+        placeholder: config.placeholder ?? '',
+        locale: config.locale ?? 'id',
         pickerView: 'days', // 'days' | 'months' | 'years'
 
         viewMonth: new Date().getMonth(),
@@ -21,6 +23,12 @@ document.addEventListener('alpine:init', () => {
         dayNamesFull: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
 
         init() {
+            if (this.locale === 'en') {
+                this.monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                this.monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                this.dayNamesShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                this.dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            }
             if (config.initialValue) this.parseValue(config.initialValue);
         },
 
