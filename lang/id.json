@@ -749,5 +749,18 @@
     "participants completed": "peserta selesai",
     "Passed": "Lulus",
     "Not Passed": "Tidak Lulus",
-    "Pass Rate": "Kelulusan"
+    "Pass Rate": "Kelulusan",
+    "Exam Activity Log": "Log Aktivitas Ujian",
+    "Latest participant activities, auto-refreshes every 30 seconds": "Aktivitas peserta terbaru, diperbarui otomatis setiap 30 detik",
+    "activities": "aktivitas",
+    "All Activities": "Semua Aktivitas",
+    "Violations Only": "Pelanggaran Saja",
+    "No activity recorded yet": "Belum ada aktivitas tercatat",
+    "Activity feed will appear once exams are in progress.": "Feed aktivitas akan muncul setelah ujian berlangsung.",
+    "View All in Monitoring": "Lihat Semua di Monitoring",
+    "Tab Switch": "Pindah Tab",
+    "Window Blur": "Klik Luar Jendela",
+    "Copy Attempt": "Percobaan Copy",
+    "Paste Attempt": "Percobaan Paste",
+    "Right Click": "Klik Kanan"
 }
