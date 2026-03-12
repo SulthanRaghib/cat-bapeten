@@ -24,6 +24,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\View\PanelsRenderHook;
@@ -35,12 +36,14 @@ class AdminPanelProvider extends PanelProvider
         parent::register();
 
         Event::listen(ServingFilament::class, function (): void {
-            if (! auth()->check()) {
+            $user = Auth::user();
+
+            if (! $user instanceof \App\Models\User) {
                 return;
             }
 
             FilamentColor::register([
-                'primary' => match (auth()->user()->theme_color) {
+                'primary' => match ($user->theme_color) {
                     'green'   => Color::Emerald,
                     'purple'  => Color::Purple,
                     'orange'  => Color::Orange,
@@ -97,6 +100,40 @@ class AdminPanelProvider extends PanelProvider
             ->plugins([
                 FilamentShieldPlugin::make(),
             ])
+            ->renderHook(
+                'panels::head.end',
+                fn(): string => Blade::render(<<<'HTML'
+                    {{-- PWA Meta Tags --}}
+                    <meta name="application-name" content="CAT BAPETEN" />
+                    <meta name="apple-mobile-web-app-capable" content="yes" />
+                    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+                    <meta name="apple-mobile-web-app-title" content="CAT BAPETEN" />
+                    <meta name="mobile-web-app-capable" content="yes" />
+                    <meta name="msapplication-TileColor" content="#d97706" />
+                    <meta name="msapplication-tap-highlight" content="no" />
+                    <meta name="theme-color" content="#d97706" />
+                    <link rel="manifest" href="/build/manifest.webmanifest" />
+                    {{-- Apple Touch Icons --}}
+                    <link rel="apple-touch-icon" href="/pwa/icon-192.png" />
+                    <link rel="apple-touch-icon" sizes="152x152" href="/pwa/icon-152.png" />
+                    <link rel="apple-touch-icon" sizes="144x144" href="/pwa/icon-144.png" />
+                    <link rel="apple-touch-icon" sizes="128x128" href="/pwa/icon-128.png" />
+                    {{-- Apple Splash Screens — portrait, per device --}}
+                    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/pwa/splash-750x1334.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1242x2208.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1125x2436.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/pwa/splash-828x1792.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1242x2688.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1170x2532.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1284x2778.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1179x2556.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/pwa/splash-1290x2796.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/pwa/splash-1488x2266.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/pwa/splash-1640x2360.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/pwa/splash-1668x2388.png" />
+                    <link rel="apple-touch-startup-image" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/pwa/splash-2048x2732.png" />
+                HTML)
+            )
             ->renderHook(
                 'panels::body.end',
                 fn(): string => Blade::render(<<<'HTML'

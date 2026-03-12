@@ -38,6 +38,12 @@ Route::get('/lang/{locale}', function (string $locale) {
     return redirect()->back(fallback: '/admin');
 })->name('lang.switch');
 
+// PWA offline fallback page
+Route::get('/offline', function () {
+    return view('pwa.offline');
+})->name('pwa.offline');
+
+
 Route::get('/debug-user-exam/{nip}', function ($nip) {
     $user = \App\Models\User::where('nip', $nip)->first();
     if (!$user) return "User with NIP $nip not found";
