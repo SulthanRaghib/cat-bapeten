@@ -9,12 +9,24 @@ use Filament\Schemas\Schema;
 class AppearanceSettings extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-paint-brush';
-    protected static ?string $navigationLabel = 'Tampilan';
-    protected static ?string $title = 'Pengaturan Tampilan';
-    protected static string|\UnitEnum|null $navigationGroup = 'Pengaturan';
     protected static ?int $navigationSort = 99;
 
     protected string $view = 'filament.pages.appearance-settings';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Appearance');
+    }
+
+    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Appearance Settings');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Settings');
+    }
 
     public string $currentColor = 'yellow';
 
@@ -37,7 +49,7 @@ class AppearanceSettings extends Page
         $this->currentColor = $color;
 
         Notification::make()
-            ->title('Tema berhasil diubah!')
+            ->title(__('Theme changed successfully!'))
             ->success()
             ->duration(2000)
             ->send();
