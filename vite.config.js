@@ -6,7 +6,13 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/css/filament/admin/theme.css'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js',
+                'resources/css/filament/admin/theme.css',
+                'resources/css/components/math-helper.css',
+                'resources/js/components/math-helper.js',
+            ],
             refresh: true,
         }),
         tailwindcss(),
