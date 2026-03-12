@@ -31,7 +31,7 @@ class CustomLogin extends BaseLogin
     protected function getLoginIdFormComponent(): Component
     {
         return TextInput::make('login_id')
-            ->label('Email / NIP')
+            ->label(__('Email / NIP'))
             ->required()
             ->autocomplete()
             ->autofocus()
@@ -41,7 +41,7 @@ class CustomLogin extends BaseLogin
     protected function getPasswordFormComponent(): Component
     {
         return TextInput::make('password')
-            ->label('Password / Token Ujian')
+            ->label(__('Password / Exam Token'))
             ->password()
             ->revealable(filament()->arePasswordsRevealable())
             ->required()

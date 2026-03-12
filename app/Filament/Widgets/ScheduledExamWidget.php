@@ -26,11 +26,11 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
 
     protected static ?int $sort = 2; // After stats, before charts
     protected int | string | array $columnSpan = 'full';
-    protected static ?string $heading = 'Daftar Ujian Terjadwal';
+    protected static ?string $heading = null;
 
     protected function getTableHeading(): string|\Illuminate\Contracts\Support\Htmlable|null
     {
-        return 'Daftar Ujian Terjadwal';
+        return __('Scheduled Exams');
     }
 
     public function getDescription(): string | View | null
@@ -72,11 +72,11 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
     public function viewNoActivityAction(): Action
     {
         return Action::make('viewNoActivity')
-            ->label('Ujian Tanpa Aktivitas')
-            ->modalHeading('Daftar Ujian Sedang Berlangsung Tanpa Aktivitas')
+            ->label(__('Exams Without Activity'))
+            ->modalHeading(__('Ongoing Exams Without Activity'))
             ->modalWidth('lg')
             ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Tutup')
+            ->modalCancelActionLabel(__('Close'))
             ->modalContent(function () {
                 $exams = ExamPackage::query()
                     ->where('is_active', true)
@@ -87,7 +87,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
 
                 return view('filament.widgets.modals.exam-list', [
                     'records' => $exams,
-                    'actionLabel' => 'Periksa',
+                    'actionLabel' => __('Inspect'),
                     'actionUrl' => fn($record) => ExamPackageResource::getUrl('edit', ['record' => $record]),
                 ]);
             });
@@ -96,11 +96,11 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
     public function viewStartingSoonAction(): Action
     {
         return Action::make('viewStartingSoon')
-            ->label('Ujian Segera Mulai')
-            ->modalHeading('Daftar Ujian Segera Mulai')
+            ->label(__('Exams Starting Soon'))
+            ->modalHeading(__('Exams Starting Soon'))
             ->modalWidth('lg')
             ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Tutup')
+            ->modalCancelActionLabel(__('Close'))
             ->modalContent(function () {
                 $exams = ExamPackage::where('is_active', true)
                     ->where('start_time', '>', now())
@@ -108,7 +108,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     ->get();
                 return view('filament.widgets.modals.exam-list', [
                     'records' => $exams,
-                    'actionLabel' => 'Lihat Detail',
+                    'actionLabel' => __('View Detail'),
                     'actionUrl' => fn($record) => ExamPackageResource::getUrl('edit', ['record' => $record]),
                 ]);
             });
@@ -117,11 +117,11 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
     public function viewLoggedOutAction(): Action
     {
         return Action::make('viewLoggedOut')
-            ->label('Peserta Terdeteksi Logout')
-            ->modalHeading('Daftar Peserta Terdeteksi Logout (24 Jam Terakhir)')
+            ->label(__('Participants Detected Logout'))
+            ->modalHeading(__('Participants Detected Logout (Last 24 Hours)'))
             ->modalWidth('lg')
             ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Tutup')
+            ->modalCancelActionLabel(__('Close'))
             ->modalContent(function () {
                 $sessions = ExamSession::where('status', 'terminated')
                     ->where('updated_at', '>=', now()->subDay())
@@ -144,7 +144,9 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             ->count();
 
         $description = $this->getDescription();
-        $ongoingMessage = $ongoingCount > 0 ? "🔴 {$ongoingCount} Ujian Sedang Berlangsung" : null;
+        $ongoingMessage = $ongoingCount > 0
+            ? '🔴 ' . __(':count Exams Ongoing', ['count' => $ongoingCount])
+            : null;
 
         $finalDescription = null;
         if ($description && $ongoingMessage) {
@@ -172,7 +174,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             )
             ->headerActions([
                 Action::make('monitoring')
-                    ->label('Monitoring Ujian')
+                    ->label(__('Exam Monitoring'))
                     ->icon('heroicon-m-eye')
                     ->color('danger')
                     ->url(ExamMonitorResource::getUrl('index'))
@@ -180,7 +182,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             ])
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                    ->label('Nama Ujian')
+                    ->label(__('Exam Name'))
                     ->description(
                         fn(ExamPackage $record): string =>
                         $record->examType?->name ?? '\u2014'
@@ -190,7 +192,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     ->alignment('left'),
 
                 Tables\Columns\TextColumn::make('examType.name')
-                    ->label('Tipe')
+                    ->label(__('Type'))
                     ->badge()
                     ->icon(fn($record): string => match ($record->examType?->evaluation_method) {
                         'correct_wrong' => 'heroicon-m-check-badge',
@@ -205,7 +207,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('start_time')
-                    ->label('Waktu Pelaksanaan')
+                    ->label(__('Schedule'))
                     ->formatStateUsing(fn(ExamPackage $record) => new \Illuminate\Support\HtmlString(
                         ($record->start_time && $record->end_time && $record->start_time->isSameDay($record->end_time))
                             ? ($record->start_time->format('d M Y') . '<br>' .
@@ -221,21 +223,24 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('duration_minutes')
-                    ->label('Durasi')
-                    ->formatStateUsing(fn($state) => "{$state} menit")
+                    ->label(__('Duration'))
+                    ->formatStateUsing(fn($state) => "{$state} " . __('minutes'))
                     ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('participants_count')
-                    ->label('Peserta')
+                    ->label(__('Participants'))
                     ->formatStateUsing(function (ExamPackage $record) {
                         $total    = $record->participants_count ?? 0;
                         $finished = $record->participants_finished_count ?? 0;
                         $percentage = $total > 0 ? round(($finished / $total) * 100) : 0;
 
+                        $participants = __(':total Participants', ['total' => $total]);
+                        $done = __(':finished Done (:pct%)', ['finished' => $finished, 'pct' => $percentage]);
+
                         return new \Illuminate\Support\HtmlString(
-                            "<div class='mb-1'>{$total} Peserta</div>" .
+                            "<div class='mb-1'>{$participants}</div>" .
                                 ($total > 0
-                                    ? "<div class='text-xs text-gray-500 mb-1'>{$finished} Selesai ({$percentage}%)</div>
+                                    ? "<div class='text-xs text-gray-500 mb-1'>{$done}</div>
                                    <div class='w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 overflow-hidden'>
                                        <div class='bg-success-600 h-1.5 rounded-full' style='width: {$percentage}%'></div>
                                    </div>"
@@ -245,7 +250,7 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                     ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('computed_status')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'scheduled' => 'success',
@@ -255,17 +260,17 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                         default     => 'gray',
                     })
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'scheduled' => 'Akan Datang',
-                        'ongoing'   => 'Berlangsung',
-                        'finished'  => 'Selesai',
-                        'cancelled' => 'Dibatalkan',
+                        'scheduled' => __('Upcoming'),
+                        'ongoing'   => __('Ongoing'),
+                        'finished'  => __('Finished'),
+                        'cancelled' => __('Cancelled'),
                         default     => $state,
                     })
                     ->alignment('center'),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->label('Edit Ujian')
+                    ->label(__('Edit Exam'))
                     ->url(function (ExamPackage $record): string {
                         // Cek apakah request saat ini adalah POST (seperti Livewire update)
                         // Jika ya, gunakan Referer sebagai return_url karena kita tidak bisa redirect GET ke route POST
@@ -285,14 +290,14 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
                 'weighted'      => 'border-s-4 border-violet-500',
                 default         => '',
             })
-            ->emptyStateHeading('Belum ada ujian terjadwal.')
+            ->emptyStateHeading(__('No scheduled exams.'))
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->options([
-                        'scheduled' => 'Akan Datang',
-                        'ongoing'   => 'Berlangsung',
-                        'finished'  => 'Selesai',
+                        'scheduled' => __('Upcoming'),
+                        'ongoing'   => __('Ongoing'),
+                        'finished'  => __('Finished'),
                     ])
                     ->query(function (Builder $query, array $data) {
                         if (empty($data['value'])) {

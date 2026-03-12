@@ -23,11 +23,22 @@ class QuestionResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'question_text';
 
-    protected static ?string $modelLabel = 'Bank Soal';
-    protected static ?string $pluralModelLabel = 'Bank Soal';
-    protected static ?string $navigationLabel = 'Bank Soal';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Manajemen Ujian';
+    public static function getModelLabel(): string
+    {
+        return __('Question Bank');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Question Bank');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Question Bank');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Exam Management');
+    }
 
     public static function form(Schema $schema): Schema
     {

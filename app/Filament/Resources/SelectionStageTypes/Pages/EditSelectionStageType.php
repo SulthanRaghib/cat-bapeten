@@ -16,9 +16,9 @@ class EditSelectionStageType extends EditRecord
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Jenis Tahap Seleksi?')
-                ->modalDescription('Jenis tahap seleksi ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete Selection Stage Type?'))
+                ->modalDescription(__('This selection stage type will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -26,10 +26,10 @@ class EditSelectionStageType extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

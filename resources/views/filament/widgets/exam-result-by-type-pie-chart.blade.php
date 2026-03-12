@@ -3,10 +3,10 @@
         <x-slot name="heading">
             <div class="flex items-center gap-2">
                 <x-filament::icon icon="heroicon-m-chart-pie" class="h-5 w-5 text-primary-500" />
-                Distribusi Hasil Ujian per Tipe
+                {{ __('Exam Result Distribution by Type') }}
             </div>
         </x-slot>
-        <x-slot name="description">Persentase kelulusan berdasarkan sesi ujian yang telah selesai</x-slot>
+        <x-slot name="description">{{ __('Pass rate based on completed exam sessions') }}</x-slot>
 
         {{-- Filter Periode --}}
         <div
@@ -14,7 +14,7 @@
 
             {{-- Tombol periode --}}
             <div class="flex flex-wrap gap-2">
-                @foreach (['today' => 'Hari Ini', 'week' => 'Minggu Ini', 'month' => 'Bulan Ini', 'all' => 'Semua'] as $val => $label)
+                @foreach (['today' => __('Today'), 'week' => __('This Week'), 'month' => __('This Month'), 'all' => __('All')] as $val => $label)
                     <button type="button" wire:click="$set('period', '{{ $val }}')"
                         class="rounded-lg px-3 py-1.5 text-sm font-medium transition
                                    {{ $period === $val
@@ -44,7 +44,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
                     </svg>
-                    <span>Rentang Tanggal</span>
+                    <span>{{ __('Date Range') }}</span>
                     @if ($period === 'custom' && ($customFrom || $customTo))
                         <span
                             class="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">1</span>
@@ -56,9 +56,14 @@
                         x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                         x-transition:leave="transition ease-in duration-100"
                         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                        :style="(() => { const spaceBelow = window.innerHeight - btnRect.bottom; const popH = 280; const top =
+                        :style="(() => {
+                            const spaceBelow = window.innerHeight - btnRect.bottom;
+                            const popH = 280;
+                            const top =
                                 spaceBelow >= popH + 8 ? btnRect.bottom + 8 : btnRect.top - popH -
-                                8; return `position:fixed; top:${top}px; right:${window.innerWidth - btnRect.right}px; z-index:9999;`; })
+                                8;
+                            return `position:fixed; top:${top}px; right:${window.innerWidth - btnRect.right}px; z-index:9999;`;
+                        })
                         ()"
                         @click.outside="open = false"
                         class="w-72 origin-top-right rounded-xl border border-gray-200 bg-white p-4 shadow-xl
@@ -66,18 +71,20 @@
                         style="display:none;">
 
                         <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            Pilih Rentang Tanggal
+                            {{ __('Select Date Range') }}
                         </p>
 
                         <div class="space-y-3">
                             <div>
-                                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Dari</label>
+                                <label
+                                    class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ __('From') }}</label>
                                 <input type="date" wire:model="customFrom"
                                     class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm
                                               dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
                             </div>
                             <div>
-                                <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Sampai</label>
+                                <label
+                                    class="mb-1 block text-xs text-gray-500 dark:text-gray-400">{{ __('Until') }}</label>
                                 <input type="date" wire:model="customTo"
                                     class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm
                                               dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -87,11 +94,11 @@
                         <div class="mt-4 flex gap-2">
                             <button type="button" @click="open = false" wire:click="$set('period', 'custom')"
                                 class="flex-1 rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition">
-                                Terapkan
+                                {{ __('Apply') }}
                             </button>
                             <button type="button" @click="open = false" wire:click="resetCustomFilter"
                                 class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 transition">
-                                Reset
+                                {{ __('Reset') }}
                             </button>
                         </div>
                     </div>
@@ -104,9 +111,11 @@
                 <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                     <x-filament::icon icon="heroicon-o-chart-pie" class="h-8 w-8 opacity-50" />
                 </div>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tidak ada data ujian pada periode ini
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {{ __('No exam data for this period') }}
                 </p>
-                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Coba pilih periode yang berbeda</p>
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ __('Try selecting a different period') }}
+                </p>
             </div>
         @else
             <div class="grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
@@ -147,8 +156,8 @@
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
                                     {{ $data['name'] }}</p>
-                                <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{{ $total }} peserta
-                                    selesai</p>
+                                <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{{ $total }}
+                                    {{ __('participants completed') }}</p>
                             </div>
                             <span
                                 class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold {{ $badgeBg }} {{ $badgeText }}">
@@ -170,16 +179,19 @@
                             <div class="flex flex-col items-center py-3 px-2">
                                 <span
                                     class="text-base font-bold text-emerald-600 dark:text-emerald-400">{{ $data['lulus'] }}</span>
-                                <span class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Lulus</span>
+                                <span
+                                    class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{{ __('Passed') }}</span>
                             </div>
                             <div class="flex flex-col items-center py-3 px-2">
                                 <span
                                     class="text-base font-bold text-red-500 dark:text-red-400">{{ $data['tidakLulus'] }}</span>
-                                <span class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Tidak Lulus</span>
+                                <span
+                                    class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{{ __('Not Passed') }}</span>
                             </div>
                             <div class="flex flex-col items-center py-3 px-2">
                                 <span class="text-base font-bold {{ $rateTextColor }}">{{ $passRate }}%</span>
-                                <span class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">Kelulusan</span>
+                                <span
+                                    class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{{ __('Pass Rate') }}</span>
                             </div>
                         </div>
                     </div>
@@ -200,7 +212,7 @@
                 new Chart(canvas, {
                     type: 'pie',
                     data: {
-                        labels: ['Lulus', 'Tidak Lulus'],
+                        labels: ['{{ __('Passed') }}', '{{ __('Not Passed') }}'],
                         datasets: [{
                             data: values,
                             backgroundColor: ['#10b981', '#ef4444'],

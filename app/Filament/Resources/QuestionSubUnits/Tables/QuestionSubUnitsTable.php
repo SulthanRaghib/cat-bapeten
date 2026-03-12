@@ -28,13 +28,13 @@ class QuestionSubUnitsTable
             )
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nama Sub Unit')
+                    ->label(__('Sub Unit Name'))
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 TextColumn::make('questionUnit.name')
-                    ->label('Unit Soal')
+                    ->label(__('Question Unit'))
                     ->description(
                         fn($record): string =>
                         $record->questionUnit?->examType?->name ?? '\u2014'
@@ -48,21 +48,21 @@ class QuestionSubUnitsTable
                     ->sortable(),
 
                 TextColumn::make('questions_count')
-                    ->label('Soal')
+                    ->label(__('Questions'))
                     ->counts('questions')
                     ->icon('heroicon-m-document-text')
                     ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
+                    ->label(__('Created At'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('question_unit_id')
-                    ->label('Unit Soal')
+                    ->label(__('Question Unit'))
                     ->relationship('questionUnit', 'name')
                     ->preload()
                     ->native(false),
@@ -70,22 +70,22 @@ class QuestionSubUnitsTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Sub Unit')
+                        ->label(__('Edit Sub Unit'))
                         ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
-                        ->label('Hapus Sub Unit')
+                        ->label(__('Delete Sub Unit'))
                         ->icon('heroicon-m-trash')
-                        ->modalHeading('Hapus Sub Unit Soal?')
-                        ->modalDescription('Menghapus sub unit ini juga akan menghapus seluruh soal yang terkait. Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
+                        ->modalHeading(__('Delete Question Sub Unit?'))
+                        ->modalDescription(__('Deleting this sub unit will also delete all related questions. This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
             ])
-            ->emptyStateHeading('Belum ada sub unit soal')
-            ->emptyStateDescription('Tambahkan sub unit sebagai klasifikasi lebih rinci dalam unit soal.')
+            ->emptyStateHeading(__('No question sub units yet'))
+            ->emptyStateDescription(__('Add sub units as a more detailed classification within a question unit.'))
             ->emptyStateIcon('heroicon-o-folder-open');
     }
 }

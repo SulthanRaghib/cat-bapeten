@@ -45,7 +45,12 @@ class NabConfigurationRelationManager extends RelationManager
 {
     protected static string $relationship = 'questions';
 
-    protected static ?string $title = 'Konfigurasi NAB & Kelulusan';
+    protected static ?string $title = null;
+
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('NAB & Graduation Configuration');
+    }
 
     /**
      * Livewire state property — all form components bind to this
@@ -78,16 +83,16 @@ class NabConfigurationRelationManager extends RelationManager
                 Group::make()
                     ->statePath('nabData')
                     ->schema([
-                        Section::make('Konfigurasi NAB & Kelulusan')
+                        Section::make(__('NAB & Graduation Configuration'))
                             ->description(
-                                'Daftar unit ditentukan otomatis dari soal di tab "Soal Ujian".'
-                                    . ' Nilai indikator bersifat independen per paket ujian — perubahan di sini hanya berlaku untuk paket ini, tidak mempengaruhi paket lain maupun Master Data.'
+                                __('The unit list is determined automatically from questions in the "Exam Questions" tab.')
+                                    . ' ' . __('Indicator values are independent per exam package — changes here only apply to this package and do not affect other packages or Master Data.')
                             )
                             ->icon('heroicon-o-adjustments-horizontal')
                             ->headerActions([
                                 // ── Smart Sync: refresh units from questions ──
                                 Action::make('syncFromQuestions')
-                                    ->label('🔄 Sinkronkan')
+                                    ->label('🔄 ' . __('Synchronize'))
                                     ->icon('heroicon-o-arrow-path')
                                     ->color('warning')
                                     ->action(function (): void {
@@ -99,8 +104,8 @@ class NabConfigurationRelationManager extends RelationManager
                                         if (empty($result['configs'])) {
                                             Notification::make()
                                                 ->warning()
-                                                ->title('Tidak ada soal terkait')
-                                                ->body('Pastikan soal sudah ditambahkan di tab "Soal Ujian" dan setiap soal memiliki Unit.')
+                                                ->title(__('No related questions'))
+                                                ->body(__('Make sure questions have been added in the "Exam Questions" tab and each question has a Unit.'))
                                                 ->send();
 
                                             return;
@@ -109,20 +114,20 @@ class NabConfigurationRelationManager extends RelationManager
                                         // Build descriptive notification
                                         $parts = [];
                                         if ($result['added'] > 0) {
-                                            $parts[] = "{$result['added']} unit baru ditambahkan";
+                                            $parts[] = __(':count new units added', ['count' => $result['added']]);
                                         }
                                         if ($result['removed'] > 0) {
-                                            $parts[] = "{$result['removed']} unit tidak relevan dihapus";
+                                            $parts[] = __(':count irrelevant units removed', ['count' => $result['removed']]);
                                         }
                                         if ($result['kept'] > 0) {
-                                            $parts[] = "{$result['kept']} unit dipertahankan";
+                                            $parts[] = __(':count units retained', ['count' => $result['kept']]);
                                         }
 
                                         $hasChanges = $result['added'] > 0 || $result['removed'] > 0;
 
                                         Notification::make()
                                             ->color($hasChanges ? 'success' : 'info')
-                                            ->title($hasChanges ? 'Sinkronisasi Berhasil' : 'Data Sudah Sinkron')
+                                            ->title($hasChanges ? __('Sync Successful') : __('Data Already Synced'))
                                             ->body(
                                                 $hasChanges
                                                     ? implode(', ', $parts) . '. Total: ' . count($result['configs']) . ' unit.'
@@ -136,7 +141,7 @@ class NabConfigurationRelationManager extends RelationManager
 
                                 // ── Save per-package config (JSON only — no master sync) ──
                                 Action::make('saveNabConfig')
-                                    ->label('💾 Simpan')
+                                    ->label('💾 ' . __('Save'))
                                     ->icon('heroicon-o-check-circle')
                                     ->color('primary')
                                     ->action(function (): void {
@@ -157,8 +162,8 @@ class NabConfigurationRelationManager extends RelationManager
 
                                         Notification::make()
                                             ->success()
-                                            ->title('Tersimpan')
-                                            ->body('Konfigurasi NAB & Kelulusan berhasil disimpan untuk paket ini.')
+                                            ->title(__('Saved'))
+                                            ->body(__('NAB & Graduation Configuration saved for this package.'))
                                             ->send();
 
                                         $this->js('setTimeout(() => window.location.reload(), 600)');
@@ -171,15 +176,15 @@ class NabConfigurationRelationManager extends RelationManager
                                     ->deletable(false)
                                     ->reorderable(false)
                                     ->defaultItems(0)
-                                    ->helperText('Unit ditentukan oleh soal di tab "Soal Ujian". Untuk menambah/menghapus unit, kelola soal terlebih dahulu, lalu klik "🔄 Sinkronkan". Nilai indikator yang sudah dikustomisasi tidak akan berubah saat sinkronisasi.')
+                                    ->helperText(__('Units are determined by questions in the "Exam Questions" tab. To add/remove units, manage questions first, then click "Synchronize". Customized indicator values will not change during synchronization.'))
                                     ->extraItemActions([
                                         Action::make('resetUnitToMaster')
-                                            ->label('↩ Reset ke Master')
+                                            ->label('↩ ' . __('Reset to Master'))
                                             ->icon('heroicon-o-arrow-uturn-left')
                                             ->color('warning')
                                             ->requiresConfirmation()
-                                            ->modalHeading('Reset ke Nilai Master?')
-                                            ->modalDescription('Nilai indikator untuk unit ini akan dikembalikan ke template master data. Kustomisasi yang sudah dilakukan pada unit ini akan hilang.')
+                                            ->modalHeading(__('Reset to Master Values?'))
+                                            ->modalDescription(__('The indicator values for this unit will be reset to the master data template. Customizations made to this unit will be lost.'))
                                             ->action(function (array $arguments): void {
                                                 $itemKey = $arguments['item'];
                                                 $unitId  = (int) ($this->nabData['unit_scoring_configs'][$itemKey]['question_unit_id'] ?? 0);
@@ -197,8 +202,8 @@ class NabConfigurationRelationManager extends RelationManager
 
                                                 Notification::make()
                                                     ->success()
-                                                    ->title('Reset Berhasil')
-                                                    ->body('Indikator unit telah dikembalikan ke template master data.')
+                                                    ->title(__('Reset Successful'))
+                                                    ->body(__('Unit indicators have been reset to the master data template.'))
                                                     ->send();
 
                                                 $this->js('setTimeout(() => window.location.reload(), 600)');
@@ -216,8 +221,8 @@ class NabConfigurationRelationManager extends RelationManager
                                         ]),
 
                                         Repeater::make('indicators')
-                                            ->label('Level Indikator')
-                                            ->addActionLabel('+ Tambah Indikator')
+                                            ->label(__('Indicator Levels'))
+                                            ->addActionLabel(__('+ Add Indicator'))
                                             ->collapsible()
                                             ->cloneable()
                                             ->defaultItems(0)
@@ -226,21 +231,21 @@ class NabConfigurationRelationManager extends RelationManager
                                             ->schema([
                                                 Grid::make(4)->schema([
                                                     TextInput::make('name')
-                                                        ->label('Nama Indikator')
-                                                        ->validationAttribute('Nama Indikator')
+                                                        ->label(__('Indicator Name'))
+                                                        ->validationAttribute(__('Indicator Name'))
                                                         ->required()
-                                                        ->placeholder('cth: Memenuhi Standar')
+                                                        ->placeholder(__('e.g. Meets Standard'))
                                                         ->columnSpan(2),
 
                                                     TextInput::make('min_score')
-                                                        ->label('Skor Min')
+                                                        ->label(__('Min Score'))
                                                         ->validationAttribute('Skor Minimal')
                                                         ->numeric()
                                                         ->required()
                                                         ->columnSpan(1),
 
                                                     TextInput::make('max_score')
-                                                        ->label('Skor Maks')
+                                                        ->label(__('Max Score'))
                                                         ->validationAttribute('Skor Maks')
                                                         ->numeric()
                                                         ->required()
@@ -248,9 +253,9 @@ class NabConfigurationRelationManager extends RelationManager
                                                 ]),
 
                                                 Toggle::make('is_passing')
-                                                    ->label('Lulus NAB?')
+                                                    ->label(__('Pass NAB?'))
                                                     ->default(false)
-                                                    ->helperText('Tandai jika indikator ini memenuhi syarat kelulusan.'),
+                                                    ->helperText(__('Mark if this indicator meets the graduation requirement.')),
                                             ])
                                             ->itemLabel(fn(array $state): ?string => ($state['name'] ?? 'Indikator baru')
                                                 . ' (' . ($state['min_score'] ?? '?') . '–' . ($state['max_score'] ?? '?') . ')'
@@ -292,8 +297,8 @@ class NabConfigurationRelationManager extends RelationManager
         if ($result['added'] > 0 && $result['kept'] === 0 && ! empty($configs)) {
             Notification::make()
                 ->info()
-                ->title('Auto-Sync')
-                ->body('Konfigurasi NAB otomatis di-sync dari ' . count($configs) . ' unit soal.')
+                ->title(__('Auto-Sync'))
+                ->body(__('NAB configuration auto-synced from :count question units.', ['count' => count($configs)]))
                 ->send();
         }
 

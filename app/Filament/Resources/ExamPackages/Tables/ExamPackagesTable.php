@@ -27,7 +27,7 @@ class ExamPackagesTable
             )
             ->columns([
                 TextColumn::make('title')
-                    ->label('Judul Paket Ujian')
+                    ->label(__('Exam Package Title'))
                     ->description(
                         fn($record): string =>
                         'KKM: ' . ($record->passing_grade ?? '—')
@@ -39,7 +39,7 @@ class ExamPackagesTable
                     ->wrap(),
 
                 TextColumn::make('examType.name')
-                    ->label('Tipe Ujian')
+                    ->label(__('Exam Type'))
                     ->badge()
                     ->icon(fn($record): string => match ($record->examType?->evaluation_method) {
                         'correct_wrong' => 'heroicon-m-check-badge',
@@ -54,7 +54,7 @@ class ExamPackagesTable
                     ->sortable(),
 
                 TextColumn::make('start_time')
-                    ->label('Jadwal Ujian')
+                    ->label(__('Exam Schedule'))
                     ->description(
                         fn($record): string =>
                         $record->start_time ? $record->start_time->format('H:i') . ' WIB' : '—'
@@ -64,14 +64,14 @@ class ExamPackagesTable
                     ->sortable(),
 
                 TextColumn::make('is_active')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->icon(fn(bool $state): string => $state ? 'heroicon-m-bolt' : 'heroicon-m-pause-circle')
                     ->badge()
-                    ->formatStateUsing(fn(bool $state): string => $state ? 'Aktif' : 'Nonaktif')
+                    ->formatStateUsing(fn(bool $state): string => $state ? __('Active') : __('Inactive'))
                     ->color(fn(bool $state): string => $state ? 'success' : 'gray'),
 
                 TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
+                    ->label(__('Created At'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -82,56 +82,56 @@ class ExamPackagesTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Paket Ujian')
+                        ->label(__('Edit Exam Package'))
                         ->icon('heroicon-m-pencil-square'),
 
                     Action::make('edit_questions')
-                        ->label('Edit Soal Ujian')
+                        ->label(__('Edit Questions'))
                         ->icon('heroicon-m-rectangle-stack')
                         ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=0")),
 
                     Action::make('edit_konfigurasi_nab_dan_kelulusan')
-                        ->label('Edit Konfigurasi NAB & Kelulusan')
+                        ->label(__('Edit NAB & Pass Config'))
                         ->icon('heroicon-m-cog-6-tooth')
                         ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=1"))
                         ->visible(fn($record) => $record->examType?->evaluation_method === 'weighted'),
 
                     Action::make('edit_participants')
-                        ->label('Edit Peserta Ujian')
+                        ->label(__('Edit Participants'))
                         ->icon('heroicon-m-users')
                         ->url(fn($record) => url("/admin/exam-packages/{$record->id}/edit?relation=2")),
 
                     Action::make('activate')
-                        ->label('Aktifkan Paket')
+                        ->label(__('Activate Package'))
                         ->icon('heroicon-m-bolt')
                         ->visible(fn($record) => ! $record->is_active)
                         ->color('success')
                         ->requiresConfirmation()
-                        ->modalHeading('Aktifkan paket ujian?')
-                        ->modalDescription('Peserta akan dapat melihat dan mengerjakan paket ujian ini setelah diaktifkan.')
-                        ->modalSubmitActionLabel('Ya, Aktifkan')
+                        ->modalHeading(__('Activate exam package?'))
+                        ->modalDescription(__('Participants will be able to see and take this exam package once activated.'))
+                        ->modalSubmitActionLabel(__('Yes, Activate'))
                         ->action(fn($record) => $record->update(['is_active' => true]))
                         ->after(fn() => Notification::make()
-                            ->title('Paket ujian diaktifkan')
+                            ->title(__('Exam package activated'))
                             ->success()
                             ->send()),
 
                     Action::make('deactivate')
-                        ->label('Nonaktifkan Paket')
+                        ->label(__('Deactivate Package'))
                         ->icon('heroicon-m-pause-circle')
                         ->visible(fn($record) => $record->is_active)
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->modalHeading('Nonaktifkan paket ujian?')
-                        ->modalDescription('Peserta tidak akan dapat mengerjakan paket ini sampai Anda mengaktifkannya kembali.')
-                        ->modalSubmitActionLabel('Ya, Nonaktifkan')
+                        ->modalHeading(__('Deactivate exam package?'))
+                        ->modalDescription(__('Participants will not be able to take this package until you reactivate it.'))
+                        ->modalSubmitActionLabel(__('Yes, Deactivate'))
                         ->action(fn($record) => $record->update(['is_active' => false]))
                         ->after(fn() => Notification::make()
-                            ->title('Paket ujian dinonaktifkan')
+                            ->title(__('Exam package deactivated'))
                             ->warning()
                             ->send()),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -139,14 +139,14 @@ class ExamPackagesTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('Hapus Paket Ujian Terpilih')
-                        ->modalHeading('Hapus Paket Ujian Terpilih')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus paket ujian yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected Exam Packages'))
+                        ->modalHeading(__('Delete Selected Exam Packages'))
+                        ->modalDescription(__('Are you sure you want to delete the selected exam packages? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ])
-            ->emptyStateHeading('Belum ada paket ujian')
-            ->emptyStateDescription('Buat paket ujian baru untuk mulai mengelola soal dan peserta.')
+            ->emptyStateHeading(__('No exam packages yet'))
+            ->emptyStateDescription(__('Create a new exam package to start managing questions and participants.'))
             ->emptyStateIcon('heroicon-o-rectangle-stack');
     }
 }

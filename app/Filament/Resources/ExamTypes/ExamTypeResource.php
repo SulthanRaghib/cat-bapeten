@@ -21,10 +21,22 @@ class ExamTypeResource extends Resource
     protected static ?string $model = ExamType::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
     protected static ?string $recordTitleAttribute = 'name';
-    protected static ?string $modelLabel = 'Tipe Ujian';
-    protected static ?string $pluralModelLabel = 'Tipe Ujian';
-    protected static ?string $navigationLabel = 'Tipe Ujian';
-    protected static string|UnitEnum|null $navigationGroup = 'Data Master';
+    public static function getModelLabel(): string
+    {
+        return __('Exam Type');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Exam Types');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Exam Types');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
     protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema

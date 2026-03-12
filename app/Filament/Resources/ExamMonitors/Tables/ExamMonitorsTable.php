@@ -23,22 +23,22 @@ class ExamMonitorsTable
             )
             ->columns([
                 TextColumn::make('user.name')
-                    ->label('Peserta')
+                    ->label(__('Participant'))
                     ->description(fn(ExamSession $record): string => 'NIP: ' . ($record->user->nip ?? '—'))
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 TextColumn::make('examParticipant.token')
-                    ->label('Token')
+                    ->label(__('Token'))
                     ->copyable()
-                    ->copyMessage('Token disalin!')
+                    ->copyMessage(__('Token copied!'))
                     ->copyMessageDuration(2000)
                     ->weight('bold')
                     ->color('primary'),
 
                 TextColumn::make('examPackage.title')
-                    ->label('Paket Ujian')
+                    ->label(__('Exam Package'))
                     ->description(
                         fn(ExamSession $record): string =>
                         $record->examPackage?->examType?->name ?? '—'
@@ -47,7 +47,7 @@ class ExamMonitorsTable
                     ->wrap(),
 
                 TextColumn::make('started_at')
-                    ->label('Waktu Mulai')
+                    ->label(__('Start Time'))
                     ->description(
                         fn(ExamSession $record): string =>
                         $record->started_at ? $record->started_at->format('d M Y') : '—'
@@ -56,7 +56,7 @@ class ExamMonitorsTable
                     ->icon('heroicon-m-clock'),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->badge()
                     ->icon(fn(string $state): string => match ($state) {
                         'ongoing'    => 'heroicon-m-play-circle',
@@ -73,15 +73,15 @@ class ExamMonitorsTable
                         default      => 'gray',
                     })
                     ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'ongoing'    => 'Sedang Berjalan',
-                        'paused'     => 'Dijeda',
-                        'completed'  => 'Selesai',
-                        'terminated' => 'Dihentikan',
+                        'ongoing'    => __('Running'),
+                        'paused'     => __('Paused'),
+                        'completed'  => __('Completed'),
+                        'terminated' => __('Terminated'),
                         default      => $state,
                     }),
 
                 TextColumn::make('progress')
-                    ->label('Progres')
+                    ->label(__('Progress'))
                     ->state(function (ExamSession $record): string {
                         $meta     = $record->answers_meta ?? [];
                         $total    = is_array($meta) ? count($meta) : 0;
@@ -90,12 +90,12 @@ class ExamMonitorsTable
                         $pct      = round(($answered / $total) * 100);
                         return "{$answered}/{$total} ({$pct}%)";
                     })
-                    ->description('soal dijawab')
+                    ->description(__('questions answered'))
                     ->icon('heroicon-m-chart-bar')
                     ->color('gray'),
 
                 TextColumn::make('violation_count')
-                    ->label('Pelanggaran')
+                    ->label(__('Violations'))
                     ->state(
                         fn(ExamSession $record) =>
                         \App\Models\ExamActivityLog::where('exam_session_id', $record->id)
@@ -116,7 +116,7 @@ class ExamMonitorsTable
             ])
             ->recordActions([
                 Action::make('pantau')
-                    ->label('Pantau')
+                    ->label(__('Monitor'))
                     ->icon('heroicon-o-eye')
                     ->modalWidth('7xl')
                     ->modalContent(fn($record) => $record ? view('filament.resources.exam-monitors.modal-content', ['record' => $record]) : null)
@@ -124,8 +124,8 @@ class ExamMonitorsTable
                     ->modalCancelAction(false)
                     ->slideOver(),
             ])
-            ->emptyStateHeading('Tidak ada peserta yang sedang ujian')
-            ->emptyStateDescription('Saat ini tidak ada sesi ujian yang aktif. Halaman ini diperbarui otomatis setiap 5 detik.')
+            ->emptyStateHeading(__('No active exam sessions'))
+            ->emptyStateDescription(__('No active exam sessions currently. This page auto-refreshes every 5 seconds.'))
             ->emptyStateIcon('heroicon-o-computer-desktop');
     }
 }

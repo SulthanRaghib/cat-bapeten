@@ -10,15 +10,20 @@ class EditExamResult extends EditRecord
 {
     protected static string $resource = ExamResultResource::class;
 
-    protected static ?string $title = 'Detail Hasil Ujian';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Exam Result Detail');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Hasil Ujian?')
-                ->modalDescription('Data hasil ujian ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete Exam Result?'))
+                ->modalDescription(__('This exam result data will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -26,10 +31,10 @@ class EditExamResult extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

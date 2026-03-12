@@ -52,8 +52,8 @@ final class ValidateCorrectAnswerAction
         }
 
         Notification::make()
-            ->title('Kunci Jawaban Belum Dipilih')
-            ->body('Soal tipe Teknis wajib memiliki minimal 1 jawaban yang ditandai sebagai Kunci Jawaban (Benar).')
+            ->title(__('Answer Key Not Selected'))
+            ->body(__('Technical type questions must have at least 1 answer marked as the Answer Key (Correct).'))
             ->danger()
             ->persistent()
             ->send();

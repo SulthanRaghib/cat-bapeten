@@ -11,24 +11,29 @@ class CreateQuestionSubUnit extends CreateRecord
 {
     protected static string $resource = QuestionSubUnitResource::class;
 
-    protected static ?string $title = 'Tambah Sub Unit Soal';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Add Question Sub Unit');
+    }
 
     public function getBreadcrumb(): string
     {
-        return 'Tambah';
+        return __('Add');
     }
 
     protected function getFormActions(): array
     {
         return [
             $this->getCreateFormAction()
-                ->label('Simpan'),
+                ->label(__('Save')),
 
             $this->getCreateAnotherFormAction()
-                ->label('Simpan & Tambah Lagi'),
+                ->label(__('Save & Add Another')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

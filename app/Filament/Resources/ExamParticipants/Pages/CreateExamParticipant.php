@@ -12,24 +12,29 @@ class CreateExamParticipant extends CreateRecord
 {
     protected static string $resource = ExamParticipantResource::class;
 
-    protected static ?string $title = 'Tambah Peserta Ujian';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Add Exam Participant');
+    }
 
     public function getBreadcrumb(): string
     {
-        return 'Tambah';
+        return __('Add');
     }
 
     protected function getFormActions(): array
     {
         return [
             $this->getCreateFormAction()
-                ->label('Simpan'),
+                ->label(__('Save')),
 
             $this->getCreateAnotherFormAction()
-                ->label('Simpan & Tambah Lagi'),
+                ->label(__('Save & Add Another')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

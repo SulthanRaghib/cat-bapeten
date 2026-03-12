@@ -30,13 +30,13 @@ class QuestionUnitsTable
             )
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nama Unit')
+                    ->label(__('Unit Name'))
                     ->searchable()
                     ->sortable()
                     ->weight('semibold'),
 
                 TextColumn::make('examType.name')
-                    ->label('Tipe Ujian')
+                    ->label(__('Exam Type'))
                     ->badge()
                     ->icon(fn($record): string => match ($record->examType?->evaluation_method) {
                         'correct_wrong' => 'heroicon-m-check-badge',
@@ -51,33 +51,33 @@ class QuestionUnitsTable
                     ->sortable(),
 
                 TextColumn::make('sub_units_count')
-                    ->label('Sub Unit')
+                    ->label(__('Sub Unit'))
                     ->counts('subUnits')
                     ->icon('heroicon-m-bars-3-bottom-left')
                     ->alignCenter()
                     ->sortable(),
 
                 TextColumn::make('questions_count')
-                    ->label('Soal')
+                    ->label(__('Questions'))
                     ->counts('questions')
                     ->icon('heroicon-m-document-text')
                     ->alignCenter()
                     ->sortable(),
 
                 IconColumn::make('is_active')
-                    ->label('Aktif')
+                    ->label(__('Active'))
                     ->boolean()
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
+                    ->label(__('Created At'))
                     ->date('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('exam_type_id')
-                    ->label('Tipe Ujian')
+                    ->label(__('Exam Type'))
                     ->relationship('examType', 'name')
                     ->preload()
                     ->native(false),
@@ -85,30 +85,30 @@ class QuestionUnitsTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Unit')
+                        ->label(__('Edit Unit'))
                         ->icon('heroicon-m-pencil-square'),
 
                     Action::make('kelola_indikator')
-                        ->label('Kelola Indikator NAB')
+                        ->label(__('Manage NAB Indicators'))
                         ->icon('heroicon-m-chart-bar')
                         ->color('primary')
                         ->url(fn($record) => url("/admin/question-units/{$record->id}/edit?relation=0"))
                         ->visible(fn($record): bool => $record->examType?->evaluation_method === 'weighted'),
 
                     DeleteAction::make()
-                        ->label('Hapus Unit')
+                        ->label(__('Delete Unit'))
                         ->icon('heroicon-m-trash')
-                        ->modalHeading('Hapus Unit Soal?')
-                        ->modalDescription('Menghapus unit ini juga akan menghapus seluruh sub unit dan soal yang terkait. Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
+                        ->modalHeading(__('Delete Question Unit?'))
+                        ->modalDescription(__('Deleting this unit will also delete all related sub units and questions. This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
             ])
-            ->emptyStateHeading('Belum ada unit soal')
-            ->emptyStateDescription('Tambahkan unit soal untuk mengelompokkan soal-soal berdasarkan kompetensi.')
+            ->emptyStateHeading(__('No question units yet'))
+            ->emptyStateDescription(__('Add question units to group questions by competency.'))
             ->emptyStateIcon('heroicon-o-folder');
     }
 }

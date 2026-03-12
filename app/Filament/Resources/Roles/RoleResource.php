@@ -124,16 +124,16 @@ class RoleResource extends Resource
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Edit Peran')
+                        ->label(__('Edit Role'))
                         ->icon('heroicon-m-pencil-square'),
                     DeleteAction::make()
-                        ->label('Hapus Peran')
+                        ->label(__('Delete Role'))
                         ->icon('heroicon-m-trash')
-                        ->modalHeading('Hapus Peran?')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus peran ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
+                        ->modalHeading(__('Delete Role?'))
+                        ->modalDescription(__('Are you sure you want to delete this role? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -141,11 +141,11 @@ class RoleResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->label('Hapus Peran Terpilih')
-                        ->modalHeading('Hapus Peran Terpilih')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus peran yang dipilih ini? Tindakan ini tidak dapat dibatalkan.')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Delete Selected Roles'))
+                        ->modalHeading(__('Delete Selected Roles'))
+                        ->modalDescription(__('Are you sure you want to delete the selected roles? This action cannot be undone.'))
+                        ->modalSubmitActionLabel(__('Yes, Delete')),
+                ])->label(__('Bulk Actions')),
             ]);
     }
 

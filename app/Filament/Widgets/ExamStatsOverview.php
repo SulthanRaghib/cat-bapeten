@@ -68,38 +68,38 @@ class ExamStatsOverview extends BaseWidget
             : ($passCount >= $todaySessions->count() * 0.7 ? 'success' : 'warning');
 
         return [
-            Stat::make('Peserta Sedang Ujian', (string) $liveCount)
-                ->description($liveCount > 0 ? 'Sedang mengerjakan ujian saat ini' : 'Tidak ada sesi aktif')
+            Stat::make(__('Participants in Exam'), (string) $liveCount)
+                ->description($liveCount > 0 ? __('Currently taking exam') : __('No active sessions'))
                 ->descriptionIcon($liveCount > 0 ? 'heroicon-m-signal' : 'heroicon-m-users')
                 ->color($liveCount > 0 ? 'warning' : 'gray')
                 ->chart($liveChart)
                 ->url(ExamMonitorResource::getUrl('index')),
 
-            Stat::make('Selesai Hari Ini', (string) $todayCompletions)
+            Stat::make(__('Completed Today'), (string) $todayCompletions)
                 ->description(
                     $deltaToday > 0
-                        ? "+{$deltaToday} dibanding kemarin"
-                        : ($deltaToday < 0 ? "{$deltaToday} dibanding kemarin" : 'Sama dengan kemarin')
+                        ? __(':delta vs yesterday', ['delta' => "+{$deltaToday}"])
+                        : ($deltaToday < 0 ? __(':delta vs yesterday', ['delta' => "{$deltaToday}"]) : __('Same as yesterday'))
                 )
                 ->descriptionIcon($deltaToday >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($deltaToday >= 0 ? 'success' : 'warning')
                 ->url(ExamMonitorResource::getUrl('index')),
 
-            Stat::make('Paket Ujian Aktif', (string) $activePackages)
+            Stat::make(__('Active Exam Packages'), (string) $activePackages)
                 ->description(
                     $scheduledPackages > 0
-                        ? "Berlangsung saat ini · {$scheduledPackages} akan datang"
-                        : ($activePackages > 0 ? 'Berlangsung saat ini' : 'Tidak ada ujian berlangsung')
+                        ? __('Live now · :count upcoming', ['count' => $scheduledPackages])
+                        : ($activePackages > 0 ? __('Live now') : __('No ongoing exams'))
                 )
                 ->descriptionIcon('heroicon-m-rectangle-stack')
                 ->color($activePackages > 0 ? 'primary' : 'gray')
                 ->url(ExamPackageResource::getUrl('index')),
 
-            Stat::make('Tingkat Kelulusan Hari Ini', $passRateFormatted)
+            Stat::make(__('Today\'s Pass Rate'), $passRateFormatted)
                 ->description(
                     $todaySessions->count() > 0
-                        ? "{$passCount} lulus dari {$todaySessions->count()} peserta"
-                        : 'Belum ada ujian selesai hari ini'
+                        ? __(':passed passed of :total participants', ['passed' => $passCount, 'total' => $todaySessions->count()])
+                        : __('No completed exams today')
                 )
                 ->descriptionIcon('heroicon-m-trophy')
                 ->color($passRateColor),

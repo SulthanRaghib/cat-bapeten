@@ -16,42 +16,42 @@ class ExamTypeForm
     {
         return $schema
             ->components([
-                Section::make('Informasi Tipe Ujian')
-                    ->description('Lengkapi konfigurasi tipe ujian berikut. Tipe ujian menentukan metode penilaian dan jenis soal yang digunakan.')
+                Section::make(__('Exam Type Information'))
+                    ->description(__('Complete the exam type configuration. The exam type determines the grading method and type of questions used.'))
                     ->icon('heroicon-o-academic-cap')
                     ->schema([
                         TextInput::make('name')
-                            ->label('Nama Tipe')
+                            ->label(__('Type Name'))
                             ->validationAttribute('Nama Tipe')
-                            ->placeholder('cth: Teknis, Mansoskul')
+                            ->placeholder(__('e.g. Technical, Mansoskul'))
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('code')
-                            ->label('Kode')
+                            ->label(__('Code'))
                             ->validationAttribute('Kode Tipe Ujian')
-                            ->placeholder('cth: TEK, MAN')
+                            ->placeholder(__('e.g. TEK, MAN'))
                             ->required()
                             ->maxLength(50)
                             ->unique(ignoreRecord: true)
-                            ->helperText('Kode unik untuk identifikasi tipe ujian.'),
+                            ->helperText(__('Unique code for exam type identification.')),
 
                         Select::make('evaluation_method')
-                            ->label('Metode Evaluasi')
+                            ->label(__('Evaluation Method'))
                             ->validationAttribute('Metode Evaluasi')
                             ->options([
-                                'correct_wrong' => 'Benar / Salah (Pilihan tunggal dengan 1 jawaban benar)',
-                                'weighted' => 'Berbobot (Setiap opsi memiliki skor/bobot)',
+                                'correct_wrong' => __('Correct / Incorrect (Single choice with 1 correct answer)'),
+                                'weighted' => __('Weighted (Each option has a score/weight)'),
                             ])
                             ->required()
                             ->native(false)
-                            ->helperText('Menentukan bagaimana jawaban akan dinilai.'),
+                            ->helperText(__('Determines how answers will be scored.')),
 
                         Toggle::make('is_active')
                             ->hidden(true)
-                            ->label('Aktif')
+                            ->label(__('Active'))
                             ->default(true)
-                            ->helperText('Tipe ujian yang tidak aktif tidak akan muncul di pilihan.'),
+                            ->helperText(__('Inactive exam types will not appear in the selection.')),
                     ])
                     ->columns(2),
             ]);

@@ -22,20 +22,20 @@ class ExamPackageForm
         return $schema
             ->columns(1)
             ->components([
-                Section::make('Detail Ujian')
-                    ->description('Atur informasi dasar mengenai paket ujian ini.')
+                Section::make(__('Exam Details'))
+                    ->description(__('Set up the basic information for this exam package.'))
                     ->schema([
                         TextInput::make('title')
-                            ->label('Judul Paket Ujian')
+                            ->label(__('Exam Package Title'))
                             ->validationAttribute('Judul Paket Ujian')
                             ->required()
                             ->columnSpanFull()
-                            ->placeholder('Contoh: Ujian Kompetensi Teknis Batch 1'),
+                            ->placeholder(__('e.g. Technical Competency Exam Batch 1')),
 
                         Grid::make(2)
                             ->schema([
                                 Select::make('exam_type_id')
-                                    ->label('Tipe Ujian')
+                                    ->label(__('Exam Type'))
                                     ->validationAttribute('Tipe Ujian')
                                     ->relationship('examType', 'name')
                                     ->preload()
@@ -44,55 +44,55 @@ class ExamPackageForm
                                     ->native(false),
 
                                 TextInput::make('passing_grade')
-                                    ->label('Nilai Ambang Batas (Passing Grade)')
+                                    ->label(__('Passing Grade'))
                                     ->validationAttribute('Nilai Ambang Batas')
                                     ->numeric()
                                     ->required()
-                                    ->helperText('Contoh: Jika 100 soal x 1 poin = 100 Max. Passing grade bisa 70.'),
+                                    ->helperText(__('e.g. If 100 questions x 1 point = 100 Max. Passing grade could be 70.')),
                             ]),
 
                         TextInput::make('duration_minutes')
-                            ->label('Durasi Pengerjaan')
+                            ->label(__('Duration'))
                             ->validationAttribute('Durasi Pengerjaan')
-                            ->suffix('Menit')
+                            ->suffix(__('Minutes'))
                             ->numeric()
                             ->required(),
 
                         Grid::make(2)
                             ->schema([
                                 CustomDateTimePicker::make('start_time')
-                                    ->label('Waktu Mulai')
+                                    ->label(__('Start Time'))
                                     ->validationAttribute('Waktu Mulai')
                                     ->required()
-                                    ->helperText('Kapan ujian ini mulai bisa diakses.')
+                                    ->helperText(__('When this exam becomes accessible.'))
                                     ->columnSpan(1),
 
                                 CustomDateTimePicker::make('end_time')
-                                    ->label('Waktu Selesai')
+                                    ->label(__('End Time'))
                                     ->validationAttribute('Waktu Selesai')
                                     ->required()
-                                    ->helperText('Batas akhir akses ujian.')
+                                    ->helperText(__('Deadline for exam access.'))
                                     ->rule('after:start_time')
                                     ->columnSpan(1),
                             ]),
 
                         Select::make('is_active')
-                            ->label('Status Ketersediaan')
+                            ->label(__('Availability Status'))
                             ->validationAttribute('Status Ketersediaan')
                             ->options([
-                                1 => 'Aktif — Peserta dapat mengakses ujian ini',
-                                0 => 'Nonaktif — Paket ditutup untuk peserta',
+                                1 => __('Active — Participants can access this exam'),
+                                0 => __('Inactive — Package is closed for participants'),
                             ])
                             ->default(1)
                             ->required()
                             ->native(false)
                             ->dehydrateStateUsing(fn($state) => (bool) $state)
-                            ->helperText('Tentukan apakah paket ini terlihat dan dapat diakses oleh peserta.'),
+                            ->helperText(__('Determine whether this package is visible and accessible by participants.')),
                     ]),
 
                 // ── Konfigurasi Seleksi Lanjutan (hanya untuk Teknis / correct_wrong) ─────
-                Section::make('Konfigurasi Seleksi Lanjutan (Teknis)')
-                    ->description('Aktifkan jika ujian ini memerlukan tahap seleksi setelah CBT selesai — seperti Wawancara, Presentasi, FGD, dan lain-lain.')
+                Section::make(__('Advanced Selection Configuration (Technical)'))
+                    ->description(__('Enable if this exam requires a selection stage after CBT is complete — such as Interview, Presentation, FGD, etc.'))
                     ->icon('heroicon-o-clipboard-document-list')
                     ->collapsible()
                     ->visible(
@@ -101,8 +101,8 @@ class ExamPackageForm
                     )
                     ->schema([
                         Toggle::make('technical_scoring_config.has_stages')
-                            ->label('Gunakan Tahap Seleksi Lanjutan?')
-                            ->helperText('Jika aktif, peserta akan berstatus "Menunggu Seleksi" setelah CBT dan admin perlu menginput nilai setiap tahap seleksi sebelum nilai akhir ditetapkan.')
+                            ->label(__('Use Advanced Selection Stages?'))
+                            ->helperText(__('If enabled, participants will have status "Awaiting Selection" after CBT and admin needs to enter scores for each selection stage before the final score is set.'))
                             ->live()
                             ->default(false),
 
@@ -114,7 +114,7 @@ class ExamPackageForm
 
                                 // ── Bobot CBT ──
                                 TextInput::make('technical_scoring_config.cbt_weight')
-                                    ->label('Bobot CBT (%)')
+                                    ->label(__('CBT Weight (%)'))
                                     ->validationAttribute('Bobot CBT')
                                     ->numeric()
                                     ->minValue(1)
@@ -123,7 +123,7 @@ class ExamPackageForm
                                     ->suffix('%')
                                     ->live(debounce: 500)
                                     ->required(fn(Get $get): bool => (bool) $get('technical_scoring_config.has_stages'))
-                                    ->helperText('Persentase bobot nilai CBT terhadap nilai akhir.')
+                                    ->helperText(__('Percentage weight of CBT score toward the final score.'))
                                     ->rules([
                                         fn(Get $get): \Closure => static function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
                                             if (! (bool) $get('technical_scoring_config.has_stages')) return;
@@ -141,23 +141,23 @@ class ExamPackageForm
 
                                 // ── Repeater Tahap Seleksi ──
                                 Repeater::make('technical_scoring_config.stages')
-                                    ->label('Tahap Seleksi')
-                                    ->helperText('Tambahkan setiap tahap seleksi beserta bobot nilainya. Total bobot CBT + semua tahap harus tepat 100%.')
+                                    ->label(__('Selection Stages'))
+                                    ->helperText(__('Add each selection stage along with its weight. Total weight of CBT + all stages must equal exactly 100%.'))
                                     ->schema([
                                         Grid::make(2)
                                             ->schema([
                                                 Select::make('label')
-                                                    ->label('Nama Tahap')
+                                                    ->label(__('Stage Name'))
                                                     ->validationAttribute('Nama Tahap Seleksi')
                                                     ->options(fn(): array => SelectionStageType::active()->pluck('name', 'name')->toArray())
                                                     ->searchable()
                                                     ->createOptionForm([
                                                         TextInput::make('name')
-                                                            ->label('Nama Tahap Baru')
+                                                            ->label(__('New Stage Name'))
                                                             ->required()
                                                             ->maxLength(100),
                                                         TextInput::make('description')
-                                                            ->label('Keterangan')
+                                                            ->label(__('Description'))
                                                             ->maxLength(255),
                                                     ])
                                                     ->createOptionUsing(function (array $data): string {
@@ -172,10 +172,10 @@ class ExamPackageForm
                                                     ->getOptionLabelUsing(fn($value): string => $value)
                                                     ->required()
                                                     ->native(false)
-                                                    ->placeholder('Pilih atau tambah nama tahap...'),
+                                                    ->placeholder(__('Select or add stage name...')),
 
                                                 TextInput::make('weight')
-                                                    ->label('Bobot (%)')
+                                                    ->label(__('Weight (%)'))
                                                     ->validationAttribute('Bobot Tahap Seleksi')
                                                     ->numeric()
                                                     ->minValue(1)
@@ -185,12 +185,12 @@ class ExamPackageForm
                                                     ->live(debounce: 500),
                                             ]),
                                     ])
-                                    ->addActionLabel('+ Tambah Tahap Seleksi')
+                                    ->addActionLabel(__('+ Add Selection Stage'))
                                     ->reorderableWithButtons()
                                     ->collapsible()
                                     ->itemLabel(
-                                        fn(array $state): string => ($state['label'] ?? 'Tahap Baru')
-                                            . ' — Bobot: ' . ($state['weight'] ?? 0) . '%'
+                                        fn(array $state): string => ($state['label'] ?? __('New Stage'))
+                                            . ' — ' . __('Weight') . ': ' . ($state['weight'] ?? 0) . '%'
                                     )
                                     ->minItems(1)
                                     ->required(fn(Get $get): bool => (bool) $get('../../technical_scoring_config.has_stages'))

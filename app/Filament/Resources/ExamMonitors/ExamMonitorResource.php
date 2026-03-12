@@ -20,11 +20,22 @@ class ExamMonitorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-eye';
 
-    protected static ?string $modelLabel = 'Monitoring Ujian';
-    protected static ?string $pluralModelLabel = 'Monitoring Ujian';
-    protected static ?string $navigationLabel = 'Monitoring Ujian';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Laporan & Hasil';
+    public static function getModelLabel(): string
+    {
+        return __('Exam Monitoring');
+    }
+    public static function getPluralModelLabel(): string
+    {
+        return __('Exam Monitoring');
+    }
+    public static function getNavigationLabel(): string
+    {
+        return __('Exam Monitoring');
+    }
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Reports & Results');
+    }
 
     /**
      * Akses halaman Monitoring Ujian:

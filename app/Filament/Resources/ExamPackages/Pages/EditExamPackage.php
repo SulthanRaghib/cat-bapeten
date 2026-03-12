@@ -32,21 +32,21 @@ class EditExamPackage extends EditRecord
         }
 
         $method = match ($examType->evaluation_method) {
-            'weighted' => 'Pembobotan (Mansoskul)',
-            'correct_wrong' => 'Benar/Salah (Teknis)',
+            'weighted' => __('Weighted (Mansoskul)'),
+            'correct_wrong' => __('Correct/Incorrect (Technical)'),
             default => $examType->evaluation_method,
         };
 
-        return "Tipe Ujian: {$examType->name} — Metode: {$method}";
+        return __('Exam Type: :name — Method: :method', ['name' => $examType->name, 'method' => $method]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Paket Ujian?')
-                ->modalDescription('Paket ujian beserta seluruh soal, konfigurasi NAB, dan data peserta yang terkait akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete Exam Package?'))
+                ->modalDescription(__('The exam package along with all its questions, NAB configuration, and related participant data will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -54,10 +54,10 @@ class EditExamPackage extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

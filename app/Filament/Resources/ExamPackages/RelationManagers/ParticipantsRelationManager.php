@@ -23,9 +23,18 @@ class ParticipantsRelationManager extends RelationManager
 {
     protected static string $relationship = 'participants';
 
-    // Translasi Judul Tab
-    protected static ?string $title = 'Peserta Ujian';
-    protected static ?string $modelLabel = 'Peserta';
+    protected static ?string $title = null;
+    protected static ?string $modelLabel = null;
+
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('Exam Participants');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Participant');
+    }
 
     public function form(Schema $form): Schema
     {
@@ -44,25 +53,25 @@ class ParticipantsRelationManager extends RelationManager
             ->recordTitleAttribute('name')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Nama Peserta')
+                    ->label(__('Participant Name'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('nip')
-                    ->label('NIP')
+                    ->label(__('NIP'))
                     ->searchable()
                     ->copyable(),
 
                 Tables\Columns\TextColumn::make('token')
-                    ->label('Token Akses')
+                    ->label(__('Access Token'))
                     ->weight('bold')
                     ->color(Color::Amber)
                     ->copyable()
-                    ->copyMessage('Token disalin!')
-                    ->description('Bagikan token ini ke peserta'),
+                    ->copyMessage(__('Token Copied!'))
+                    ->description(__('Share this token with the participant')),
 
                 Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->badge()
                     ->getStateUsing(function ($record) {
                         // Pivot pada relasi participants sudah berupa model ExamParticipant,
@@ -92,10 +101,10 @@ class ParticipantsRelationManager extends RelationManager
             ->headerActions([
                 // filter hanya role user yang bisa ditambahkan (bukan admin) dan belum menjadi peserta
                 AttachAction::make()
-                    ->label('Tambah Peserta')
+                    ->label(__('Add Participant'))
                     ->color(Color::Amber)
-                    ->modalHeading('Pilih Peserta Ujian')
-                    ->modalSubmitActionLabel('Tambahkan')
+                    ->modalHeading(__('Select Exam Participant'))
+                    ->modalSubmitActionLabel(__('Add'))
                     ->preloadRecordSelect()
                     ->multiple() // Bisa pilih banyak sekaligus
                     ->recordSelectOptionsQuery(function (\Illuminate\Database\Eloquent\Builder $query) {
@@ -109,7 +118,7 @@ class ParticipantsRelationManager extends RelationManager
             ->recordActions([
                 ActionGroup::make([
                     Action::make('toggle_active')
-                        ->label(fn($record) => $record->pivot->is_active ? 'Nonaktifkan' : 'Aktifkan')
+                        ->label(fn($record) => $record->pivot->is_active ? __('Deactivate') : __('Activate'))
                         ->icon(fn($record) => $record->pivot->is_active ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle')
                         ->color(fn($record) => $record->pivot->is_active ? 'danger' : 'success')
                         // Hanya tampil jika peserta belum pernah mengerjakan (tidak punya sesi)
@@ -130,11 +139,11 @@ class ParticipantsRelationManager extends RelationManager
                             ]);
                         })
                         ->requiresConfirmation()
-                        ->modalHeading('Ubah Status Akses Peserta')
-                        ->modalDescription('Apakah Anda yakin ingin mengubah status akses ujian peserta ini?'),
+                        ->modalHeading(__('Change Participant Access Status'))
+                        ->modalDescription(__('Are you sure you want to change the exam access status of this participant?')),
 
                     Action::make('reset_exam')
-                        ->label('Reset Ujian')
+                        ->label(__('Reset Exam'))
                         ->icon('heroicon-m-arrow-path')
                         ->color('warning')
                         // Tampil hanya jika sudah pernah ujian (punya sesi)
@@ -152,22 +161,22 @@ class ParticipantsRelationManager extends RelationManager
                                 $record->pivot->update(['is_active' => true]); // Ensure active after reset
 
                                 \Filament\Notifications\Notification::make()
-                                    ->title('Ujian Direset')
+                                    ->title(__('Exam Reset'))
                                     ->success()
                                     ->send();
                             }
                         })
                         ->requiresConfirmation()
-                        ->modalHeading('Reset Data Ujian?')
-                        ->modalDescription('PERHATIAN: Ini akan menghapus seluruh jawaban dan riwayat ujian peserta ini. Peserta harus memulai dari awal. Lanjutkan?'),
+                        ->modalHeading(__('Reset Exam Data?'))
+                        ->modalDescription(__('WARNING: This will delete all answers and exam history for this participant. The participant must start over. Continue?')),
 
                     DetachAction::make()
-                        ->label('Hapus Peserta')
-                        ->modalHeading('Hapus Peserta dari Ujian')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus peserta ini dari paket ujian?')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
+                        ->label(__('Remove Participant'))
+                        ->modalHeading(__('Remove Participant from Exam'))
+                        ->modalDescription(__('Are you sure you want to remove this participant from the exam package?'))
+                        ->modalSubmitActionLabel(__('Yes, Remove')),
                 ])
-                    ->label('Aksi')
+                    ->label(__('Action Group'))
                     ->button()
                     ->size(Size::Small)
                     ->outlined(),
@@ -175,11 +184,11 @@ class ParticipantsRelationManager extends RelationManager
             ->toolbarActions([
                 BulkActionGroup::make([
                     DetachBulkAction::make()
-                        ->label('Hapus Peserta Terpilih')
-                        ->modalHeading('Hapus Peserta dari Ujian')
-                        ->modalDescription('Apakah Anda yakin ingin menghapus peserta terpilih dari paket ujian?')
-                        ->modalSubmitActionLabel('Ya, Hapus'),
-                ])->label('Tindakan Massal'),
+                        ->label(__('Remove Selected Participants'))
+                        ->modalHeading(__('Remove Participants from Exam'))
+                        ->modalDescription(__('Are you sure you want to remove the selected participants from the exam package?'))
+                        ->modalSubmitActionLabel(__('Yes, Remove')),
+                ])->label(__('Bulk Actions')),
             ]);
     }
 }

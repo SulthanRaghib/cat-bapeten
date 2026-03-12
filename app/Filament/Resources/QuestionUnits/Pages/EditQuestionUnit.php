@@ -12,15 +12,20 @@ class EditQuestionUnit extends EditRecord
 {
     protected static string $resource = QuestionUnitResource::class;
 
-    protected static ?string $title = 'Edit Unit Soal';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Edit Question Unit');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Unit Soal?')
-                ->modalDescription('Unit soal beserta semua sub unit dan soal yang terkait akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete Question Unit?'))
+                ->modalDescription(__('The question unit along with all related sub units and questions will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -28,10 +33,10 @@ class EditQuestionUnit extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

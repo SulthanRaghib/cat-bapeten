@@ -16,7 +16,12 @@ class EditQuestion extends EditRecord
 {
     protected static string $resource = QuestionResource::class;
 
-    protected static ?string $title = 'Edit Soal';
+    protected static ?string $title = null;
+
+    public function getTitle(): string
+    {
+        return __('Edit Question');
+    }
 
     /**
      * Validate correct answer exists for Teknis type — delegates to the
@@ -31,9 +36,9 @@ class EditQuestion extends EditRecord
     {
         return [
             DeleteAction::make()
-                ->modalHeading('Hapus Soal?')
-                ->modalDescription('Soal ini beserta semua jawaban dan konfigurasi skornya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.')
-                ->modalSubmitActionLabel('Ya, Hapus'),
+                ->modalHeading(__('Delete Question?'))
+                ->modalDescription(__('This question along with all its answers and score configurations will be permanently deleted. This action cannot be undone.'))
+                ->modalSubmitActionLabel(__('Yes, Delete')),
         ];
     }
 
@@ -41,10 +46,10 @@ class EditQuestion extends EditRecord
     {
         return [
             $this->getSaveFormAction()
-                ->label('Simpan Perubahan'),
+                ->label(__('Save Changes')),
 
             $this->getCancelFormAction()
-                ->label('Batal'),
+                ->label(__('Cancel')),
         ];
     }
 

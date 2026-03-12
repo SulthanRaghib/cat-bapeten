@@ -12,8 +12,8 @@ class QuestionStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $stats = [
-            Stat::make('Total Soal', Question::count())
-                ->description('Semua soal yang terdaftar')
+            Stat::make(__('Total Questions'), Question::count())
+                ->description(__('All registered questions'))
                 ->descriptionIcon('heroicon-m-rectangle-stack')
                 ->color('success'),
         ];
@@ -31,10 +31,10 @@ class QuestionStatsOverview extends BaseWidget
             $count = Question::where('exam_type_id', $examType->id)->count();
             $color = $colors[$index % count($colors)];
             $icon = $icons[$examType->evaluation_method] ?? 'heroicon-m-tag';
-            $methodLabel = $examType->isCorrectWrong() ? 'Benar/Salah' : 'Bobot Nilai';
+            $methodLabel = $examType->isCorrectWrong() ? __('Correct/Incorrect') : __('Score Weight');
 
-            $stats[] = Stat::make("Soal {$examType->name}", $count)
-                ->description("Tipe {$methodLabel}")
+            $stats[] = Stat::make(__('Questions: :name', ['name' => $examType->name]), $count)
+                ->description(__('Type: :method', ['method' => $methodLabel]))
                 ->descriptionIcon($icon)
                 ->color($color);
         }
