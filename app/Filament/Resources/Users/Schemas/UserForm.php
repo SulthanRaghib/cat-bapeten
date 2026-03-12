@@ -23,23 +23,27 @@ class UserForm
                     ->schema([
                         TextInput::make('name')
                             ->label('Nama Lengkap')
+                            ->validationAttribute('Nama Lengkap')
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('email')
                             ->label('Alamat Email')
+                            ->validationAttribute('Alamat Email')
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true),
 
                         TextInput::make('nip')
                             ->label('NIP')
+                            ->validationAttribute('NIP')
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->helperText('Nomor Induk Pegawai — harus unik.'),
 
                         Select::make('role')
                             ->label('Peran')
+                            ->validationAttribute('Peran')
                             ->options(static function (): array {
                                 $labels = [
                                     'super_admin' => 'Super Admin',
@@ -81,6 +85,10 @@ class UserForm
 
                         TextInput::make('password')
                             ->label('Password')
+                            ->validationAttribute('Kata Sandi')
+                            ->validationMessages([
+                                'required' => 'Kata sandi wajib diisi saat menambahkan pengguna baru.',
+                            ])
                             ->password()
                             ->revealable()
                             ->dehydrated(fn(?string $state) => filled($state))

@@ -28,7 +28,7 @@ class ExportQuestionsBulkAction
             ->color('success')
             ->modalHeading('Export Soal Terpilih')
             ->modalDescription('Konfigurasi format export untuk soal yang dipilih.')
-            ->modalSubmitActionLabel('Download')
+            ->modalSubmitActionLabel('Unduh')
             ->modalWidth('md')
             ->deselectRecordsAfterCompletion()
             ->schema([

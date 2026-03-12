@@ -55,6 +55,7 @@ class QuestionForm
                     ->schema([
                         Select::make('exam_type_id')
                             ->label('Tipe Soal')
+                            ->validationAttribute('Tipe Soal')
                             ->options(fn() => ExamType::query()
                                 ->where('is_active', true)
                                 ->pluck('name', 'id')
@@ -74,6 +75,7 @@ class QuestionForm
 
                         Select::make('question_unit_id')
                             ->label('Unit (Materi/Bab)')
+                            ->validationAttribute('Unit Soal')
                             ->options(fn(Get $get) => QuestionUnit::query()
                                 ->where('exam_type_id', $get('exam_type_id'))
                                 ->where('is_active', true)
@@ -130,7 +132,7 @@ class QuestionForm
                                 return $action
                                     ->label('Edit Unit')
                                     ->modalHeading('Ubah Data Unit')
-                                    ->modalSubmitActionLabel('Update')
+                                    ->modalSubmitActionLabel('Perbarui')
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-pencil')
                                     ->color('warning');
@@ -160,6 +162,7 @@ class QuestionForm
 
                         Select::make('question_sub_unit_id')
                             ->label('Sub Unit (Sub-Bab)')
+                            ->validationAttribute('Sub Unit Soal')
                             ->options(fn(Get $get) => QuestionSubUnit::query()
                                 ->where('question_unit_id', $get('question_unit_id'))
                                 ->orderBy('name')
@@ -210,7 +213,7 @@ class QuestionForm
                                 return $action
                                     ->label('Edit Sub Unit')
                                     ->modalHeading('Ubah Data Sub Unit')
-                                    ->modalSubmitActionLabel('Update')
+                                    ->modalSubmitActionLabel('Perbarui')
                                     ->modalWidth('md')
                                     ->icon('heroicon-o-pencil')
                                     ->color('warning');
@@ -238,6 +241,7 @@ class QuestionForm
 
                         Select::make('category')
                             ->label('Tingkat Kesulitan')
+                            ->validationAttribute('Tingkat Kesulitan')
                             ->options([
                                 'easy'   => 'Mudah',
                                 'medium' => 'Sedang',

@@ -23,6 +23,7 @@ class QuestionUnitForm
                     ->schema([
                         Select::make('exam_type_id')
                             ->label('Tipe Ujian')
+                            ->validationAttribute('Tipe Ujian')
                             ->options(fn() => ExamType::query()
                                 ->where('is_active', true)
                                 ->pluck('name', 'id')
@@ -35,6 +36,7 @@ class QuestionUnitForm
 
                         TextInput::make('name')
                             ->label('Nama Unit')
+                            ->validationAttribute('Nama Unit')
                             ->placeholder('cth: Proteksi Radiasi, Keselamatan Nuklir')
                             ->required()
                             ->maxLength(255),

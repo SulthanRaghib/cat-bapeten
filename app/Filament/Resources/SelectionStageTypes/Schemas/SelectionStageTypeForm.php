@@ -24,6 +24,7 @@ class SelectionStageTypeForm
                 ->schema([
                     TextInput::make('name')
                         ->label('Nama Tahap')
+                        ->validationAttribute('Nama Tahap')
                         ->placeholder('Contoh: Wawancara, FGD, Presentasi')
                         ->required()
                         ->maxLength(100)
@@ -43,7 +44,7 @@ class SelectionStageTypeForm
                         ->dehydrated(false) // Field ini tidak disimpan ke database
                         ->helperText('Ketik untuk menampilkan pilihan icon di bawah.')
                         ->hidden(true),
-                        
+
 
                     // Pilihan Icon Visual
                     ToggleButtons::make('icon')
@@ -63,6 +64,7 @@ class SelectionStageTypeForm
 
                     TextInput::make('sort_order')
                         ->label('Urutan Tampil')
+                        ->validationAttribute('Urutan Tampil')
                         ->numeric()
                         ->default(0)
                         ->minValue(0)

@@ -34,7 +34,7 @@ class ExportQuestionsHeaderAction
             ->color('success')
             ->modalHeading('Export Bank Soal')
             ->modalDescription('Atur filter dan format export yang diinginkan.')
-            ->modalSubmitActionLabel('Download')
+            ->modalSubmitActionLabel('Unduh')
             ->modalWidth('lg')
             ->schema([
                 Section::make('Filter Data')

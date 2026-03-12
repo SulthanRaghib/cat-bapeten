@@ -42,6 +42,7 @@ class IndicatorsRelationManager extends RelationManager
             ->schema([
                 TextInput::make('name')
                     ->label('Nama Level Indikator')
+                    ->validationAttribute('Nama Level Indikator')
                     ->placeholder('cth: Memenuhi Standar')
                     ->required()
                     ->maxLength(255)
@@ -49,12 +50,14 @@ class IndicatorsRelationManager extends RelationManager
 
                 TextInput::make('min_score')
                     ->label('Skor Minimum')
+                    ->validationAttribute('Skor Minimum')
                     ->numeric()
                     ->required()
                     ->minValue(0),
 
                 TextInput::make('max_score')
                     ->label('Skor Maksimum')
+                    ->validationAttribute('Skor Maksimum')
                     ->numeric()
                     ->required()
                     ->minValue(0),
@@ -67,6 +70,7 @@ class IndicatorsRelationManager extends RelationManager
 
                 TextInput::make('sort_order')
                     ->label('Urutan')
+                    ->validationAttribute('Urutan')
                     ->numeric()
                     ->default(0)
                     ->helperText('Urutan tampil — semakin kecil semakin atas.'),
@@ -97,7 +101,7 @@ class IndicatorsRelationManager extends RelationManager
                     ->alignCenter(),
 
                 TextColumn::make('max_score')
-                    ->label('Max')
+                    ->label('Maks')
                     ->numeric()
                     ->alignCenter(),
 

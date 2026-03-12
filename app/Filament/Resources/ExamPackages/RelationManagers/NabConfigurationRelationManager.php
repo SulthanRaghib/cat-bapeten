@@ -227,18 +227,21 @@ class NabConfigurationRelationManager extends RelationManager
                                                 Grid::make(4)->schema([
                                                     TextInput::make('name')
                                                         ->label('Nama Indikator')
+                                                        ->validationAttribute('Nama Indikator')
                                                         ->required()
                                                         ->placeholder('cth: Memenuhi Standar')
                                                         ->columnSpan(2),
 
                                                     TextInput::make('min_score')
                                                         ->label('Skor Min')
+                                                        ->validationAttribute('Skor Minimal')
                                                         ->numeric()
                                                         ->required()
                                                         ->columnSpan(1),
 
                                                     TextInput::make('max_score')
-                                                        ->label('Skor Max')
+                                                        ->label('Skor Maks')
+                                                        ->validationAttribute('Skor Maks')
                                                         ->numeric()
                                                         ->required()
                                                         ->columnSpan(1),

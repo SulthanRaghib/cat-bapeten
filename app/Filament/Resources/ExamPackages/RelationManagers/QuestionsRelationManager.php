@@ -195,13 +195,13 @@ class QuestionsRelationManager extends RelationManager
     private function makeGenerateRandomAction(): Action
     {
         return Action::make('generate_random')
-            ->label('Generate Acak')
+            ->label('Acak Soal')
             ->icon('heroicon-o-arrow-path-rounded-square')
             ->color('primary')
-            ->modalHeading('Generate Soal Acak')
+            ->modalHeading('Acak Soal Otomatis')
             ->modalDescription('Tentukan jumlah soal yang ingin di-generate dari setiap unit & sub unit.')
             ->modalWidth('3xl')
-            ->modalSubmitActionLabel('Generate Soal')
+            ->modalSubmitActionLabel('Acak Soal')
             ->schema(fn() => $this->buildGenerateForm())
             ->action(fn(array $data) => $this->executeGenerate($data));
     }

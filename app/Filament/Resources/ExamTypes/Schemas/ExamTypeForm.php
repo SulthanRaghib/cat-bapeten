@@ -22,12 +22,14 @@ class ExamTypeForm
                     ->schema([
                         TextInput::make('name')
                             ->label('Nama Tipe')
+                            ->validationAttribute('Nama Tipe')
                             ->placeholder('cth: Teknis, Mansoskul')
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('code')
                             ->label('Kode')
+                            ->validationAttribute('Kode Tipe Ujian')
                             ->placeholder('cth: TEK, MAN')
                             ->required()
                             ->maxLength(50)
@@ -36,6 +38,7 @@ class ExamTypeForm
 
                         Select::make('evaluation_method')
                             ->label('Metode Evaluasi')
+                            ->validationAttribute('Metode Evaluasi')
                             ->options([
                                 'correct_wrong' => 'Benar / Salah (Pilihan tunggal dengan 1 jawaban benar)',
                                 'weighted' => 'Berbobot (Setiap opsi memiliki skor/bobot)',
