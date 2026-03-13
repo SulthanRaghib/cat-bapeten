@@ -57,8 +57,8 @@ class ExamResultsTable
             ->recordClasses(
                 fn(ExamSession $record): string =>
                 $record->examPackage?->examType?->evaluation_method === 'weighted'
-                    ? 'border-s-[3px] border-violet-500 dark:border-violet-400'
-                    : 'border-s-[3px] border-info-400 dark:border-info-500'
+                    ? 'border-s-[3px] border-primary-600 dark:border-primary-500'
+                    : 'border-s-[3px] border-primary-400 dark:border-primary-300'
             )
             ->columns([
 

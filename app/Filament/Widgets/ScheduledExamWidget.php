@@ -286,8 +286,8 @@ class ScheduledExamWidget extends BaseWidget implements HasActions, HasForms
             ])
             ->striped()
             ->recordClasses(fn(ExamPackage $record): string => match ($record->examType?->evaluation_method) {
-                'correct_wrong' => 'border-s-4 border-info-400',
-                'weighted'      => 'border-s-4 border-violet-500',
+                'correct_wrong' => 'border-s-4 border-primary-400',
+                'weighted'      => 'border-s-4 border-primary-600',
                 default         => '',
             })
             ->emptyStateHeading(__('No scheduled exams.'))
