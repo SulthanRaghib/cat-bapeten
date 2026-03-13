@@ -846,5 +846,6 @@
     "Teal": "Tosca",
     "Green": "Hijau",
     "Lime": "Lime",
+    "End Time must be after Start Time.": "Waktu Selesai harus setelah Waktu Mulai.",
     "Click formula → auto-copy → Ctrl+V in editor. Format: \\( formula \\)": "Klik chip → salin otomatis → Ctrl+V di editor teks. Format: \\( rumus \\)"
 }
