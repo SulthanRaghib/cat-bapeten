@@ -1423,3 +1423,688 @@
 .dark .medt-sym-btn.is-tpl:hover .medt-sym-name {
     color: #ffffff !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════════════
+   PROFESSIONAL MODERN UI REDESIGN
+   ════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────
+   HELPER PANEL (Compact Quick Access)
+   ───────────────────────────────────── */
+.medt-panel {
+    background: #ffffff !important;
+    border: 1px solid #e0e7ff !important;
+    border-left: 4px solid var(--medt-p500) !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+
+.medt-panel-header {
+    margin-bottom: 12px !important;
+}
+
+.medt-panel-icon {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--medt-p500) 16%, #ffffff),
+        color-mix(in srgb, var(--medt-p500) 10%, #ffffff)
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--medt-p500) 28%, #d1d5db) !important;
+    color: var(--medt-p700) !important;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+}
+
+.medt-panel-title {
+    color: #0f172a !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+.medt-panel-desc {
+    color: #64748b !important;
+    font-size: 12px !important;
+}
+
+/* Quick symbol chips */
+.medt-chip-row {
+    gap: 8px !important;
+}
+
+.medt-chip {
+    background: #f8fafc !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #1e293b !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.medt-chip:hover {
+    background: color-mix(in srgb, var(--medt-p500) 9%, #ffffff) !important;
+    border-color: var(--medt-p500) !important;
+    box-shadow:
+        0 4px 12px rgba(15, 23, 42, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    transform: translateY(-2px) !important;
+}
+
+.medt-chip-math {
+    color: #0f172a !important;
+}
+
+.medt-open-btn {
+    background: var(--medt-p500) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--medt-p600) !important;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--medt-p500) 35%, transparent) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.medt-open-btn:hover {
+    background: var(--medt-p600) !important;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--medt-p500) 40%, transparent) !important;
+    transform: translateY(-2px) !important;
+}
+
+.medt-panel-tip {
+    color: #64748b !important;
+    font-size: 11px !important;
+}
+
+.medt-tip-badge {
+    background: color-mix(in srgb, var(--medt-p500) 18%, #ffffff) !important;
+    color: var(--medt-p700) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 28%, #d1d5db) !important;
+}
+
+/* ─────────────────────────────────────
+   MODAL DIALOG (Modern Flat Design)
+   ───────────────────────────────────── */
+.medt-dialog {
+    background: #ffffff !important;
+    border: 1px solid #f0f4f8 !important;
+    box-shadow:
+        0 28px 60px -16px rgba(15, 23, 42, 0.28),
+        0 0 0 1px rgba(15, 23, 42, 0.06) !important;
+    border-radius: 18px !important;
+}
+
+.medt-dialog-head {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 20px 24px !important;
+    border-radius: 18px 18px 0 0 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.medt-dialog-title {
+    color: #0f172a !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.3px !important;
+}
+
+.medt-dialog-icon {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--medt-p500) 18%, #ffffff),
+        color-mix(in srgb, var(--medt-p500) 12%, #ffffff)
+    ) !important;
+    border: 1px solid color-mix(in srgb, var(--medt-p500) 32%, #cbd5e1) !important;
+    color: var(--medt-p700) !important;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+.medt-close {
+    background: #ffffff !important;
+    border: 1px solid #e0e7ff !important;
+    color: #64748b !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.medt-close:hover {
+    background: #ffe4e6 !important;
+    border-color: #fca5a5 !important;
+    color: #be185d !important;
+    box-shadow: 0 2px 6px rgba(228, 29, 35, 0.15) !important;
+}
+
+/* ─────────────────────────────────────
+   SYMBOL GALLERY (Left Column)
+   ───────────────────────────────────── */
+.medt-sym-panel {
+    background: #f9fafb !important;
+    border-right: 1px solid #e5e7eb !important;
+}
+
+.medt-tabs {
+    gap: 6px !important;
+    padding: 12px 10px 0 !important;
+}
+
+.medt-tab {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #475569 !important;
+    transition: all 0.2s ease !important;
+}
+
+.medt-tab:hover {
+    background: color-mix(in srgb, var(--medt-p500) 7%, #ffffff) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 40%, #cbd5e1) !important;
+}
+
+.medt-tab.is-active {
+    background: var(--medt-p500) !important;
+    border-color: var(--medt-p600) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--medt-p500) 32%, transparent) !important;
+}
+
+.medt-tab-note {
+    color: #94a3b8 !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.medt-sym-btn {
+    background: #f8f9fa !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0a0e27 !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.medt-sym-btn:hover {
+    background: color-mix(in srgb, var(--medt-p500) 9%, #ffffff) !important;
+    border-color: var(--medt-p500) !important;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--medt-p500) 23%, transparent) !important;
+    transform: translateY(-2px) !important;
+}
+
+.medt-sym-btn.is-tpl {
+    background: #f8f9fa !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 28%, #cbd5e1) !important;
+}
+
+.medt-sym-btn.is-tpl:hover {
+    background: color-mix(in srgb, var(--medt-p500) 10%, #ffffff) !important;
+    border-color: var(--medt-p500) !important;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--medt-p500) 24%, transparent) !important;
+}
+
+.medt-sym-math {
+    color: #0a0e27 !important;
+    font-weight: 600 !important;
+}
+
+.medt-sym-name {
+    color: #1e293b !important;
+    font-weight: 600 !important;
+}
+
+/* ─────────────────────────────────────
+   EDITOR AREA (Right Column)
+   ───────────────────────────────────── */
+.medt-compose {
+    background: #ffffff !important;
+}
+
+.medt-label {
+    color: #0a0e27 !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px !important;
+}
+
+.medt-label-sub {
+    color: #64748b !important;
+}
+
+.medt-textarea {
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    font-size: 13px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.medt-textarea:focus {
+    background: #ffffff !important;
+    border-color: var(--medt-p500) !important;
+    box-shadow:
+        0 0 0 3px color-mix(in srgb, var(--medt-p500) 14%, transparent),
+        inset 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.medt-input-hint {
+    color: #94a3b8 !important;
+}
+
+.medt-input-hint code,
+.medt-input-hint kbd {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+.medt-btn-icon {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    transition: all 0.15s ease !important;
+}
+
+.medt-btn-icon:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--medt-p500) 8%, #ffffff) !important;
+    border-color: var(--medt-p500) !important;
+    color: var(--medt-p600) !important;
+}
+
+.medt-btn-clear {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    transition: all 0.15s ease !important;
+}
+
+.medt-btn-clear:hover {
+    background: #fee4e6 !important;
+    border-color: #fca5a5 !important;
+    color: #dc2626 !important;
+}
+
+.medt-preview {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--medt-p500) 5%, #ffffff),
+        color-mix(in srgb, var(--medt-p500) 3%, #ffffff)
+    ) !important;
+    border: 2px solid color-mix(in srgb, var(--medt-p500) 22%, #cbd5e1) !important;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+.medt-preview-empty {
+    color: color-mix(in srgb, var(--medt-p500) 60%, transparent) !important;
+}
+
+.medt-preview-render {
+    color: #0a0e27 !important;
+}
+
+.medt-preview-hint {
+    color: color-mix(in srgb, var(--medt-p500) 70%, transparent) !important;
+}
+
+.medt-preview-hint code {
+    background: color-mix(in srgb, var(--medt-p500) 14%, #ffffff) !important;
+    color: var(--medt-p800) !important;
+}
+
+.medt-preview-error {
+    background: #fef2f2 !important;
+    border-left-color: #ef4444 !important;
+    color: #7f1d1d !important;
+}
+
+/* ─────────────────────────────────────
+   MODE TOGGLE & COPY BUTTON
+   ───────────────────────────────────── */
+.medt-mode-toggle {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    gap: 0 !important;
+}
+
+.medt-mode-btn {
+    color: #475569 !important;
+    transition: all 0.2s ease !important;
+    border-radius: 6px !important;
+}
+
+.medt-mode-btn.is-active {
+    background: color-mix(in srgb, var(--medt-p500) 18%, #ffffff) !important;
+    border: 1px solid color-mix(in srgb, var(--medt-p500) 36%, #cbd5e1) !important;
+    color: #0f172a !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    font-weight: 600 !important;
+}
+
+.medt-mode-btn.is-active code {
+    background: color-mix(in srgb, var(--medt-p500) 28%, #ffffff) !important;
+    color: var(--medt-p800) !important;
+}
+
+.medt-copy-btn {
+    background: linear-gradient(
+        135deg,
+        var(--medt-p500),
+        color-mix(in srgb, var(--medt-p600) 95%, var(--medt-p500))
+    ) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--medt-p600) !important;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--medt-p500) 32%, transparent) !important;
+    font-weight: 700 !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.medt-copy-btn:hover:not(:disabled) {
+    background: linear-gradient(
+        135deg,
+        var(--medt-p600),
+        color-mix(in srgb, var(--medt-p700) 95%, var(--medt-p600))
+    ) !important;
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--medt-p500) 40%, transparent) !important;
+    transform: translateY(-2px) !important;
+}
+
+.medt-copy-btn:disabled {
+    background: color-mix(in srgb, var(--medt-p500) 24%, #ffffff) !important;
+    color: color-mix(in srgb, var(--medt-p500) 50%, #94a3b8) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 28%, #cbd5e1) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════════
+   DARK MODE - PROFESSIONAL MODERN DESIGN
+   ════════════════════════════════════════════════════════════════════════════════════ */
+
+.dark .medt-panel {
+    background: #1e1e24 !important;
+    border-color: #2d3748 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .medt-panel-icon {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--medt-p500) 18%, #1e1e24),
+        color-mix(in srgb, var(--medt-p500) 12%, #1e1e24)
+    ) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 35%, #334155) !important;
+    color: var(--medt-p400) !important;
+}
+
+.dark .medt-panel-title {
+    color: #f8fafc !important;
+}
+
+.dark .medt-panel-desc {
+    color: #cbd5e1 !important;
+}
+
+.dark .medt-chip {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+    color: #e4e4e7 !important;
+}
+
+.dark .medt-chip:hover {
+    background: color-mix(in srgb, var(--medt-p500) 12%, #27272d) !important;
+    border-color: var(--medt-p400) !important;
+    box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--medt-p500) 25%, rgba(0, 0, 0, 0.5)) !important;
+}
+
+.dark .medt-open-btn {
+    background: var(--medt-p500) !important;
+    border-color: var(--medt-p600) !important;
+    box-shadow: 0 4px 16px
+        color-mix(in srgb, var(--medt-p500) 40%, rgba(0, 0, 0, 0.4)) !important;
+}
+
+.dark .medt-open-btn:hover {
+    background: var(--medt-p600) !important;
+    box-shadow: 0 8px 28px
+        color-mix(in srgb, var(--medt-p500) 45%, rgba(0, 0, 0, 0.5)) !important;
+}
+
+.dark .medt-dialog {
+    background: #111318 !important;
+    border-color: #27272d !important;
+    box-shadow:
+        0 28px 60px -16px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .medt-dialog-head {
+    background: #1a1a1f !important;
+    border-bottom-color: #27272d !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .medt-dialog-title {
+    color: #f8fafc !important;
+}
+
+.dark .medt-dialog-icon {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--medt-p500) 18%, #1a1a1f),
+        color-mix(in srgb, var(--medt-p500) 12%, #1a1a1f)
+    ) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 38%, #334155) !important;
+    color: var(--medt-p400) !important;
+}
+
+.dark .medt-close {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+    color: #a1a1aa !important;
+}
+
+.dark .medt-close:hover {
+    background: #3f1919 !important;
+    border-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+}
+
+.dark .medt-sym-panel {
+    background: #16161a !important;
+    border-right-color: #27272d !important;
+}
+
+.dark .medt-tab {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+    color: #a1a1aa !important;
+}
+
+.dark .medt-tab:hover {
+    background: color-mix(in srgb, var(--medt-p500) 9%, #27272d) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 42%, #3f3f46) !important;
+    color: #d4d4d8 !important;
+}
+
+.dark .medt-tab.is-active {
+    background: var(--medt-p500) !important;
+    border-color: var(--medt-p600) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px
+        color-mix(in srgb, var(--medt-p500) 35%, rgba(0, 0, 0, 0.4)) !important;
+}
+
+.dark .medt-tab-note {
+    color: #71717a !important;
+    border-bottom-color: #27272d !important;
+}
+
+.dark .medt-sym-btn {
+    background: #1f1f24 !important;
+    border-color: #3f3f46 !important;
+    color: #f0f0f0 !important;
+}
+
+.dark .medt-sym-btn:hover {
+    background: color-mix(in srgb, var(--medt-p500) 14%, #1f1f24) !important;
+    border-color: var(--medt-p400) !important;
+    box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--medt-p500) 24%, rgba(0, 0, 0, 0.6)) !important;
+}
+
+.dark .medt-sym-btn.is-tpl {
+    background: #1f1f24 !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 32%, #3f3f46) !important;
+}
+
+.dark .medt-sym-btn.is-tpl:hover {
+    background: color-mix(in srgb, var(--medt-p500) 14%, #1f1f24) !important;
+    border-color: var(--medt-p400) !important;
+    box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--medt-p500) 28%, rgba(0, 0, 0, 0.6)) !important;
+}
+
+.dark .medt-sym-math {
+    color: #f0f0f0 !important;
+}
+
+.dark .medt-sym-name {
+    color: #f0f0f0 !important;
+    font-weight: 500 !important;
+}
+
+.dark .medt-compose {
+    background: #111318 !important;
+}
+
+.dark .medt-label {
+    color: #f8f8f8 !important;
+}
+
+.dark .medt-label-sub {
+    color: #cbd5e1 !important;
+}
+
+.dark .medt-textarea {
+    background: #1a1a1f !important;
+    border-color: #2d2d33 !important;
+    color: #f0f0f0 !important;
+}
+
+.dark .medt-textarea::placeholder {
+    color: #a1a1aa !important;
+}
+
+.dark .medt-textarea:focus {
+    background: #1f1f24 !important;
+    border-color: var(--medt-p400) !important;
+    box-shadow:
+        0 0 0 3px color-mix(in srgb, var(--medt-p500) 20%, rgba(0, 0, 0, 0.5)),
+        inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .medt-input-hint {
+    color: #cbd5e1 !important;
+}
+
+.dark .medt-input-hint code,
+.dark .medt-input-hint kbd {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+    color: #e4e4e7 !important;
+}
+
+.dark .medt-btn-icon {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+    color: #d4d4d8 !important;
+}
+
+.dark .medt-btn-icon:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--medt-p500) 14%, #27272d) !important;
+    border-color: var(--medt-p400) !important;
+    color: var(--medt-p300) !important;
+}
+
+.dark .medt-btn-clear {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+    color: #d4d4d8 !important;
+}
+
+.dark .medt-btn-clear:hover {
+    background: #3f1919 !important;
+    border-color: #7f1d1d !important;
+    color: #fca5a5 !important;
+}
+
+.dark .medt-preview {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--medt-p500) 7%, #1a1a1f),
+        color-mix(in srgb, var(--medt-p500) 4%, #1a1a1f)
+    ) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 28%, #3f3f46) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .medt-preview-empty {
+    color: color-mix(in srgb, var(--medt-p500) 65%, transparent) !important;
+}
+
+.dark .medt-preview-render {
+    color: #f0f0f0 !important;
+}
+
+.dark .medt-preview-hint {
+    color: color-mix(in srgb, var(--medt-p500) 75%, transparent) !important;
+}
+
+.dark .medt-preview-hint code {
+    background: color-mix(in srgb, var(--medt-p500) 16%, #27272d) !important;
+    color: var(--medt-p300) !important;
+}
+
+.dark .medt-preview-error {
+    background: #291111 !important;
+    border-left-color: #ef4444 !important;
+    color: #fecaca !important;
+}
+
+.dark .medt-mode-toggle {
+    background: #27272d !important;
+    border-color: #3f3f46 !important;
+}
+
+.dark .medt-mode-btn {
+    color: #d4d4d8 !important;
+}
+
+.dark .medt-mode-btn.is-active {
+    background: color-mix(in srgb, var(--medt-p500) 24%, #27272d) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 45%, #3f3f46) !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    font-weight: 600 !important;
+}
+
+.dark .medt-mode-btn.is-active code {
+    background: color-mix(in srgb, var(--medt-p500) 34%, #27272d) !important;
+    color: #ffffff !important;
+}
+
+.dark .medt-copy-btn {
+    background: linear-gradient(
+        135deg,
+        var(--medt-p500),
+        color-mix(in srgb, var(--medt-p600) 95%, var(--medt-p500))
+    ) !important;
+    color: #ffffff !important;
+    border-color: var(--medt-p600) !important;
+    box-shadow: 0 4px 16px
+        color-mix(in srgb, var(--medt-p500) 35%, rgba(0, 0, 0, 0.5)) !important;
+}
+
+.dark .medt-copy-btn:hover:not(:disabled) {
+    background: linear-gradient(
+        135deg,
+        var(--medt-p600),
+        color-mix(in srgb, var(--medt-p700) 95%, var(--medt-p600))
+    ) !important;
+    box-shadow: 0 8px 28px
+        color-mix(in srgb, var(--medt-p500) 45%, rgba(0, 0, 0, 0.6)) !important;
+}
+
+.dark .medt-copy-btn:disabled {
+    background: color-mix(in srgb, var(--medt-p500) 18%, #1a1a1f) !important;
+    color: color-mix(in srgb, var(--medt-p500) 45%, #71717a) !important;
+    border-color: color-mix(in srgb, var(--medt-p500) 24%, #334155) !important;
+}
