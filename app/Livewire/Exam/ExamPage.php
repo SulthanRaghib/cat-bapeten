@@ -107,6 +107,7 @@ class ExamPage extends Component
         'copy_attempt',
         'paste_attempt',
         'right_click',
+        'screenshot_attempt',
     ];
 
     // =========================================================================
@@ -480,6 +481,7 @@ class ExamPage extends Component
         }
     }
 
+    #[Renderless]
     public function logActivity(string $action, ?string $message = null, string $severity = 'warning'): void
     {
         if (! $this->examSessionId) {
@@ -505,11 +507,12 @@ class ExamPage extends Component
         }
 
         $messageMap = [
-            'tab_switch'    => 'Peserta berpindah tab atau meminimalkan browser.',
-            'window_blur'   => 'Peserta mengklik di luar jendela ujian.',
-            'copy_attempt'  => 'Percobaan menyalin teks soal (Copy).',
-            'paste_attempt' => 'Percobaan menempel teks (Paste).',
-            'right_click'   => 'Percobaan klik kanan (Context Menu).',
+            'tab_switch'         => 'Peserta berpindah tab atau meminimalkan browser.',
+            'window_blur'        => 'Peserta mengklik di luar jendela ujian.',
+            'copy_attempt'       => 'Percobaan menyalin teks soal (Copy).',
+            'paste_attempt'      => 'Percobaan menempel teks (Paste).',
+            'right_click'        => 'Percobaan klik kanan (Context Menu).',
+            'screenshot_attempt' => 'Percobaan tangkapan layar (Screenshot).',
         ];
 
         // SECURITY — Gunakan hanya pesan dari whitelist server; abaikan pesan bebas dari client.
@@ -527,10 +530,7 @@ class ExamPage extends Component
         ]);
     }
 
-    public function closeViolationModal(): void
-    {
-        $this->showViolationModal = false;
-    }
+    // closeViolationModal() removed — Alpine.js handles closing client-side for instant response.
 
     // =========================================================================
     // COMPUTED PROPERTIES (PROPERTI KALKULASI)
