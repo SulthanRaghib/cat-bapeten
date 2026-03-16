@@ -19,7 +19,7 @@ class EditExamPackage extends EditRecord
     // Dynamic title showing the package name
     public function getTitle(): string
     {
-        return 'Edit: ' . ($this->record->name ?? 'Paket Ujian');
+        return __('Edit: :name', ['name' => $this->record?->title ?? parent::getTitle()]);
     }
 
     // Show exam type as a subheading badge
@@ -27,7 +27,7 @@ class EditExamPackage extends EditRecord
     {
         $examType = $this->record->examType;
 
-        if (! $examType) {
+        if (!$examType) {
             return null;
         }
 
@@ -81,6 +81,6 @@ class EditExamPackage extends EditRecord
     // Mengubah label Tab Form utama (defaultnya "Edit")
     public function getContentTabLabel(): ?string
     {
-        return 'Detail Ujian';
+        return __('Exam Details');
     }
 }
