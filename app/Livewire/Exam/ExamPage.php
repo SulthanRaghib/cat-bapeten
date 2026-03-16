@@ -195,9 +195,15 @@ class ExamPage extends Component
             return;
         }
 
-        $session = app(ExamSessionService::class)->start(
-            new StartExamDTO($participant->id),
-        );
+        // Cek apakah peserta sudah memiliki sesi aktif (resume session)
+        // atau buat sesi baru jika belum ada.
+        $session = $participant->activeSession();
+
+        if (! $session) {
+            $session = app(ExamSessionService::class)->start(
+                new StartExamDTO($participant->id),
+            );
+        }
 
         // Pengaman: jika event model gagal mengisi answers_meta, generate ulang di sini.
         if (empty($session->answers_meta)) {
