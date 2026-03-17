@@ -6,30 +6,41 @@
     step: @entangle('step'),
 
     logActivity(action, message, severity = 'warning') {
-        // PERBAIKAN: Gunakan pendekatan 'blacklist' (blokir jika result) daripada 'whitelist' (hanya jika exam).
-        // Ini lebih aman jika status 'step' belum tersinkronisasi sempurna di awal.
+        // Blokir jika sudah di halaman result
         if (this.step === 'result') return;
 
-        // Simple throttle to prevent spamming DB
+        // Throttle: cegah spam ke DB (2 detik cooldown)
         if (this._lastLog && Date.now() - this._lastLog < 2000) return;
         this._lastLog = Date.now();
 
-        @this.call('logActivity', action, null, severity);
+        // OPTIMISTIC: Tampilkan modal pelanggaran INSTAN di client
+        // tanpa menunggu respons server
+        const messages = {
+            'tab_switch': 'Peserta berpindah tab atau meminimalkan browser.',
+            'window_blur': 'Peserta mengklik di luar jendela ujian.',
+            'copy_attempt': 'Percobaan menyalin teks soal (Copy).',
+            'paste_attempt': 'Percobaan menempel teks (Paste).',
+            'right_click': 'Percobaan klik kanan (Context Menu).',
+            'screenshot_attempt': 'Percobaan tangkapan layar (Screenshot).',
+        };
+        this.$wire.showViolationModal = true;
+        this.$wire.violationMessage = messages[action] || 'Aktivitas mencurigakan terdeteksi.';
+
+        // Catat ke server (violationCount diperbarui dari respons server)
+        this.$wire.logActivity(action, null, severity);
     }
 }" x-init="
     // 1. Detect Tab Switching / Visibility Change
     document.addEventListener('visibilitychange', () => {
-        // Hapus pengecekan step di sini untuk menghindari masalah scope 'this' pada arrow function
         if (document.hidden) {
             logActivity('tab_switch', '', 'warning');
         }
     });
 
-    // 2. Detect Window Blur (Clicking outside browser)
-    // window.addEventListener('blur', () => {
-    // Optional: strict mode, might trigger on some popups
-    // logActivity('window_blur', '', 'info');
-    // });
+    // 2. Detect Window Blur (split screen / klik di luar jendela browser)
+    window.addEventListener('blur', () => {
+        logActivity('window_blur', '', 'warning');
+    });
 
     // 3. Detect Copy/Paste
     document.addEventListener('copy', (e) => {
@@ -53,12 +64,27 @@
         logActivity('right_click', '', 'warning');
         return false;
     });
+
+    // 5. Detect Screenshot attempts (PrintScreen, Win+Shift+S, macOS Cmd+Shift+3/4/5)
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'PrintScreen') {
+            logActivity('screenshot_attempt', '', 'warning');
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (
+            e.key === 'PrintScreen' ||
+            (e.metaKey && e.shiftKey && e.key.toLowerCase() === 's') ||
+            (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key))
+        ) {
+            e.preventDefault();
+            logActivity('screenshot_attempt', '', 'warning');
+        }
+    });
 ">
 
-    {{-- Violation Modal --}}
-    @if ($showViolationModal)
-        @include('livewire.exam.components.violation-modal')
-    @endif
+    {{-- Violation Modal (Alpine.js controls visibility via x-show) --}}
+    @include('livewire.exam.components.violation-modal')
 
     <span wire:poll.keep-alive.5s="monitorSessionStatus" style="display: none;" id="exam-session-status"></span>
 

@@ -72,7 +72,17 @@ class ExamPackageForm
                                     ->validationAttribute('Waktu Selesai')
                                     ->required()
                                     ->helperText(__('Deadline for exam access.'))
-                                    ->rule('after:start_time')
+                                    ->rules([
+                                        fn (Get $get): \Closure => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
+                                            $startTime = $get('start_time');
+                                            if (! $startTime || ! $value) {
+                                                return;
+                                            }
+                                            if (strtotime($value) <= strtotime($startTime)) {
+                                                $fail(__('End Time must be after Start Time.'));
+                                            }
+                                        },
+                                    ])
                                     ->columnSpan(1),
                             ]),
 

@@ -30,7 +30,7 @@
 - [✨ Fitur Utama](#-fitur-utama)
 - [⚙️ Teknologi](#️-teknologi)
 - [📋 Prasyarat](#-prasyarat)
-- [🚀 Instalasi](#-instalasi)
+- [🚀 Instalasi & Deployment](#-instalasi)
 - [🗂️ Struktur Proyek](#️-struktur-proyek)
 - [📦 Modul Sistem](#-modul-sistem)
 - [🎓 Alur Ujian](#-alur-ujian)
@@ -227,6 +227,68 @@ Perintah ini menjalankan secara paralel:
 - `php artisan pail` — log viewer
 - `npm run dev` — Vite hot-reload
 
+### ⏰ Task Scheduling (Cron Job) — Wajib untuk Production
+
+Sistem ini memiliki **scheduled command** yang berjalan otomatis setiap menit untuk menutup sesi ujian yang terlantar (_orphaned sessions_) — yaitu sesi yang masih berstatus `ongoing` namun waktunya sudah habis karena peserta menutup browser tanpa submit.
+
+| Command | Interval | Fungsi |
+|---|---|---|
+| `app:force-close-expired-exams` | Setiap menit | Sweep sesi expired → force-close via `ExamSessionService` |
+
+#### 🐧 VPS / Dedicated Server (Linux)
+
+Tambahkan **1 baris saja** ke crontab (berlaku untuk semua scheduled command Laravel):
+
+```bash
+crontab -e
+```
+
+```bash
+* * * * * cd /path/ke/cat-bapeten && php artisan schedule:run >> /dev/null 2>&1
+```
+
+> Ganti `/path/ke/cat-bapeten` dengan path absolut project di server.
+
+#### 🌐 Shared Hosting (cPanel)
+
+1. Login ke **cPanel** → cari **Cron Jobs**
+2. Set interval ke **Every Minute** (`* * * * *`)
+3. Masukkan command:
+   ```
+   cd /home/username/public_html/cat-bapeten && php artisan schedule:run >> /dev/null 2>&1
+   ```
+4. Klik **Add New Cron Job**
+
+#### 🚀 Laravel Forge / Ploi
+
+Platform ini sudah memiliki fitur **scheduler bawaan** — cukup aktifkan di dashboard, tidak perlu edit crontab manual.
+
+#### 🐳 Docker
+
+Tambahkan cron service di `docker-compose.yml` atau gunakan entrypoint script:
+
+```bash
+* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
+```
+
+#### 🖥️ Testing Lokal (XAMPP / Windows)
+
+Untuk testing manual tanpa cron, jalankan langsung:
+
+```bash
+php artisan app:force-close-expired-exams
+```
+
+#### 📋 Verifikasi Schedule
+
+Untuk memastikan command sudah terdaftar di scheduler:
+
+```bash
+php artisan schedule:list
+```
+
+Output log sweeper tersimpan di: `storage/logs/sweeper.log`
+
 ---
 
 ## 🗂️ Struktur Proyek
@@ -234,6 +296,9 @@ Perintah ini menjalankan secara paralel:
 ```
 cat-bapeten/
 ├── app/
+│   ├── Console/
+│   │   └── Commands/
+│   │       └── ForceCloseExpiredExams.php  # Sweeper: force-close sesi ujian yang expired
 │   ├── DTOs/                          # Data Transfer Objects (immutable input contracts)
 │   │   ├── ExamPackage/               # DTOs untuk paket ujian
 │   │   ├── ExamSession/               # DTOs untuk sesi ujian
