@@ -147,9 +147,8 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         logActivity('screenshot_attempt', '', 'warning');
     }
-});" @effect // Sync local violationCounter dengan
-        $wire.violationCount dari server // Ini memastikan counter tetap akurat setelah server confirm increment
-    this.violationCounter=$wire.violationCount; @endeffect>
+});" @effect this.violationCounter=$wire.violationCount;
+    @endeffect>
 
     {{-- Violation Modal (Alpine.js controls visibility via x-show) --}}
     @include('livewire.exam.components.violation-modal')
@@ -160,7 +159,6 @@ document.addEventListener('keydown', (e) => {
         @include('livewire.exam.steps.rules')
     @elseif($step === 'exam')
         @include('livewire.exam.components.confirm-finish-modal')
-        @include('livewire.exam.components.overlay-result-modal')
         @include('livewire.exam.steps.exam')
     @elseif($step === 'result')
         @include('livewire.exam.steps.result')

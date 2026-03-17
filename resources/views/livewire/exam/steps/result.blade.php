@@ -5,30 +5,48 @@
             <div
                 style="background: white; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); overflow: hidden; position: relative;">
                 <!-- Brand Accent Bar -->
-                <div style="height: 5px; background: #f9a825;"></div>
+                <div
+                    style="height: 5px; background: {{ $examEndReason === 'admin_stop' ? '#ef4444' : ($examEndReason === 'timeout' ? '#f97316' : '#f9a825') }};">
+                </div>
 
                 <div style="padding: 24px;">
                     <div style="text-align: center; margin-bottom: 20px;">
                         <!-- Logo Instansi -->
                         <img src="{{ asset('assets/img/logo.png') }}" alt="Logo"
-                            style="height: 60px; margin-bottom: 12px; object-fit: contain;">
+                            style="height: 60px; margin: 0 auto 12px; display: block; object-fit: contain;">
 
-                        <h2
-                            style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
-                            Ujian Selesai</h2>
-                        <p style="color: #6b7280; font-size: 13px; margin: 0; line-height: 1.4;">Jawaban Anda
-                            telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
+                        @if ($examEndReason === 'submitted')
+                            <h2
+                                style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
+                                Ujian Selesai</h2>
+                            <p style="color: #6b7280; font-size: 13px; margin: 0; line-height: 1.4;">Jawaban Anda
+                                telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
+                        @elseif ($examEndReason === 'timeout')
+                            <h2
+                                style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
+                                Ujian Selesai (Waktu Habis)</h2>
+                            <p style="color: #f97316; font-size: 13px; margin: 0; line-height: 1.4;">Waktu ujian
+                                Anda telah habis.<br>Ujian otomatis selesai dan jawaban tersimpan.</p>
+                        @else
+                            <h2
+                                style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
+                                Ujian Dihentikan</h2>
+                            <p style="color: #ef4444; font-size: 13px; margin: 0; line-height: 1.4;">Ujian Anda
+                                telah dihentikan oleh pengawas.<br>Keputusan ini bersifat final dan tidak dapat diubah.
+                            </p>
+                        @endif
                     </div>
 
                     <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; align-items: stretch;">
-                        
+
                         <!-- Exam Summary Section (Left) -->
                         <div style="flex: 1 1 350px; text-align: left;">
                             <div
                                 style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); height: 100%; box-sizing: border-box;">
 
                                 <!-- NIP & Nama -->
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                                <div
+                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                                     <div>
                                         <div
                                             style="font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 2px;">
@@ -108,12 +126,12 @@
 
                     <div style="text-align: center;">
                         <button wire:click="finishAndLogout"
-                            style="width: 100%; padding: 12px 20px; background-color: #f9a825; color: white; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
-                            onmouseover="this.style.backgroundColor='#f9a825'; this.style.transform='translateY(-1px)'"
-                            onmouseout="this.style.backgroundColor='#f9a825'; this.style.transform='translateY(0)'">
+                            style="width: 100%; padding: 12px 20px; background-color: {{ $examEndReason === 'admin_stop' ? '#ef4444' : ($examEndReason === 'timeout' ? '#f97316' : '#f9a825') }}; color: white; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
+                            onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'"
+                            onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
                             <span>Kembali ke Halaman Utama</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" style="width: 16px; height: 16px;">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                             </svg>
