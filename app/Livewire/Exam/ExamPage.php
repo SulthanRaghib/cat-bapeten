@@ -100,6 +100,11 @@ class ExamPage extends Component
     public string  $violationSource    = '';
     public ?string $violationDetectedAt = null;
 
+    // == Tracking Exam End Reason ============================================
+    // submitted | timeout | admin_stop
+    #[Locked]
+    public string  $examEndReason = 'submitted';
+
     /** Daftar nilai opsi jawaban yang sah. Digunakan di saveAnswerClient() untuk validasi input. */
     private const VALID_ANSWER_OPTIONS = ['0', '1', '2', '3', '4', ''];
 
@@ -412,6 +417,7 @@ class ExamPage extends Component
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
+                $this->examEndReason = 'submitted';
                 $this->completeExamSession($session, now());
             }
         }
@@ -419,6 +425,7 @@ class ExamPage extends Component
         $this->showConfirmFinish = false;
         $this->dispatch('exam-finished');
         $this->loadResults();
+        $this->showResults = true;
         $this->step = 'result';
     }
 
@@ -456,16 +463,22 @@ class ExamPage extends Component
                 $finishedAt = now();
             }
 
+            $this->examEndReason = 'timeout';
             $this->completeExamSession($session, $finishedAt);
         }
 
         $this->dispatch('exam-finished');
         $this->loadResults();
+        $this->showResults = true;
         $this->step = 'result';
     }
 
     public function monitorSessionStatus(): void
     {
+        if ($this->step !== 'exam') {
+            return;
+        }
+
         if ($this->showResults || ! $this->examSessionId) {
             return;
         }
@@ -941,9 +954,11 @@ class ExamPage extends Component
             $this->endTime = now()->toIso8601String();
         }
 
+        $this->examEndReason = 'admin_stop';
         $this->showConfirmFinish = false;
         $this->loadResults();
         $this->showResults = true;
+        $this->step = 'result';
 
         $this->dispatch('exam-stopped', endTime: $this->endTime);
 
