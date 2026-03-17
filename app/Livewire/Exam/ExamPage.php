@@ -96,6 +96,9 @@ class ExamPage extends Component
     public int     $violationCount     = 0;
     public bool    $showViolationModal = false;
     public string  $violationMessage   = '';
+    public string  $violationAction    = '';
+    public string  $violationSource    = '';
+    public ?string $violationDetectedAt = null;
 
     /** Daftar nilai opsi jawaban yang sah. Digunakan di saveAnswerClient() untuk validasi input. */
     private const VALID_ANSWER_OPTIONS = ['0', '1', '2', '3', '4', ''];
@@ -490,23 +493,24 @@ class ExamPage extends Component
     #[Renderless]
     public function logActivity(string $action, ?string $message = null, string $severity = 'warning'): void
     {
+        if ($this->step !== 'exam') {
+            return;
+        }
+
         if (! $this->examSessionId) {
             return;
         }
 
-        // SECURITY — Whitelist validation: tolak aksi yang tidak dikenali.
-        // Mencegah injection string sembarang ke kolom exam_activity_logs.action.
+        // SECURITY — Whitelist validation
         if (! in_array($action, self::ALLOWED_PROCTORING_ACTIONS, true)) {
             return;
         }
 
-        // SECURITY — Severity whitelist: nilai di luar daftar diabaikan.
         if (! in_array($severity, ['warning', 'danger', 'critical'], true)) {
             return;
         }
 
-        // VALIDASI: Hanya catat log jika ujian masih berstatus 'ongoing'
-        // Mencegah log palsu setelah ujian selesai tetapi peserta masih di halaman result.
+        // VALIDASI: Hanya catat log jika ujian masih ongoing
         $session = ExamSession::find($this->examSessionId);
         if (! $session || $session->status !== 'ongoing') {
             return;
@@ -521,13 +525,14 @@ class ExamPage extends Component
             'screenshot_attempt' => 'Percobaan tangkapan layar (Screenshot).',
         ];
 
-        // SECURITY — Gunakan hanya pesan dari whitelist server; abaikan pesan bebas dari client.
         $logMessage = $messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.';
 
+        // INCREMENT ONLY — jangan override display properties yang sudah di-set client!
+        // Client Alpine.js sudah set: violationMessage, violationAction, violationSource, violationDetectedAt
+        // Server hanya increment count + catat ke DB (don't trigger Livewire re-render dari property override)
         $this->violationCount++;
-        $this->violationMessage   = $logMessage;
-        $this->showViolationModal = true;
 
+        // Catat ke database saja
         ExamActivityLog::create([
             'exam_session_id' => $this->examSessionId,
             'action'          => $action,
