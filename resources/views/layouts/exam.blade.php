@@ -13,6 +13,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap"
         rel="stylesheet" />
 
+    {{-- Load Tailwind CSS + App CSS from Vite build --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     @livewireStyles
 
     @stack('styles')
