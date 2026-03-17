@@ -97,7 +97,7 @@
                 </div>
             </div>
 
-            <button type="button" wire:click="confirmFinish" class="finish" style="margin-top: 20px;">Selesai
+            <button type="button" @click="showConfirmFinishLocal = true" class="finish" style="margin-top: 20px;">Selesai
                 Ujian</button>
         </aside>
     </div>

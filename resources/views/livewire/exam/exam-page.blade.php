@@ -4,6 +4,7 @@
 <div x-data="{
     // Sinkronisasi status 'step' dari Livewire ke Alpine.js
     step: @entangle('step'),
+    showConfirmFinishLocal: false,
 
     logActivity(action, message, severity = 'warning') {
         // Blokir jika sudah di halaman result
