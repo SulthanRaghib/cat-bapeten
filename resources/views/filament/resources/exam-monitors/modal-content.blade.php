@@ -6,12 +6,12 @@
         <div class="col-span-1 space-y-4">
             <x-filament::section>
                 <x-slot name="heading">
-                    Detail Peserta
+                    {{ __('Participant Details') }}
                 </x-slot>
 
                 <div class="space-y-2">
                     <div class="flex justify-between">
-                        <span class="font-medium text-gray-500">Nama:</span>
+                        <span class="font-medium text-gray-500">{{ __('Name') }}:</span>
                         <span>{{ $record->user->name }}</span>
                     </div>
                     <div class="flex justify-between">
@@ -19,14 +19,20 @@
                         <span>{{ $record->user->nip ?? '-' }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="font-medium text-gray-500">Status:</span>
+                        <span class="font-medium text-gray-500">{{ __('Status') }}:</span>
                         <x-filament::badge color="success">
-                            {{ ucfirst($record->status) }}
+                            {{ match ($record->status) {
+                                'ongoing' => __('Running'),
+                                'paused' => __('Paused'),
+                                'completed' => __('Completed'),
+                                'terminated' => __('Terminated'),
+                                default => ucfirst($record->status),
+                            } }}
                         </x-filament::badge>
                     </div>
                     <div class="pt-4 border-t">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-lg">Skor Sementara:</span>
+                            <span class="font-bold text-lg">{{ __('Temporary Score') }}:</span>
                             <span class="text-2xl font-bold text-primary-600">
                                 {{ $record->answers()->sum('score') }}
                             </span>
@@ -38,7 +44,7 @@
             @if ($canForceFinish)
                 <div class="flex flex-col gap-2">
                     <x-filament::button color="danger" icon="heroicon-m-stop" x-on:click="confirmForceFinish = true">
-                        Paksa Selesai
+                        {{ __('Force Finish') }}
                     </x-filament::button>
                 </div>
             @endif
@@ -75,25 +81,23 @@
                                     </div>
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                         <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                            Konfirmasi Paksa Selesai
+                                            {{ __('Confirm Force Finish') }}
                                         </h3>
                                         <div class="mt-2">
                                             <div class="space-y-4 text-sm">
                                                 <p class="text-red-600 font-semibold">
-                                                    Tindakan ini akan:
+                                                    {{ __('This action will:') }}
                                                 </p>
 
                                                 <ul class="list-disc pl-5 space-y-1 text-gray-700">
-                                                    <li>Mengakhiri ujian peserta secara paksa</li>
-                                                    <li>Menyimpan jawaban yang ada saat ini</li>
-                                                    <li>Tidak dapat dibatalkan</li>
+                                                    <li>{{ __('Forcefully end the participant exam') }}</li>
+                                                    <li>{{ __('Save current answers') }}</li>
+                                                    <li>{{ __('Cannot be undone') }}</li>
                                                 </ul>
 
                                                 <div
                                                     class="rounded-md bg-red-50 border border-red-200 p-3 text-red-700">
-                                                    Pastikan tindakan ini dilakukan karena pelanggaran serius atau
-                                                    kondisi
-                                                    darurat.
+                                                    {{ __('Make sure this action is taken only for serious violations or emergency situations.') }}
                                                 </div>
                                             </div>
                                         </div>
@@ -104,10 +108,10 @@
                                 <x-filament::button color="danger" icon="heroicon-m-stop"
                                     wire:click="todoForceFinish({{ $record->id }})"
                                     x-on:click="confirmForceFinish = false">
-                                    Ya, Akhiri Ujian
+                                    {{ __('Yes, End Exam') }}
                                 </x-filament::button>
                                 <x-filament::button color="gray" x-on:click="confirmForceFinish = false">
-                                    Batal
+                                    {{ __('Cancel') }}
                                 </x-filament::button>
                             </div>
                         </div>
@@ -121,7 +125,7 @@
         <div class="col-span-2" wire:poll.5s>
             <x-filament::section>
                 <x-slot name="heading">
-                    Log Aktivitas (Realtime)
+                    {{ __('Activity Log (Realtime)') }}
                 </x-slot>
 
                 <div class="space-y-4 overflow-y-auto pr-2" style="max-height: 420px;">
@@ -163,7 +167,7 @@
                         </div>
                     @empty
                         <div class="text-center py-8 text-gray-400">
-                            Belum ada aktivitas mencurigakan tercatat.
+                            {{ __('No suspicious activity has been recorded yet.') }}
                         </div>
                     @endforelse
                 </div>

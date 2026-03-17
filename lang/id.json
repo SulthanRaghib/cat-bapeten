@@ -818,5 +818,17 @@
     "Questions Without Unit": "Soal Tanpa Unit",
     "There are :count questions without an assigned unit.": "Terdapat :count soal yang belum masuk ke unit manapun.",
     "Success": "Sukses",
-    ":count questions successfully added randomly to the exam package.": ":count soal acak berhasil ditambahkan ke paket ujian."
+    ":count questions successfully added randomly to the exam package.": ":count soal acak berhasil ditambahkan ke paket ujian.",
+    "Participant Details": "Detail Peserta",
+    "Temporary Score": "Skor Sementara",
+    "Force Finish": "Paksa Selesai",
+    "Confirm Force Finish": "Konfirmasi Paksa Selesai",
+    "This action will:": "Tindakan ini akan:",
+    "Forcefully end the participant exam": "Mengakhiri ujian peserta secara paksa",
+    "Save current answers": "Menyimpan jawaban yang ada saat ini",
+    "Cannot be undone": "Tidak dapat dibatalkan",
+    "Make sure this action is taken only for serious violations or emergency situations.": "Pastikan tindakan ini dilakukan karena pelanggaran serius atau kondisi darurat.",
+    "Yes, End Exam": "Ya, Akhiri Ujian",
+    "Activity Log (Realtime)": "Log Aktivitas (Realtime)",
+    "No suspicious activity has been recorded yet.": "Belum ada aktivitas mencurigakan tercatat."
 }
