@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\ExamMonitors\Pages;
 
 use App\Filament\Resources\ExamMonitors\ExamMonitorResource;
+use App\Models\ExamSession;
 use Filament\Actions\CreateAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Table;
 
 class ListExamMonitors extends ListRecords
 {
@@ -16,6 +19,23 @@ class ListExamMonitors extends ListRecords
         return [
             // CreateAction::make(),
         ];
+    }
+
+    public function table(Table $table): Table
+    {
+        return parent::table($table)
+            ->modifyQueryUsing(function (Builder $query): void {
+                $mountedAction = $this->mountedActions[array_key_last($this->mountedActions)] ?? null;
+                $mountedRecordKey = $mountedAction['context']['recordKey'] ?? null;
+
+                $query->where(function (Builder $subQuery) use ($mountedRecordKey): void {
+                    $subQuery->whereIn('status', ['ongoing', 'paused']);
+
+                    if (filled($mountedRecordKey)) {
+                        $subQuery->orWhere((new ExamSession)->getQualifiedKeyName(), $mountedRecordKey);
+                    }
+                });
+            });
     }
 
     public function todoForceFinish($recordId)
@@ -50,5 +70,7 @@ class ListExamMonitors extends ListRecords
             ->title(__('Exam session forcefully ended'))
             ->success()
             ->send();
+
+        $this->unmountAction();
     }
 }

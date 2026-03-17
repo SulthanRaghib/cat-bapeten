@@ -72,7 +72,7 @@ class ExamMonitorResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereIn('status', ['ongoing', 'paused']);
+        return parent::getEloquentQuery();
     }
 
     public static function table(Table $table): Table
