@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ExamMonitors\Pages;
 
 use App\Filament\Resources\ExamMonitors\ExamMonitorResource;
 use Filament\Actions\CreateAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
 class ListExamMonitors extends ListRecords
@@ -19,6 +20,15 @@ class ListExamMonitors extends ListRecords
 
     public function todoForceFinish($recordId)
     {
+        if (! ExamMonitorResource::canForceFinish()) {
+            Notification::make()
+                ->title(__('Anda tidak memiliki izin untuk memaksa mengakhiri ujian.'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $record = \App\Models\ExamSession::find($recordId);
         if (! $record) {
             return;
@@ -36,7 +46,7 @@ class ListExamMonitors extends ListRecords
             $record->examParticipant->update(['is_active' => false]);
         }
 
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->title(__('Exam session forcefully ended'))
             ->success()
             ->send();

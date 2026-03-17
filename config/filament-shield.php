@@ -27,7 +27,7 @@ return [
             'pages' => true,
             'widgets' => true,
             'resources' => true,
-            'custom_permissions' => true,
+            'custom_permissions' => false,
         ],
     ],
 
@@ -160,8 +160,8 @@ return [
     */
 
     'localization' => [
-        'enabled' => false,
-        'key' => 'filament-shield::filament-shield.resource_permission_prefixes_labels',
+        'enabled' => true,
+        'key' => 'shield_permissions.resource_permission_prefixes_labels',
     ],
 
     /*
@@ -184,6 +184,20 @@ return [
                 'create',
                 'update',
                 'delete',
+            ],
+            \App\Filament\Resources\ExamMonitors\ExamMonitorResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
+                'restore',
+                'forceDelete',
+                'forceDeleteAny',
+                'restoreAny',
+                'replicate',
+                'reorder',
+                'forceFinish',
             ],
         ],
         'exclude' => [
