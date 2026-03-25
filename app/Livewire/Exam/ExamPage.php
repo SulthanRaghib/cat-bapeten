@@ -610,8 +610,8 @@ class ExamPage extends Component
             ->latest()
             ->first();
 
-        // Kasus A: peserta sudah selesai ujian secara manual sebelumnya.
-        if ($session && $session->status === 'completed') {
+        // Kasus A: peserta sudah selesai ujian secara manual sebelumnya atau diberhentikan paksa.
+        if ($session && ($session->status === 'completed' || $session->status === 'terminated')) {
             $this->examSessionId = $session->id;
             $this->questionIds   = $session->answers_meta ?? [];
             $this->loadResults();
@@ -938,6 +938,9 @@ class ExamPage extends Component
 
         $this->showConfirmFinish = false;
         $this->loadResults();
+
+        // Ganti step ke 'result' agar menggunakan tampilan hasil lengkap yang sama dengan penyelesaian normal.
+        $this->step = 'result';
         $this->showResults = true;
 
         $this->dispatch('exam-stopped', endTime: $this->endTime);

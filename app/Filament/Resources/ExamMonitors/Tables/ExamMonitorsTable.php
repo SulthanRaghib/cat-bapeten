@@ -6,12 +6,14 @@ use App\Models\ExamSession;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ExamMonitorsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn(Builder $query) => $query->whereIn('status', ['ongoing', 'paused']))
             ->striped()
             ->poll('5s')
             ->recordUrl(null)

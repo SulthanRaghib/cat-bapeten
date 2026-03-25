@@ -13,11 +13,22 @@
                         <img src="{{ asset('assets/img/logo.png') }}" alt="Logo"
                             style="height: 60px; margin-bottom: 12px; object-fit: contain;">
 
-                        <h2
-                            style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
-                            Ujian Selesai</h2>
-                        <p style="color: #6b7280; font-size: 13px; margin: 0; line-height: 1.4;">Jawaban Anda
-                            telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
+                        @if (($resultStats['violation_count'] ?? 0) > 0)
+                            <h2 style="font-size: 21px; font-weight: 700; color: #ef4444; margin: 0 0 4px 0; letter-spacing: -0.5px;">
+                                Ujian Diberhentikan Paksa</h2>
+                            <p style="color: #ef4444; font-size: 13px; margin: 0; line-height: 1.4; font-weight: 600;">
+                                Ujian Anda diberhentikan paksa karena melanggar peraturan.</p>
+                        @elseif (isset($resultStats['end_time']) && isset($resultStats['start_time']) && isset($durationMinutes) && \Carbon\Carbon::parse($resultStats['end_time'])->greaterThanOrEqualTo(\Carbon\Carbon::parse($resultStats['start_time'])->addMinutes($durationMinutes)))
+                             <h2 style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
+                                Ujian Selesai</h2>
+                             <p style="color: #6b7280; font-size: 13px; margin: 0; line-height: 1.4;">
+                                 Waktu ujian telah habis.<br>Jawaban Anda telah tersimpan otomatis.</p>
+                        @else
+                             <h2 style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
+                                Ujian Selesai</h2>
+                            <p style="color: #6b7280; font-size: 13px; margin: 0; line-height: 1.4;">Jawaban Anda
+                                telah berhasil disimpan.<br>Terima kasih telah berpartisipasi.</p>
+                        @endif
                     </div>
 
                     <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; align-items: stretch;">
