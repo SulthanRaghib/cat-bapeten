@@ -16,6 +16,8 @@ use UnitEnum;
 
 class ExamMonitorResource extends Resource
 {
+    public const FORCE_FINISH_PERMISSION = 'ForceFinish:ExamSession';
+
     protected static ?string $model = ExamSession::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-eye';
@@ -54,6 +56,18 @@ class ExamMonitorResource extends Resource
         }
 
         return $user->can('ViewAny:ExamSession');
+    }
+
+    public static function canForceFinish(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $user->can(static::FORCE_FINISH_PERMISSION);
     }
 
     public static function getEloquentQuery(): Builder

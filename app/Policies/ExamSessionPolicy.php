@@ -67,4 +67,9 @@ class ExamSessionPolicy
         return $authUser->can('Reorder:ExamSession');
     }
 
+    public function forceFinish(AuthUser $authUser, ExamSession $examSession): bool
+    {
+        return $authUser->can('ForceFinish:ExamSession');
+    }
+
 }

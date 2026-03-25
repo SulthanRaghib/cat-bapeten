@@ -2,9 +2,11 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 
 class AppearanceSettings extends Page
 {
@@ -32,7 +34,11 @@ class AppearanceSettings extends Page
 
     public function mount(): void
     {
-        $this->currentColor = auth()->user()->theme_color ?? 'yellow';
+        $user = Auth::user();
+
+        $this->currentColor = $user instanceof User
+            ? ($user->theme_color ?? 'yellow')
+            : 'yellow';
     }
 
     public function setColor(string $color): void
@@ -42,8 +48,12 @@ class AppearanceSettings extends Page
             return;
         }
 
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
         $user->update(['theme_color' => $color]);
 
         $this->currentColor = $color;
@@ -59,8 +69,14 @@ class AppearanceSettings extends Page
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->check() && auth()->user()->canAccessPanel(
-            \Filament\Facades\Filament::getCurrentPanel()
-        );
+        if (! Auth::check()) {
+            return false;
+        }
+
+        $user = Auth::user();
+
+        return $user instanceof User
+            ? $user->canAccessPanel(\Filament\Facades\Filament::getCurrentPanel())
+            : false;
     }
 }

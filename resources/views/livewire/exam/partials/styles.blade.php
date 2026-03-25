@@ -12,7 +12,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.3s ease-out;
         }
 
         .violation-content {
@@ -23,8 +22,6 @@
             width: 90%;
             text-align: center;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            transform: scale(0.95);
-            animation: zoomIn 0.3s ease-out forwards;
             border-top: 6px solid #ef4444;
         }
 
@@ -38,28 +35,6 @@
             justify-content: center;
             margin: 0 auto 1.5rem;
             color: #ef4444;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes zoomIn {
-            from {
-                transform: scale(0.95);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
         }
 
 

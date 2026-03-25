@@ -1,15 +1,17 @@
+@php($canForceFinish = \App\Filament\Resources\ExamMonitors\ExamMonitorResource::canForceFinish())
+
 <div x-data="{ confirmForceFinish: false }">
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {{-- Left: Details --}}
         <div class="col-span-1 space-y-4">
             <x-filament::section>
                 <x-slot name="heading">
-                    Detail Peserta
+                    {{ __('Participant Details') }}
                 </x-slot>
 
                 <div class="space-y-2">
                     <div class="flex justify-between">
-                        <span class="font-medium text-gray-500">Nama:</span>
+                        <span class="font-medium text-gray-500">{{ __('Name') }}:</span>
                         <span>{{ $record->user->name }}</span>
                     </div>
                     <div class="flex justify-between">
@@ -17,14 +19,20 @@
                         <span>{{ $record->user->nip ?? '-' }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="font-medium text-gray-500">Status:</span>
+                        <span class="font-medium text-gray-500">{{ __('Status') }}:</span>
                         <x-filament::badge color="success">
-                            {{ ucfirst($record->status) }}
+                            {{ match ($record->status) {
+                                'ongoing' => __('Running'),
+                                'paused' => __('Paused'),
+                                'completed' => __('Completed'),
+                                'terminated' => __('Terminated'),
+                                default => ucfirst($record->status),
+                            } }}
                         </x-filament::badge>
                     </div>
                     <div class="pt-4 border-t">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-lg">Skor Sementara:</span>
+                            <span class="font-bold text-lg">{{ __('Temporary Score') }}:</span>
                             <span class="text-2xl font-bold text-primary-600">
                                 {{ $record->answers()->sum('score') }}
                             </span>
@@ -33,86 +41,91 @@
                 </div>
             </x-filament::section>
 
-            <div class="flex flex-col gap-2">
-                <x-filament::button color="danger" icon="heroicon-m-stop" x-on:click="confirmForceFinish = true">
-                    Paksa Selesai
-                </x-filament::button>
-            </div>
+            @if ($canForceFinish)
+                <div class="flex flex-col gap-2">
+                    <x-filament::button color="danger" icon="heroicon-m-stop" x-on:click="confirmForceFinish = true">
+                        {{ __('Force Finish') }}
+                    </x-filament::button>
+                </div>
+            @endif
         </div>
 
         {{-- Modal Verifikasi (Custom Alpine Implementation) --}}
-        <template x-teleport="body">
-            <div x-show="confirmForceFinish" x-cloak class="fixed inset-0 z-[999] overflow-y-auto"
-                aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                    <div x-show="confirmForceFinish" x-transition:enter="ease-out duration-300"
-                        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                        x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500/75 transition-opacity"
-                        aria-hidden="true" @click="confirmForceFinish = false"></div>
+        @if ($canForceFinish)
+            <template x-teleport="body">
+                <div x-show="confirmForceFinish" x-cloak class="fixed inset-0 z-[999] overflow-y-auto"
+                    aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div x-show="confirmForceFinish" x-transition:enter="ease-out duration-300"
+                            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                            x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500/75 transition-opacity"
+                            aria-hidden="true" @click="confirmForceFinish = false"></div>
 
-                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                        <span class="hidden sm:inline-block sm:align-middle sm:h-screen"
+                            aria-hidden="true">&#8203;</span>
 
-                    <div x-show="confirmForceFinish" x-transition:enter="ease-out duration-300"
-                        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                        x-transition:leave="ease-in duration-200"
-                        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        class="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        <div x-show="confirmForceFinish" x-transition:enter="ease-out duration-300"
+                            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                            x-transition:leave="ease-in duration-200"
+                            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            class="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
 
-                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                            <div class="sm:flex sm:items-start">
-                                <div
-                                    class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                    <span class="h-6 w-6 text-red-600">⚠️</span>
-                                </div>
-                                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                        Konfirmasi Paksa Selesai
-                                    </h3>
-                                    <div class="mt-2">
-                                        <div class="space-y-4 text-sm">
-                                            <p class="text-red-600 font-semibold">
-                                                Tindakan ini akan:
-                                            </p>
+                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div class="sm:flex sm:items-start">
+                                    <div
+                                        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                        <span class="h-6 w-6 text-red-600">⚠️</span>
+                                    </div>
+                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                            {{ __('Confirm Force Finish') }}
+                                        </h3>
+                                        <div class="mt-2">
+                                            <div class="space-y-4 text-sm">
+                                                <p class="text-red-600 font-semibold">
+                                                    {{ __('This action will:') }}
+                                                </p>
 
-                                            <ul class="list-disc pl-5 space-y-1 text-gray-700">
-                                                <li>Mengakhiri ujian peserta secara paksa</li>
-                                                <li>Menyimpan jawaban yang ada saat ini</li>
-                                                <li>Tidak dapat dibatalkan</li>
-                                            </ul>
+                                                <ul class="list-disc pl-5 space-y-1 text-gray-700">
+                                                    <li>{{ __('Forcefully end the participant exam') }}</li>
+                                                    <li>{{ __('Save current answers') }}</li>
+                                                    <li>{{ __('Cannot be undone') }}</li>
+                                                </ul>
 
-                                            <div class="rounded-md bg-red-50 border border-red-200 p-3 text-red-700">
-                                                Pastikan tindakan ini dilakukan karena pelanggaran serius atau kondisi
-                                                darurat.
+                                                <div
+                                                    class="rounded-md bg-red-50 border border-red-200 p-3 text-red-700">
+                                                    {{ __('Make sure this action is taken only for serious violations or emergency situations.') }}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-                            <x-filament::button color="danger" icon="heroicon-m-stop"
-                                wire:click="todoForceFinish({{ $record->id }})"
-                                x-on:click="confirmForceFinish = false">
-                                Ya, Akhiri Ujian
-                            </x-filament::button>
-                            <x-filament::button color="gray" x-on:click="confirmForceFinish = false">
-                                Batal
-                            </x-filament::button>
+                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                                <x-filament::button color="danger" icon="heroicon-m-stop"
+                                    wire:click="todoForceFinish({{ $record->id }})"
+                                    x-on:click="confirmForceFinish = false">
+                                    {{ __('Yes, End Exam') }}
+                                </x-filament::button>
+                                <x-filament::button color="gray" x-on:click="confirmForceFinish = false">
+                                    {{ __('Cancel') }}
+                                </x-filament::button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </template>
+            </template>
+        @endif
 
 
         {{-- Right: Activity Log Timeline (polls independently) --}}
         <div class="col-span-2" wire:poll.5s>
             <x-filament::section>
                 <x-slot name="heading">
-                    Log Aktivitas (Realtime)
+                    {{ __('Activity Log (Realtime)') }}
                 </x-slot>
 
                 <div class="space-y-4 overflow-y-auto pr-2" style="max-height: 420px;">
@@ -154,7 +167,7 @@
                         </div>
                     @empty
                         <div class="text-center py-8 text-gray-400">
-                            Belum ada aktivitas mencurigakan tercatat.
+                            {{ __('No suspicious activity has been recorded yet.') }}
                         </div>
                     @endforelse
                 </div>

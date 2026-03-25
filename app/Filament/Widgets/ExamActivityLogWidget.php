@@ -18,11 +18,12 @@ class ExamActivityLogWidget extends Widget
     public string $filter = 'all';
 
     private const ACTION_LABELS = [
-        'tab_switch'    => 'Tab Switch',
-        'window_blur'   => 'Window Blur',
-        'copy_attempt'  => 'Copy Attempt',
-        'paste_attempt' => 'Paste Attempt',
-        'right_click'   => 'Right Click',
+        'tab_switch'         => 'Tab Switch',
+        'window_blur'        => 'Window Blur',
+        'copy_attempt'       => 'Copy Attempt',
+        'paste_attempt'      => 'Paste Attempt',
+        'right_click'        => 'Right Click',
+        'screenshot_attempt' => 'Screenshot Attempt',
     ];
 
     private const SEVERITY_CONFIG = [

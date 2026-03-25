@@ -96,6 +96,14 @@ class ExamPage extends Component
     public int     $violationCount     = 0;
     public bool    $showViolationModal = false;
     public string  $violationMessage   = '';
+    public string  $violationAction    = '';
+    public string  $violationSource    = '';
+    public ?string $violationDetectedAt = null;
+
+    // == Tracking Exam End Reason ============================================
+    // submitted | timeout | admin_stop
+    #[Locked]
+    public string  $examEndReason = 'submitted';
 
     /** Daftar nilai opsi jawaban yang sah. Digunakan di saveAnswerClient() untuk validasi input. */
     private const VALID_ANSWER_OPTIONS = ['0', '1', '2', '3', '4', ''];
@@ -107,6 +115,7 @@ class ExamPage extends Component
         'copy_attempt',
         'paste_attempt',
         'right_click',
+        'screenshot_attempt',
     ];
 
     // =========================================================================
@@ -408,6 +417,7 @@ class ExamPage extends Component
         if ($this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
             if ($session && $session->status === 'ongoing') {
+                $this->examEndReason = 'submitted';
                 $this->completeExamSession($session, now());
             }
         }
@@ -415,6 +425,7 @@ class ExamPage extends Component
         $this->showConfirmFinish = false;
         $this->dispatch('exam-finished');
         $this->loadResults();
+        $this->showResults = true;
         $this->step = 'result';
     }
 
@@ -452,16 +463,22 @@ class ExamPage extends Component
                 $finishedAt = now();
             }
 
+            $this->examEndReason = 'timeout';
             $this->completeExamSession($session, $finishedAt);
         }
 
         $this->dispatch('exam-finished');
         $this->loadResults();
+        $this->showResults = true;
         $this->step = 'result';
     }
 
     public function monitorSessionStatus(): void
     {
+        if ($this->step !== 'exam') {
+            return;
+        }
+
         if ($this->showResults || ! $this->examSessionId) {
             return;
         }
@@ -486,45 +503,49 @@ class ExamPage extends Component
         }
     }
 
+    #[Renderless]
     public function logActivity(string $action, ?string $message = null, string $severity = 'warning'): void
     {
+        if ($this->step !== 'exam') {
+            return;
+        }
+
         if (! $this->examSessionId) {
             return;
         }
 
-        // SECURITY — Whitelist validation: tolak aksi yang tidak dikenali.
-        // Mencegah injection string sembarang ke kolom exam_activity_logs.action.
+        // SECURITY — Whitelist validation
         if (! in_array($action, self::ALLOWED_PROCTORING_ACTIONS, true)) {
             return;
         }
 
-        // SECURITY — Severity whitelist: nilai di luar daftar diabaikan.
         if (! in_array($severity, ['warning', 'danger', 'critical'], true)) {
             return;
         }
 
-        // VALIDASI: Hanya catat log jika ujian masih berstatus 'ongoing'
-        // Mencegah log palsu setelah ujian selesai tetapi peserta masih di halaman result.
+        // VALIDASI: Hanya catat log jika ujian masih ongoing
         $session = ExamSession::find($this->examSessionId);
         if (! $session || $session->status !== 'ongoing') {
             return;
         }
 
         $messageMap = [
-            'tab_switch'    => 'Peserta berpindah tab atau meminimalkan browser.',
-            'window_blur'   => 'Peserta mengklik di luar jendela ujian.',
-            'copy_attempt'  => 'Percobaan menyalin teks soal (Copy).',
-            'paste_attempt' => 'Percobaan menempel teks (Paste).',
-            'right_click'   => 'Percobaan klik kanan (Context Menu).',
+            'tab_switch'         => 'Peserta berpindah tab atau meminimalkan browser.',
+            'window_blur'        => 'Peserta mengklik di luar jendela ujian.',
+            'copy_attempt'       => 'Percobaan menyalin teks soal (Copy).',
+            'paste_attempt'      => 'Percobaan menempel teks (Paste).',
+            'right_click'        => 'Percobaan klik kanan (Context Menu).',
+            'screenshot_attempt' => 'Percobaan tangkapan layar (Screenshot).',
         ];
 
-        // SECURITY — Gunakan hanya pesan dari whitelist server; abaikan pesan bebas dari client.
         $logMessage = $messageMap[$action] ?? 'Aktivitas mencurigakan terdeteksi.';
 
+        // INCREMENT ONLY — jangan override display properties yang sudah di-set client!
+        // Client Alpine.js sudah set: violationMessage, violationAction, violationSource, violationDetectedAt
+        // Server hanya increment count + catat ke DB (don't trigger Livewire re-render dari property override)
         $this->violationCount++;
-        $this->violationMessage   = $logMessage;
-        $this->showViolationModal = true;
 
+        // Catat ke database saja
         ExamActivityLog::create([
             'exam_session_id' => $this->examSessionId,
             'action'          => $action,
@@ -533,10 +554,7 @@ class ExamPage extends Component
         ]);
     }
 
-    public function closeViolationModal(): void
-    {
-        $this->showViolationModal = false;
-    }
+    // closeViolationModal() removed — Alpine.js handles closing client-side for instant response.
 
     // =========================================================================
     // COMPUTED PROPERTIES (PROPERTI KALKULASI)
@@ -936,12 +954,14 @@ class ExamPage extends Component
             $this->endTime = now()->toIso8601String();
         }
 
+        $this->examEndReason = 'admin_stop';
         $this->showConfirmFinish = false;
         $this->loadResults();
 
         // Ganti step ke 'result' agar menggunakan tampilan hasil lengkap yang sama dengan penyelesaian normal.
         $this->step = 'result';
         $this->showResults = true;
+        $this->step = 'result';
 
         $this->dispatch('exam-stopped', endTime: $this->endTime);
 
