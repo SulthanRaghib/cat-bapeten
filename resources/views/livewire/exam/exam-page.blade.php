@@ -10,6 +10,11 @@
     showConfirmFinishLocal: false,
 
     init() {
+        // Listener untuk scroll ke atas saat ujian dimulai
+        window.addEventListener('exam-started', () => {
+            window.scrollTo(0, 0);
+        });
+
         // 1. Sinkronisasi State (Anti-Flicker Logic)
         let serverCount = {{ $violationCount ?? 0 }};
         let globalCount = window.globalViolationCounter || 0;
