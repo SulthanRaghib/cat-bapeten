@@ -15,17 +15,16 @@
                         <img src="{{ asset('assets/img/logo.png') }}" alt="Logo"
                             style="height: 60px; margin: 0 auto 12px; display: block; object-fit: contain;">
 
-                        @if (($resultStats['violation_count'] ?? 0) > 0)
+                        @if ($examEndReason === 'admin_stop')
                             <h2 style="font-size: 21px; font-weight: 700; color: #ef4444; margin: 0 0 4px 0; letter-spacing: -0.5px;">
                                 Ujian Diberhentikan Paksa</h2>
                             <p style="color: #ef4444; font-size: 13px; margin: 0; line-height: 1.4; font-weight: 600;">
-                                Ujian Anda diberhentikan paksa karena melanggar peraturan.</p>
-                        @elseif ($examEndReason === 'admin_stop')
-                            <h2
-                                style="font-size: 21px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0; letter-spacing: -0.5px;">
-                                Ujian Dihentikan</h2>
-                            <p style="color: #ef4444; font-size: 13px; margin: 0; line-height: 1.4;">Ujian Anda
-                                telah dihentikan oleh pengawas.<br>Keputusan ini bersifat final dan tidak dapat diubah.
+                                Ujian Anda telah diberhentikan paksa oleh pengawas.<br>
+                                @if (($resultStats['violation_count'] ?? 0) > 0)
+                                    Keputusan ini diambil karena Anda melanggar peraturan ujian.
+                                @else
+                                    Keputusan ini bersifat final dan tidak dapat diubah.
+                                @endif
                             </p>
                         @elseif ($examEndReason === 'timeout' || (isset($resultStats['end_time']) && isset($resultStats['start_time']) && isset($durationMinutes) && \Carbon\Carbon::parse($resultStats['end_time'])->greaterThanOrEqualTo(\Carbon\Carbon::parse($resultStats['start_time'])->addMinutes($durationMinutes))))
                             <h2
