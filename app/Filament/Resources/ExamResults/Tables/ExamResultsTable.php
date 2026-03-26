@@ -36,9 +36,18 @@ class ExamResultsTable
         $m     = intdiv($total % 3600, 60);
         $s     = $total % 60;
 
-        if ($h > 0) return "{$h} jam {$m} menit {$s} detik";
-        if ($m > 0) return "{$m} menit {$s} detik";
-        return "{$s} detik";
+        $parts = [];
+        if ($h > 0) {
+            $parts[] = "{$h} " . __('hour');
+        }
+        if ($m > 0) {
+            $parts[] = "{$m} " . __('minute');
+        }
+        if ($s > 0 || empty($parts)) {
+            $parts[] = "{$s} " . __('second');
+        }
+
+        return implode(' ', $parts);
     }
 
     /** Apakah peserta lulus? */
