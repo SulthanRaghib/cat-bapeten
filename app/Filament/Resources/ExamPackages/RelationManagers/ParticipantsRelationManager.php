@@ -82,13 +82,13 @@ class ParticipantsRelationManager extends RelationManager
                         return $participant?->status_label ?? 'Nonaktif';
                     })
                     ->color(fn(string $state): string => match ($state) {
-                        'Nonaktif'           => 'danger',
-                        'Belum Mengerjakan'  => 'gray',
+                        'Nonaktif' => 'danger',
+                        'Belum Mengerjakan' => 'gray',
                         'Sedang Mengerjakan' => 'warning',
-                        'Menunggu Seleksi'   => 'info',
-                        'Selesai'            => 'success',
-                        'Diberhentikan'      => 'danger',
-                        default              => 'gray',
+                        'Menunggu Seleksi' => 'info',
+                        'Selesai' => 'success',
+                        'Diberhentikan' => 'danger',
+                        default => 'gray',
                     })
                     ->icon(function ($state, $record) {
                         $participant = $record->pivot instanceof ExamParticipant
@@ -101,8 +101,9 @@ class ParticipantsRelationManager extends RelationManager
             ->headerActions([
                 // filter hanya role user yang bisa ditambahkan (bukan admin) dan belum menjadi peserta
                 AttachAction::make()
-                    ->label(__('Add Participant'))
-                    ->color(Color::Amber)
+                    ->label(__('Add Exam Participant'))
+                    ->icon('heroicon-m-user-plus')
+                    ->color('primary')
                     ->modalHeading(__('Select Exam Participant'))
                     ->modalSubmitActionLabel(__('Add'))
                     ->preloadRecordSelect()
@@ -159,7 +160,7 @@ class ParticipantsRelationManager extends RelationManager
                             if ($participant) {
                                 $participant->examSessions()->delete();
                                 $record->pivot->update(['is_active' => true]); // Ensure active after reset
-
+                
                                 \Filament\Notifications\Notification::make()
                                     ->title(__('Exam Reset'))
                                     ->success()
@@ -172,6 +173,7 @@ class ParticipantsRelationManager extends RelationManager
 
                     DetachAction::make()
                         ->label(__('Remove Participant'))
+                        ->icon('heroicon-m-trash')
                         ->modalHeading(__('Remove Participant from Exam'))
                         ->modalDescription(__('Are you sure you want to remove this participant from the exam package?'))
                         ->modalSubmitActionLabel(__('Yes, Remove')),
@@ -185,6 +187,7 @@ class ParticipantsRelationManager extends RelationManager
                 BulkActionGroup::make([
                     DetachBulkAction::make()
                         ->label(__('Remove Selected Participants'))
+                        ->icon('heroicon-m-trash')
                         ->modalHeading(__('Remove Participants from Exam'))
                         ->modalDescription(__('Are you sure you want to remove the selected participants from the exam package?'))
                         ->modalSubmitActionLabel(__('Yes, Remove')),
