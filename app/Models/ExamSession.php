@@ -56,34 +56,97 @@ class ExamSession extends Model
     }
 
     /**
-     * Generate a shuffled array of question IDs for this exam session.
+     * Generate a shuffled array of question IDs AND per-question option shuffle maps.
      *
-     * @return array<int>
+     * Returns:
+     * [
+     *   'question_order' => [10, 5, 22, ...],            // shuffled question IDs
+     *   'option_maps'    => ['10' => [2,0,3,1], ...],    // shuffledIndex → originalIndex per question
+     * ]
+     *
+     * @return array{question_order: list<int>, option_maps: array<string, list<int>>}
      */
     public function generateShuffledQuestionOrder(): array
     {
-        // Get the ExamParticipant to find the ExamPackage
         $examParticipant = ExamParticipant::find($this->exam_participant_id);
 
         if (!$examParticipant) {
-            return [];
+            return ['question_order' => [], 'option_maps' => []];
         }
 
-        // Retrieve the ExamPackage
         $examPackage = ExamPackage::find($examParticipant->exam_package_id);
 
         if (!$examPackage) {
-            return [];
+            return ['question_order' => [], 'option_maps' => []];
         }
 
-        // Fetch all question IDs belonging to the related ExamPackage via many-to-many relationship
-        // Use 'id' explicitly to target the questions table primary key to avoid ambiguity
-        $questionIds = $examPackage->questions()->pluck('questions.id')->unique()->values()->toArray();
+        // Fetch all questions belonging to the package
+        $questions = $examPackage->questions()->get(['questions.id', 'questions.options']);
 
-        // Shuffle the array randomly
+        $questionIds = $questions->pluck('id')->unique()->values()->toArray();
         shuffle($questionIds);
 
-        return $questionIds;
+        // Build per-question option shuffle map
+        $optionMaps = [];
+        foreach ($questions as $q) {
+            $opts = $q->options;
+            if (is_string($opts)) {
+                $opts = json_decode($opts, true) ?: [];
+            }
+            if (!is_array($opts) || count($opts) < 2) {
+                // No shuffle needed for 0-1 options
+                continue;
+            }
+
+            $indices = range(0, count($opts) - 1);
+            shuffle($indices);
+            // $indices[shuffledPosition] = originalIndex
+            $optionMaps[(string) $q->id] = $indices;
+        }
+
+        return [
+            'question_order' => $questionIds,
+            'option_maps'    => $optionMaps,
+        ];
+    }
+
+    /**
+     * Resolve question IDs from answers_meta, supporting both legacy (flat array)
+     * and new structured format.
+     *
+     * @return list<int>
+     */
+    public function resolveQuestionIds(): array
+    {
+        $meta = $this->answers_meta ?? [];
+
+        // New format: { question_order: [...], option_maps: {...} }
+        if (isset($meta['question_order']) && is_array($meta['question_order'])) {
+            return $meta['question_order'];
+        }
+
+        // Legacy format: flat array of IDs [10, 5, 22, ...]
+        if (is_array($meta) && !empty($meta) && isset($meta[0]) && is_int($meta[0])) {
+            return $meta;
+        }
+
+        return [];
+    }
+
+    /**
+     * Get the option shuffle maps from answers_meta.
+     *
+     * @return array<string, list<int>>  questionId => [shuffledPos => originalIndex, ...]
+     */
+    public function resolveOptionMaps(): array
+    {
+        $meta = $this->answers_meta ?? [];
+
+        if (isset($meta['option_maps']) && is_array($meta['option_maps'])) {
+            return $meta['option_maps'];
+        }
+
+        return [];
     }
 
     /**
@@ -93,7 +156,7 @@ class ExamSession extends Model
      */
     public function getOrderedQuestions()
     {
-        $order = $this->answers_meta ?? [];
+        $order = $this->resolveQuestionIds();
 
         if (empty($order)) {
             return collect();

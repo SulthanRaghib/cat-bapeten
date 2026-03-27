@@ -43,6 +43,10 @@ class ExamPage extends Component
     #[Locked]
     public int     $totalQuestions       = 0;
 
+    /** Per-question option shuffle map: questionId => [shuffledPos => originalIndex] */
+    #[Locked]
+    public array   $optionMaps           = [];
+
     // == State Soal yang Sedang Ditampilkan ================================================
     // currentAnswer SENGAJA tidak di-Locked — terikat ke wire:model untuk input peserta.
     public string  $currentAnswer   = '';
@@ -257,7 +261,9 @@ class ExamPage extends Component
         $questionId = $this->questionIds[$this->currentQuestionIndex] ?? null;
 
         if ($questionId) {
-            $this->saveAnswerForQuestion($questionId, $option);
+            // Translate shuffled index → original index before saving.
+            $originalOption = $this->translateShuffledToOriginal($questionId, $option);
+            $this->saveAnswerForQuestion($questionId, $originalOption);
         }
     }
 
@@ -285,9 +291,13 @@ class ExamPage extends Component
             return;
         }
 
-        $this->saveAnswerForQuestion($questionId, $option);
+        // OPTION SHUFFLE — Translate shuffled index → original index before saving.
+        $originalOption = $this->translateShuffledToOriginal($questionId, $option);
+
+        $this->saveAnswerForQuestion($questionId, $originalOption);
 
         // Sinkronkan state lokal agar tampilan soal yang aktif tetap konsisten.
+        // Store the SHUFFLED index in local state (for UI display consistency).
         if ($questionId === ($this->questionIds[$this->currentQuestionIndex] ?? null)) {
             $this->currentAnswer = $option;
         }
@@ -631,7 +641,8 @@ class ExamPage extends Component
         // Kasus A: peserta sudah selesai ujian secara manual sebelumnya atau diberhentikan paksa.
         if ($session && ($session->status === 'completed' || $session->status === 'terminated')) {
             $this->examSessionId = $session->id;
-            $this->questionIds   = $session->answers_meta ?? [];
+            $this->questionIds   = $session->resolveQuestionIds();
+            $this->optionMaps    = $session->resolveOptionMaps();
             $this->loadResults();
             $this->step = 'result';
             return;
@@ -644,7 +655,8 @@ class ExamPage extends Component
             if (now()->greaterThan($expirationTime)) {
                 $this->examSessionId = $session->id;
                 $this->endTime       = $expirationTime->toIso8601String();
-                $this->questionIds   = $session->answers_meta ?? [];
+                $this->questionIds   = $session->resolveQuestionIds();
+                $this->optionMaps    = $session->resolveOptionMaps();
                 $this->handleTimeExpiry();
                 return;
             }
@@ -671,7 +683,8 @@ class ExamPage extends Component
         $user = Auth::user();
 
         $this->examSessionId        = $session->id;
-        $this->questionIds          = $session->answers_meta ?? [];
+        $this->questionIds          = $session->resolveQuestionIds();
+        $this->optionMaps           = $session->resolveOptionMaps();
         $this->totalQuestions       = count($this->questionIds);
         $this->startedAt            = $session->started_at->toIso8601String();
         $this->candidateName        = $user->name;
@@ -701,8 +714,9 @@ class ExamPage extends Component
         // Pengaman: reload answers_meta jika karena alasan tertentu masih kosong.
         if (empty($this->questionIds) && $this->examSessionId) {
             $session = ExamSession::find($this->examSessionId);
-            if ($session && ! empty($session->answers_meta)) {
-                $this->questionIds    = $session->answers_meta;
+            if ($session) {
+                $this->questionIds    = $session->resolveQuestionIds();
+                $this->optionMaps     = $session->resolveOptionMaps();
                 $this->totalQuestions = count($this->questionIds);
             }
         }
@@ -730,9 +744,6 @@ class ExamPage extends Component
 
                 // SECURITY — Data Exposure Prevention:
                 // Strip semua field sensitif sebelum dikirim ke frontend.
-                // Field 'is_correct', 'score', 'scoring_config' TIDAK BOLEH sampai ke client
-                // karena akan terlihat jelas di browser DevTools / Livewire payload.
-                // 'image_links' dipertahankan karena dibutuhkan untuk rendering opsi bergambar.
                 $safeOptions = is_array($options)
                     ? array_values(array_map(
                         static fn(mixed $opt): array => [
@@ -743,6 +754,16 @@ class ExamPage extends Component
                         $options,
                     ))
                     : [];
+
+                // OPTION SHUFFLE: Reorder options based on the shuffle map for this question.
+                $shuffleMap = $this->optionMaps[(string) $id] ?? null;
+                if ($shuffleMap && count($shuffleMap) === count($safeOptions)) {
+                    $shuffled = [];
+                    foreach ($shuffleMap as $originalIndex) {
+                        $shuffled[] = $safeOptions[$originalIndex] ?? $safeOptions[0];
+                    }
+                    $safeOptions = $shuffled;
+                }
 
                 return [
                     'id'            => $q->id,
@@ -760,8 +781,14 @@ class ExamPage extends Component
         $this->initialAnswers = [];
         foreach ($this->questionIds as $qid) {
             $ans = $answers->firstWhere('question_id', $qid);
+            // The answer stored in DB is the ORIGINAL index.
+            // Translate to SHUFFLED index for JS display consistency.
+            $originalAnswer = $ans ? (string) $ans->answer : null;
+            $shuffledAnswer = ($originalAnswer !== null && $originalAnswer !== '')
+                ? $this->translateOriginalToShuffled($qid, $originalAnswer)
+                : null;
             $this->initialAnswers[$qid] = [
-                'answer'   => $ans ? (string) $ans->answer : null,
+                'answer'   => $shuffledAnswer,
                 'doubtful' => $ans ? (bool) $ans->is_doubtful : false,
                 'answered' => $ans && $ans->answer !== null && $ans->answer !== '',
             ];
@@ -780,7 +807,13 @@ class ExamPage extends Component
             ->where('question_id', $questionId)
             ->first();
 
-        $this->currentAnswer   = $answer?->answer ?? '';
+        // The answer in DB is original index. Translate to shuffled for UI.
+        $original = $answer?->answer ?? '';
+        if ($original !== '') {
+            $this->currentAnswer = $this->translateOriginalToShuffled($questionId, $original);
+        } else {
+            $this->currentAnswer = '';
+        }
         $this->currentDoubtful = (bool) ($answer?->is_doubtful ?? false);
     }
 
@@ -980,6 +1013,64 @@ class ExamPage extends Component
 
         // Tambah toleransi 5 detik untuk mengakomodasi latensi jaringan sebelum dinyatakan kedaluwarsa.
         return now()->greaterThan(Carbon::parse($this->endTime)->addSeconds(5));
+    }
+
+    // =========================================================================
+    // PRIVATE - PEMBANTU OPTION SHUFFLE
+    // =========================================================================
+
+    /**
+     * Translate a SHUFFLED option index → ORIGINAL option index.
+     * Used when saving answers: the user sees shuffled options, but DB stores original index.
+     *
+     * shuffleMap[shuffledPos] = originalIndex
+     * So if user picks shuffledPos 2, the original index is shuffleMap[2].
+     */
+    private function translateShuffledToOriginal(int $questionId, string $option): string
+    {
+        if ($option === '' || ! is_numeric($option)) {
+            return $option;
+        }
+
+        $map = $this->optionMaps[(string) $questionId] ?? null;
+        if (! $map) {
+            return $option; // No shuffle map = legacy session, no translation needed.
+        }
+
+        $shuffledIndex = (int) $option;
+        if (isset($map[$shuffledIndex])) {
+            return (string) $map[$shuffledIndex];
+        }
+
+        return $option; // Fallback: return as-is
+    }
+
+    /**
+     * Translate an ORIGINAL option index → SHUFFLED option index.
+     * Used when displaying answers: DB stores original index, but UI shows shuffled options.
+     *
+     * shuffleMap[shuffledPos] = originalIndex
+     * We need the reverse: find which shuffledPos has value == originalIndex.
+     */
+    private function translateOriginalToShuffled(int $questionId, string $option): string
+    {
+        if ($option === '' || ! is_numeric($option)) {
+            return $option;
+        }
+
+        $map = $this->optionMaps[(string) $questionId] ?? null;
+        if (! $map) {
+            return $option; // No shuffle map = legacy session, no translation needed.
+        }
+
+        $originalIndex = (int) $option;
+        $shuffledPos = array_search($originalIndex, $map, true);
+
+        if ($shuffledPos !== false) {
+            return (string) $shuffledPos;
+        }
+
+        return $option; // Fallback: return as-is
     }
 
     // =========================================================================
