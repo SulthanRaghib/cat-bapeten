@@ -4,7 +4,7 @@
 
     // ── 1. Determine the ordered question list ────────────────────────────────
     // answers_meta stores the shuffled question IDs used during the exam
-    $questionIdOrder = $session->answers_meta ?? [];
+    $questionIdOrder = $session->resolveQuestionIds();
 
     // Fall back to exam package question order if meta is missing
     if (empty($questionIdOrder)) {
