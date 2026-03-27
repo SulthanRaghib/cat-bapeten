@@ -76,7 +76,7 @@ class ExamResultsPdfExportService
             }
 
             // ── Teknis: correct/wrong scoring ──────────────────────────
-            $totalQ = count($session->answers_meta ?? []);
+            $totalQ = count($session->resolveQuestionIds());
             if ($totalQ === 0) {
                 $totalQ = $session->examPackage?->questions()->count() ?? 0;
             }

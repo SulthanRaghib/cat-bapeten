@@ -94,7 +94,7 @@ final class ExamSessionService
             // SECURITY — IDOR guard: verifikasi bahwa questionId benar-benar
             // ada di answers_meta sesi ini (daftar yang di-shuffle server-side).
             // Ini mencegah penyerang menyimpan jawaban untuk soal dari paket lain.
-            $allowedQuestionIds = $session->answers_meta ?? [];
+            $allowedQuestionIds = $session->resolveQuestionIds();
             if (! in_array($dto->questionId, $allowedQuestionIds, true)) {
                 throw new \RuntimeException(
                     "Question #{$dto->questionId} does not belong to session #{$dto->examSessionId}.",
