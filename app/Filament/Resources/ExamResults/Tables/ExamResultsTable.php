@@ -203,7 +203,7 @@ class ExamResultsTable
                         if ($record->examPackage?->examType?->evaluation_method === 'weighted') {
                             return '—';
                         }
-                        $totalQ = count($record->answers_meta ?? []);
+                        $totalQ = count($record->resolveQuestionIds());
                         if ($totalQ === 0) {
                             $totalQ = $record->examPackage?->questions()->count() ?? 0;
                         }

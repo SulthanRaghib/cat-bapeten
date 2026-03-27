@@ -79,8 +79,8 @@ class ExamMonitorsTable
                 TextColumn::make('progress')
                     ->label(__('Progress'))
                     ->state(function (ExamSession $record): string {
-                        $meta     = $record->answers_meta ?? [];
-                        $total    = is_array($meta) ? count($meta) : 0;
+                        $meta     = $record->resolveQuestionIds();
+                        $total    = count($meta);
                         if ($total === 0) return '0 / 0';
                         $answered = $record->answers()->whereNotNull('answer')->count();
                         $pct      = round(($answered / $total) * 100);

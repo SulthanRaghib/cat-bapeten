@@ -218,7 +218,7 @@ class ExamResultResource extends Resource
                                     ->color('warning')
                                     ->weight('bold')
                                     ->state(function (ExamSession $record): int {
-                                        $totalQ = count($record->answers_meta ?? []);
+                                        $totalQ = count($record->resolveQuestionIds());
                                         if ($totalQ === 0) {
                                             $totalQ = $record->examPackage?->questions()->count() ?? 0;
                                         }
