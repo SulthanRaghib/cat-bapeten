@@ -83,10 +83,10 @@ class ExamParticipant extends Pivot
         // Jika sudah pernah ujian, prioritaskan status sesi terbaru
         if ($session) {
             return match ($session->status) {
-                'completed'          => 'Selesai',
-                'ongoing'            => 'Sedang Mengerjakan',
-                'awaiting_interview' => 'Menunggu Seleksi',
-                'terminated'         => 'Diberhentikan',
+                'completed'          => __('Completed'),
+                'ongoing'            => __('In Progress'),
+                'awaiting_interview' => __('Awaiting Selection'),
+                'terminated'         => __('Terminated'),
                 default              => ucfirst($session->status),
             };
         }
@@ -94,37 +94,61 @@ class ExamParticipant extends Pivot
         // Belum punya sesi sama sekali
         if (!$this->is_active) {
             // Nonaktif tanpa riwayat ujian
-            return 'Nonaktif';
+            return __('Inactive');
         }
 
         if (!$session) {
-            return 'Belum Mengerjakan';
+            return __('Not Started');
         }
-        return 'Belum Mengerjakan';
+        return __('Not Started');
+    }
+
+    /**
+     * Get the raw status key (untranslated) for matching purposes
+     */
+    public function getRawStatusKeyAttribute(): string
+    {
+        $session = $this->examSessions()->latest()->first();
+
+        if ($session) {
+            return match ($session->status) {
+                'completed'          => 'Completed',
+                'ongoing'            => 'In Progress',
+                'awaiting_interview' => 'Awaiting Selection',
+                'terminated'         => 'Terminated',
+                default              => ucfirst($session->status),
+            };
+        }
+
+        if (!$this->is_active) {
+            return 'Inactive';
+        }
+
+        return 'Not Started';
     }
 
     public function getStatusColorAttribute(): string
     {
-        return match ($this->status_label) {
-            'Nonaktif'           => 'danger',
-            'Belum Mengerjakan'  => 'gray',
-            'Sedang Mengerjakan' => 'warning',
-            'Menunggu Seleksi'   => 'info',
-            'Selesai'            => 'success',
-            'Diberhentikan'      => 'danger',
+        return match ($this->raw_status_key) {
+            'Inactive'           => 'danger',
+            'Not Started'        => 'gray',
+            'In Progress'        => 'warning',
+            'Awaiting Selection' => 'info',
+            'Completed'          => 'success',
+            'Terminated'         => 'danger',
             default              => 'gray',
         };
     }
 
     public function getStatusIconAttribute(): string
     {
-        return match ($this->status_label) {
-            'Nonaktif'           => 'heroicon-m-x-circle',
-            'Belum Mengerjakan'  => 'heroicon-m-clock',
-            'Sedang Mengerjakan' => 'heroicon-m-play-circle',
-            'Menunggu Seleksi'   => 'heroicon-m-clipboard-document-check',
-            'Selesai'            => 'heroicon-m-check-badge',
-            'Diberhentikan'      => 'heroicon-m-no-symbol',
+        return match ($this->raw_status_key) {
+            'Inactive'           => 'heroicon-m-x-circle',
+            'Not Started'        => 'heroicon-m-clock',
+            'In Progress'        => 'heroicon-m-play-circle',
+            'Awaiting Selection' => 'heroicon-m-clipboard-document-check',
+            'Completed'          => 'heroicon-m-check-badge',
+            'Terminated'         => 'heroicon-m-no-symbol',
             default              => 'heroicon-m-question-mark-circle',
         };
     }

@@ -26,6 +26,9 @@ class ExamResultsExcelExport extends ExcelExport
     protected bool $includeStatistics = true;
     protected bool $isMansoskul = false;
     protected int  $unitCount   = 0;
+    protected array $summaryData = [];  // For header summary
+    protected array $columnGroups = []; // For merged group headers (Rincian Tahap Seleksi, Rincian Unit Penilaian)
+    protected bool $hasGroupHeaders = false;
 
     public function setFilterData(array $data): static
     {
@@ -48,6 +51,26 @@ class ExamResultsExcelExport extends ExcelExport
     public function setUnitCount(int $count): static
     {
         $this->unitCount = $count;
+        return $this;
+    }
+
+    public function setSummaryData(array $data): static
+    {
+        $this->summaryData = $data;
+        return $this;
+    }
+
+    /**
+     * Set column groups for merged headers.
+     * Format: [
+     *   ['label' => 'Rincian Tahap Seleksi', 'start_col' => 12, 'end_col' => 15],
+     *   ['label' => 'Rincian Unit Penilaian', 'start_col' => 16, 'end_col' => 19],
+     * ]
+     */
+    public function setColumnGroups(array $groups): static
+    {
+        $this->columnGroups = $groups;
+        $this->hasGroupHeaders = !empty($groups);
         return $this;
     }
 
@@ -94,7 +117,16 @@ class ExamResultsExcelExport extends ExcelExport
                 )");
             }
 
-            $query->orderBy('finished_at', 'desc');
+            // Sort by exam type first (Teknis before Mansoskul), then by finish date
+            $query->orderByRaw("(
+                SELECT et.id 
+                FROM exam_types et 
+                JOIN exam_packages ep ON ep.exam_type_id = et.id 
+                JOIN exam_participants part ON part.exam_package_id = ep.id
+                WHERE part.id = exam_sessions.exam_participant_id 
+                LIMIT 1
+            ) ASC")
+            ->orderBy('finished_at', 'desc');
 
             return $query;
         });
@@ -108,23 +140,236 @@ class ExamResultsExcelExport extends ExcelExport
 
     public function registerEvents(): array
     {
-        $includeStats  = $this->includeStatistics;
-        $isMansoskul   = $this->isMansoskul;
-        $unitCount     = $this->unitCount;
+        $includeStats    = $this->includeStatistics;
+        $isMansoskul     = $this->isMansoskul;
+        $unitCount       = $this->unitCount;
+        $summaryData     = $this->summaryData;
+        $columnGroups    = $this->columnGroups;
+        $hasGroupHeaders = $this->hasGroupHeaders;
 
         // Merge any parent events (e.g. RTL BeforeSheet)
         return array_merge(parent::registerEvents(), [
-            AfterSheet::class => function (AfterSheet $event) use ($includeStats, $isMansoskul, $unitCount): void {
+            AfterSheet::class => function (AfterSheet $event) use ($includeStats, $isMansoskul, $unitCount, $summaryData, $columnGroups, $hasGroupHeaders): void {
                 $sheet      = $event->sheet->getDelegate();
                 $lastCol    = $sheet->getHighestColumn();
                 $colCount   = Coordinate::columnIndexFromString($lastCol);
                 $lastRow    = $sheet->getHighestRow();
-                $headerRange = "A1:{$lastCol}1";
-                $dataRange   = "A1:{$lastCol}{$lastRow}";
+
+                // ── Insert summary header rows (EXACTLY like PDF) ──────────────
+                $summaryRowCount = 0;
+                
+                if (!empty($summaryData)) {
+                    // Calculate how many rows needed (NO blank rows):
+                    // 1. Title row
+                    // 2. Export timestamp row
+                    // 3. Filter info row (if any) - NO blank after
+                    // 4. Summary metrics (2 rows: labels + values)
+                    // 5. Group header row (if hasGroupHeaders) - for merged headers like "Rincian Tahap Seleksi"
+                    // NO blank separators!
+                    $filterRows = !empty($summaryData['filter_info']) ? 1 : 0;
+                    $groupHeaderRows = $hasGroupHeaders ? 1 : 0;
+                    $summaryRowCount = 2 + $filterRows + 2 + $groupHeaderRows; // title + timestamp + filter? + 2 summary rows + group?
+                    
+                    $sheet->insertNewRowBefore(1, $summaryRowCount);
+                    
+                    $currentRow = 1;
+                    
+                    // ── Row 1: Report Title (Indonesian, NO translation) ──
+                    $sheet->setCellValue('A1', 'LAPORAN HASIL UJIAN');
+                    $sheet->mergeCells("A1:{$lastCol}1");
+                    $sheet->getStyle('A1')->applyFromArray([
+                        'font' => [
+                            'bold' => true,
+                            'size' => 16,
+                            'color' => ['rgb' => '2C3E50'],
+                        ],
+                        'alignment' => [
+                            'horizontal' => Alignment::HORIZONTAL_CENTER,
+                            'vertical' => Alignment::VERTICAL_CENTER,
+                        ],
+                    ]);
+                    $sheet->getRowDimension(1)->setRowHeight(30);
+                    $currentRow++;
+
+                    // ── Row 2: Export timestamp ──
+                    $sheet->setCellValue('A2', 'Dicetak pada: ' . $summaryData['export_timestamp']);
+                    $sheet->mergeCells("A2:{$lastCol}2");
+                    $sheet->getStyle('A2')->applyFromArray([
+                        'font' => ['size' => 9, 'italic' => true, 'color' => ['rgb' => '7F8C8D']],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                    ]);
+                    $sheet->getRowDimension(2)->setRowHeight(16);
+                    $currentRow++;
+
+                    // ── Filter info (if any) - NO blank row after ──
+                    if (!empty($summaryData['filter_info'])) {
+                        $filterText = 'Filter Aktif: ';
+                        $filterParts = [];
+                        foreach ($summaryData['filter_info'] as $key => $value) {
+                            $filterParts[] = "{$key}: {$value}";
+                        }
+                        $filterText .= implode(' | ', $filterParts);
+                        
+                        $sheet->setCellValue("A{$currentRow}", $filterText);
+                        $sheet->mergeCells("A{$currentRow}:{$lastCol}{$currentRow}");
+                        $sheet->getStyle("A{$currentRow}")->applyFromArray([
+                            'font' => ['size' => 9, 'bold' => true],
+                            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['rgb' => 'F8F9FA'],
+                            ],
+                        ]);
+                        $sheet->getRowDimension($currentRow)->setRowHeight(18);
+                        $currentRow++;
+                    }
+
+                    // ── Summary statistics (6 metrics in 2 rows) ──
+                    $labelRow = $currentRow;
+                    $valueRow = $currentRow + 1;
+                    
+                    $metrics = [
+                        'A' => ['Total Peserta', $summaryData['total_peserta'] ?? 0, '333333'],
+                        'B' => ['Jumlah Lulus', $summaryData['jumlah_lulus'] ?? 0, '1E8449'],
+                        'C' => ['Jumlah Tidak Lulus', $summaryData['jumlah_gagal'] ?? 0, 'B03A2E'],
+                        'D' => ['Rata-rata Nilai', $summaryData['rata_rata_nilai'] ?? 0, '2874A6'],
+                        'E' => ['Nilai Tertinggi', $summaryData['nilai_tertinggi'] ?? 0, '27AE60'],
+                        'F' => ['Nilai Terendah', $summaryData['nilai_terendah'] ?? 0, 'C0392B'],
+                    ];
+                    
+                    foreach ($metrics as $col => $data) {
+                        [$label, $value, $color] = $data;
+                        
+                        // Label row
+                        $sheet->setCellValue("{$col}{$labelRow}", $label);
+                        $sheet->getStyle("{$col}{$labelRow}")->applyFromArray([
+                            'font' => ['size' => 8, 'bold' => true, 'color' => ['rgb' => '666666']],
+                            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['rgb' => 'F4F6F7'],
+                            ],
+                            'borders' => [
+                                'allBorders' => [
+                                    'borderStyle' => Border::BORDER_THIN,
+                                    'color' => ['rgb' => 'DEE2E6'],
+                                ],
+                            ],
+                        ]);
+                        
+                        // Value row
+                        $sheet->setCellValue("{$col}{$valueRow}", $value);
+                        $sheet->getStyle("{$col}{$valueRow}")->applyFromArray([
+                            'font' => ['size' => 14, 'bold' => true, 'color' => ['rgb' => $color]],
+                            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                            'borders' => [
+                                'allBorders' => [
+                                    'borderStyle' => Border::BORDER_THIN,
+                                    'color' => ['rgb' => 'DEE2E6'],
+                                ],
+                            ],
+                        ]);
+                    }
+                    
+                    $sheet->getRowDimension($labelRow)->setRowHeight(20);
+                    $sheet->getRowDimension($valueRow)->setRowHeight(28);
+                    $currentRow += 2;
+
+                    // ── Group header row (if hasGroupHeaders) ──
+                    // This creates merged headers for column groups like "Rincian Tahap Seleksi"
+                    // and merges non-group columns vertically with the column header row below
+                    if ($hasGroupHeaders && !empty($columnGroups)) {
+                        $groupHeaderRowNum = $currentRow;
+                        $columnHeaderRowNum = $currentRow + 1; // The actual column headers will be here
+                        
+                        // Track which columns are part of a group
+                        $groupedColIndices = [];
+                        
+                        // Common style for header rows
+                        $headerStyle = [
+                            'font' => [
+                                'bold' => true,
+                                'size' => 11,
+                                'color' => ['rgb' => 'FFFFFF'],
+                            ],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['rgb' => '34495E'],
+                            ],
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical' => Alignment::VERTICAL_CENTER,
+                            ],
+                            'borders' => [
+                                'allBorders' => [
+                                    'borderStyle' => Border::BORDER_THIN,
+                                    'color' => ['rgb' => '5D6D7E'],
+                                ],
+                            ],
+                        ];
+                        
+                        foreach ($columnGroups as $group) {
+                            $startColIdx = $group['start_col'];
+                            $endColIdx = $group['end_col'];
+                            $label = $group['label'];
+                            
+                            $startColLetter = Coordinate::stringFromColumnIndex($startColIdx);
+                            $endColLetter = Coordinate::stringFromColumnIndex($endColIdx);
+                            
+                            // Mark these columns as grouped
+                            for ($c = $startColIdx; $c <= $endColIdx; $c++) {
+                                $groupedColIndices[$c] = true;
+                            }
+                            
+                            // Create merged header for the group (horizontal merge on group header row)
+                            $sheet->setCellValue("{$startColLetter}{$groupHeaderRowNum}", $label);
+                            $sheet->mergeCells("{$startColLetter}{$groupHeaderRowNum}:{$endColLetter}{$groupHeaderRowNum}");
+                            $sheet->getStyle("{$startColLetter}{$groupHeaderRowNum}:{$endColLetter}{$groupHeaderRowNum}")->applyFromArray($headerStyle);
+                        }
+                        
+                        // For non-grouped columns, merge rows vertically (group header row + column header row)
+                        // This ensures no empty cells in the group header row
+                        // IMPORTANT: Copy value from column header row to group header row BEFORE merge
+                        // because after merge, getValue() returns from top-left cell
+                        for ($c = 1; $c <= $colCount; $c++) {
+                            if (!isset($groupedColIndices[$c])) {
+                                $colLetter = Coordinate::stringFromColumnIndex($c);
+                                // Copy the header value from columnHeaderRowNum to groupHeaderRowNum
+                                $headerValue = $sheet->getCell("{$colLetter}{$columnHeaderRowNum}")->getValue();
+                                $sheet->setCellValue("{$colLetter}{$groupHeaderRowNum}", $headerValue);
+                                // Merge vertically and apply same header style to both rows
+                                $sheet->mergeCells("{$colLetter}{$groupHeaderRowNum}:{$colLetter}{$columnHeaderRowNum}");
+                                // Apply style to the merged range
+                                $sheet->getStyle("{$colLetter}{$groupHeaderRowNum}:{$colLetter}{$columnHeaderRowNum}")->applyFromArray($headerStyle);
+                            }
+                        }
+                        
+                        $sheet->getRowDimension($groupHeaderRowNum)->setRowHeight(24);
+                        $sheet->getRowDimension($columnHeaderRowNum)->setRowHeight(24);
+                        $currentRow++;
+                    }
+
+                    // Adjust last row count
+                    $lastRow += $summaryRowCount;
+                }
+
+                // Calculate header row position
+                // With group headers: column headers are at summaryRowCount + 1 (because group header is included in summaryRowCount)
+                // Without group headers: column headers are at summaryRowCount + 1
+                $headerRow = $summaryRowCount + 1;
+                
+                // For lookup purposes, when we have group headers and merged vertical cells,
+                // the header values are in the group header row (headerRow - 1) because we copied them there
+                // For non-group headers case, values are in headerRow
+                $headerLookupRow = $hasGroupHeaders ? ($headerRow - 1) : $headerRow;
+                
+                $headerRange = "A{$headerRow}:{$lastCol}{$headerRow}";
+                $dataRange   = "A{$headerRow}:{$lastCol}{$lastRow}";
 
                 // ── 1. Freeze pane ─────────────────────────────────────────────
-                // B2 = freeze rows above row 2 (heading) AND columns left of B (Nama).
-                $sheet->freezePane('B2');
+                // Freeze below the header row (or group header + column header if applicable)
+                $freezeRow = $headerRow + 1;
+                $sheet->freezePane("B{$freezeRow}");
 
                 // ── 2. AutoFilter on all heading columns ───────────────────────
                 $sheet->setAutoFilter($headerRange);
@@ -138,7 +383,7 @@ class ExamResultsExcelExport extends ExcelExport
                     ],
                     'fill' => [
                         'fillType'   => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => '1E3A5F'],   // navy blue
+                        'startColor' => ['rgb' => '34495E'],   // professional slate gray
                     ],
                     'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -148,25 +393,26 @@ class ExamResultsExcelExport extends ExcelExport
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
-                            'color'       => ['rgb' => '4B8BBE'],
+                            'color'       => ['rgb' => '5D6D7E'],
                         ],
                     ],
                 ]);
-                $sheet->getRowDimension(1)->setRowHeight(32);
+                $sheet->getRowDimension($headerRow)->setRowHeight(32);
 
                 // ── 4. Outer border on entire table ───────────────────────────
                 $sheet->getStyle($dataRange)->applyFromArray([
                     'borders' => [
                         'outline' => [
                             'borderStyle' => Border::BORDER_MEDIUM,
-                            'color'       => ['rgb' => '1E3A5F'],
+                            'color'       => ['rgb' => '34495E'],
                         ],
                     ],
                 ]);
 
                 // ── 5. Data rows: plain white background + thin border ─────────
-                if ($lastRow >= 2) {
-                    $dataRowRange = "A2:{$lastCol}{$lastRow}";
+                $firstDataRow = $headerRow + 1;
+                if ($lastRow >= $firstDataRow) {
+                    $dataRowRange = "A{$firstDataRow}:{$lastCol}{$lastRow}";
                     $sheet->getStyle($dataRowRange)->applyFromArray([
                         'fill' => [
                             'fillType'   => Fill::FILL_SOLID,
@@ -183,7 +429,7 @@ class ExamResultsExcelExport extends ExcelExport
                             'wrapText' => true,
                         ],
                     ]);
-                    for ($row = 2; $row <= $lastRow; $row++) {
+                    for ($row = $firstDataRow; $row <= $lastRow; $row++) {
                         // Auto-set row height based on line count in any cell
                         $maxLines = 1;
                         for ($c = 1; $c <= $colCount; $c++) {
@@ -200,7 +446,7 @@ class ExamResultsExcelExport extends ExcelExport
                     // ── 6. NIP column: force explicit STRING type per cell ────────
                     // setCellValueExplicit overrides PhpSpreadsheet's auto numeric
                     // detection — the only reliable way to prevent scientific notation.
-                    for ($row = 2; $row <= $lastRow; $row++) {
+                    for ($row = $firstDataRow; $row <= $lastRow; $row++) {
                         $cell    = self::NIP_COLUMN . $row;
                         $current = $sheet->getCell($cell)->getValue();
                         if ($current !== null && $current !== '-' && $current !== '') {
@@ -211,7 +457,7 @@ class ExamResultsExcelExport extends ExcelExport
                             );
                         }
                     }
-                    $nipRange = self::NIP_COLUMN . "2:" . self::NIP_COLUMN . $lastRow;
+                    $nipRange = self::NIP_COLUMN . "{$firstDataRow}:" . self::NIP_COLUMN . $lastRow;
                     $sheet->getStyle($nipRange)
                         ->getAlignment()
                         ->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -221,7 +467,7 @@ class ExamResultsExcelExport extends ExcelExport
                     $widthMap = [
                         'Nama Lengkap'                    => 28,
                         'NIP'                             => 20,
-                        'Nama Ujian'                      => 30,
+                        'Paket Ujian'                     => 30,
                         'Tipe Ujian'                      => 16,
                         'Tanggal'                         => 14,
                         'Waktu Mulai'                     => 13,
@@ -239,14 +485,14 @@ class ExamResultsExcelExport extends ExcelExport
                         'Nilai Akhir'                     => 16,
                         'Nilai Ambang Batas'              => 18,
                         'NAB'                             => 10,
-                        'Keterangan'                      => 14,
+                        'Status Kelulusan'                => 16,
                         'Rincian Tahap Seleksi'           => 30,
                         'Rincian Unit Penilaian'          => 55,
                     ];
 
                     for ($c = 1; $c <= $colCount; $c++) {
                         $letter  = Coordinate::stringFromColumnIndex($c);
-                        $heading = (string) $sheet->getCell("{$letter}1")->getValue();
+                        $heading = (string) $sheet->getCell("{$letter}{$headerLookupRow}")->getValue();
                         $width   = null;
                         foreach ($widthMap as $pattern => $w) {
                             if (str_contains($heading, $pattern)) {
@@ -265,49 +511,49 @@ class ExamResultsExcelExport extends ExcelExport
                         // A-G: base cols (1-7)
                         // H, J, L, ...: Skor unit[0], unit[1], ...  (col 8+2i)
                         // I, K, M, ...: Indikator unit[0], unit[1], ...  (col 9+2i)
-                        // After units: UnitKompeten, Pelanggaran, Nilai, NAB, Keterangan
+                        // After units: UnitKompeten, Pelanggaran, Nilai, NAB, Status Kelulusan
                         $afterUnitsBase = 8 + 2 * $unitCount;   // 1-based col index of "Unit Kompeten"
                         $unitKompetenCol = Coordinate::stringFromColumnIndex($afterUnitsBase);
                         $pelanggaranCol  = Coordinate::stringFromColumnIndex($afterUnitsBase + 1);
                         $nilaiCol        = Coordinate::stringFromColumnIndex($afterUnitsBase + 2);
                         $nabCol          = Coordinate::stringFromColumnIndex($afterUnitsBase + 3);
-                        $keteranganCol   = Coordinate::stringFromColumnIndex($afterUnitsBase + 4);
+                        $statusCol       = Coordinate::stringFromColumnIndex($afterUnitsBase + 4);
 
                         for ($u = 0; $u < $unitCount; $u++) {
                             $skorCol      = Coordinate::stringFromColumnIndex(8 + 2 * $u);
                             $indikatorCol = Coordinate::stringFromColumnIndex(9 + 2 * $u);
 
                             // Skor col: decimal format + center + bold dark blue
-                            $sheet->getStyle("{$skorCol}2:{$skorCol}{$lastRow}")
+                            $sheet->getStyle("{$skorCol}{$firstDataRow}:{$skorCol}{$lastRow}")
                                 ->getNumberFormat()->setFormatCode('0.00');
-                            $sheet->getStyle("{$skorCol}2:{$skorCol}{$lastRow}")
+                            $sheet->getStyle("{$skorCol}{$firstDataRow}:{$skorCol}{$lastRow}")
                                 ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                            for ($row = 2; $row <= $lastRow; $row++) {
+                            for ($row = $firstDataRow; $row <= $lastRow; $row++) {
                                 $sheet->getStyle("{$skorCol}{$row}")->applyFromArray([
-                                    'font' => ['bold' => true, 'color' => ['rgb' => 'E67E22']],
+                                    'font' => ['bold' => true, 'color' => ['rgb' => 'D68910']],
                                 ]);
                             }
 
                             // Indikator col: green if KOMPETEN, red if BELUM KOMPETEN
-                            $sheet->getStyle("{$indikatorCol}2:{$indikatorCol}{$lastRow}")
+                            $sheet->getStyle("{$indikatorCol}{$firstDataRow}:{$indikatorCol}{$lastRow}")
                                 ->getAlignment()->setWrapText(true);
-                            for ($row = 2; $row <= $lastRow; $row++) {
+                            for ($row = $firstDataRow; $row <= $lastRow; $row++) {
                                 $val   = (string) $sheet->getCell("{$indikatorCol}{$row}")->getValue();
                                 // Contains "[KOMPETEN]" but NOT "[BELUM KOMPETEN]"
                                 $lulus = str_contains($val, '[KOMPETEN]') && !str_contains($val, '[BELUM KOMPETEN]');
                                 $sheet->getStyle("{$indikatorCol}{$row}")->applyFromArray([
                                     'font' => [
                                         'bold'  => true,
-                                        'color' => ['rgb' => $lulus ? '1A6B3C' : 'C0392B'],
+                                        'color' => ['rgb' => $lulus ? '1E8449' : 'B03A2E'],
                                     ],
                                 ]);
                             }
                         }
 
                         // Unit Kompeten: center + green if all pass
-                        $sheet->getStyle("{$unitKompetenCol}2:{$unitKompetenCol}{$lastRow}")
+                        $sheet->getStyle("{$unitKompetenCol}{$firstDataRow}:{$unitKompetenCol}{$lastRow}")
                             ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        for ($row = 2; $row <= $lastRow; $row++) {
+                        for ($row = $firstDataRow; $row <= $lastRow; $row++) {
                             $val   = (string) $sheet->getCell("{$unitKompetenCol}{$row}")->getValue();
                             // Format is "X/Y" — all pass when X === Y
                             [$passed, $total] = array_pad(explode('/', $val), 2, '0');
@@ -315,7 +561,7 @@ class ExamResultsExcelExport extends ExcelExport
                             $sheet->getStyle("{$unitKompetenCol}{$row}")->applyFromArray([
                                 'font' => [
                                     'bold'  => true,
-                                    'color' => ['rgb' => $allPass ? '1A6B3C' : 'C0392B'],
+                                    'color' => ['rgb' => $allPass ? '1E8449' : 'B03A2E'],
                                 ],
                             ]);
                         }
@@ -324,11 +570,12 @@ class ExamResultsExcelExport extends ExcelExport
                         // Column positions are dynamic because multi-stage packages
                         // insert CBT + per-stage columns between Pelanggaran and Nilai Akhir.
                         // Scan the header row to locate each column by heading text.
+                        // Use headerLookupRow because merged cells have values in the top row
 
                         $headerMap = [];
                         for ($c = 1; $c <= $colCount; $c++) {
                             $letter = Coordinate::stringFromColumnIndex($c);
-                            $headerMap[(string) $sheet->getCell("{$letter}1")->getValue()] = $letter;
+                            $headerMap[(string) $sheet->getCell("{$letter}{$headerLookupRow}")->getValue()] = $letter;
                         }
                         // Partial-match helper (matches heading text that STARTS WITH $search)
                         $findCol = function (string $search) use ($headerMap): ?string {
@@ -346,7 +593,7 @@ class ExamResultsExcelExport extends ExcelExport
                         $pelanggaranCol = $findCol('Pelanggaran');
                         $nilaiCol       = $findCol('Nilai Akhir');
                         $nabCol         = $findCol('Nilai Ambang Batas');
-                        $keteranganCol  = $findCol('Keterangan');
+                        $statusCol      = $findCol('Status Kelulusan');
 
                         // Statistik columns: Benar / Salah / Tidak Dijawab
                         if ($includeStats) {
@@ -354,24 +601,24 @@ class ExamResultsExcelExport extends ExcelExport
                             $salahCol   = $findCol('Salah');
                             $tdkCol     = $findCol('Tidak Dijawab');
                             foreach (array_filter([$benarCol, $salahCol, $tdkCol]) as $statCol) {
-                                $sheet->getStyle("{$statCol}2:{$statCol}{$lastRow}")
+                                $sheet->getStyle("{$statCol}{$firstDataRow}:{$statCol}{$lastRow}")
                                     ->getNumberFormat()->setFormatCode('0');
-                                $sheet->getStyle("{$statCol}2:{$statCol}{$lastRow}")
+                                $sheet->getStyle("{$statCol}{$firstDataRow}:{$statCol}{$lastRow}")
                                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                             }
                             if ($benarCol) {
-                                for ($row = 2; $row <= $lastRow; $row++) {
-                                    $sheet->getStyle("{$benarCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => '1A6B3C'], 'bold' => true]]);
+                                for ($row = $firstDataRow; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$benarCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => '1E8449'], 'bold' => true]]);
                                 }
                             }
                             if ($salahCol) {
-                                for ($row = 2; $row <= $lastRow; $row++) {
-                                    $sheet->getStyle("{$salahCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true]]);
+                                for ($row = $firstDataRow; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$salahCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'B03A2E'], 'bold' => true]]);
                                 }
                             }
                             if ($tdkCol) {
-                                for ($row = 2; $row <= $lastRow; $row++) {
-                                    $sheet->getStyle("{$tdkCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'E67E22'], 'bold' => true]]);
+                                for ($row = $firstDataRow; $row <= $lastRow; $row++) {
+                                    $sheet->getStyle("{$tdkCol}{$row}")->applyFromArray(['font' => ['color' => ['rgb' => 'D68910'], 'bold' => true]]);
                                 }
                             }
                         }
@@ -383,66 +630,69 @@ class ExamResultsExcelExport extends ExcelExport
                             $nilIdx = Coordinate::columnIndexFromString($nilaiCol);
                             for ($c = $pelIdx + 1; $c < $nilIdx; $c++) {
                                 $letter = Coordinate::stringFromColumnIndex($c);
-                                $sheet->getStyle("{$letter}2:{$letter}{$lastRow}")
+                                $sheet->getStyle("{$letter}{$firstDataRow}:{$letter}{$lastRow}")
                                     ->getNumberFormat()->setFormatCode('0.00');
-                                $sheet->getStyle("{$letter}2:{$letter}{$lastRow}")
+                                $sheet->getStyle("{$letter}{$firstDataRow}:{$letter}{$lastRow}")
                                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                                for ($row = 2; $row <= $lastRow; $row++) {
+                                for ($row = $firstDataRow; $row <= $lastRow; $row++) {
                                     $sheet->getStyle("{$letter}{$row}")->applyFromArray([
-                                        'font' => ['bold' => true, 'color' => ['rgb' => '1d4ed8']],
+                                        'font' => ['bold' => true, 'color' => ['rgb' => '2874A6']],
                                     ]);
                                 }
                             }
                         }
                     }
 
-                    // ── Shared trailing columns (Pelanggaran, Nilai, NAB, Keterangan) ──
-                    // Pelanggaran: center + red if > 0
-                    $pelanggaranRange = "{$pelanggaranCol}2:{$pelanggaranCol}{$lastRow}";
-                    $sheet->getStyle($pelanggaranRange)
-                        ->getNumberFormat()->setFormatCode('0');
-                    $sheet->getStyle($pelanggaranRange)
-                        ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    for ($row = 2; $row <= $lastRow; $row++) {
-                        $val = (int) $sheet->getCell("{$pelanggaranCol}{$row}")->getValue();
-                        if ($val > 0) {
-                            $sheet->getStyle("{$pelanggaranCol}{$row}")->applyFromArray([
-                                'font' => ['color' => ['rgb' => 'C0392B'], 'bold' => true],
+                    // ── Shared trailing columns (Pelanggaran, Nilai, NAB, Status Kelulusan) ──
+                    // Only process if columns were found
+                    if ($pelanggaranCol && $nilaiCol && $nabCol && $statusCol) {
+                        // Pelanggaran: center + red if > 0
+                        $pelanggaranRange = "{$pelanggaranCol}{$firstDataRow}:{$pelanggaranCol}{$lastRow}";
+                        $sheet->getStyle($pelanggaranRange)
+                            ->getNumberFormat()->setFormatCode('0');
+                        $sheet->getStyle($pelanggaranRange)
+                            ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        for ($row = $firstDataRow; $row <= $lastRow; $row++) {
+                            $val = (int) $sheet->getCell("{$pelanggaranCol}{$row}")->getValue();
+                            if ($val > 0) {
+                                $sheet->getStyle("{$pelanggaranCol}{$row}")->applyFromArray([
+                                    'font' => ['color' => ['rgb' => 'B03A2E'], 'bold' => true],
+                                ]);
+                            }
+                        }
+
+                        // Nilai: 2 decimal places + center
+                        $nilaiRange = "{$nilaiCol}{$firstDataRow}:{$nilaiCol}{$lastRow}";
+                        $sheet->getStyle($nilaiRange)
+                            ->getNumberFormat()->setFormatCode('0.00');
+                        $sheet->getStyle($nilaiRange)
+                            ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        // Color nilai red/green based on pass/fail (compare with NAB)
+                        for ($row = $firstDataRow; $row <= $lastRow; $row++) {
+                            $nilai = (float) $sheet->getCell("{$nilaiCol}{$row}")->getValue();
+                            $nab   = (float) $sheet->getCell("{$nabCol}{$row}")->getValue();
+                            $pass  = $nilai >= $nab && $nab > 0;
+                            $sheet->getStyle("{$nilaiCol}{$row}")->applyFromArray([
+                                'font' => ['bold' => true, 'color' => ['rgb' => $pass ? '1E8449' : 'B03A2E']],
                             ]);
                         }
-                    }
 
-                    // Nilai: 2 decimal places + center
-                    $nilaiRange = "{$nilaiCol}2:{$nilaiCol}{$lastRow}";
-                    $sheet->getStyle($nilaiRange)
-                        ->getNumberFormat()->setFormatCode('0.00');
-                    $sheet->getStyle($nilaiRange)
-                        ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    // Color nilai red/green based on pass/fail (compare with NAB)
-                    for ($row = 2; $row <= $lastRow; $row++) {
-                        $nilai = (float) $sheet->getCell("{$nilaiCol}{$row}")->getValue();
-                        $nab   = (float) $sheet->getCell("{$nabCol}{$row}")->getValue();
-                        $pass  = $nilai >= $nab && $nab > 0;
-                        $sheet->getStyle("{$nilaiCol}{$row}")->applyFromArray([
-                            'font' => ['bold' => true, 'color' => ['rgb' => $pass ? '1A6B3C' : 'C0392B']],
-                        ]);
-                    }
+                        // NAB: whole number + center
+                        $nabRange = "{$nabCol}{$firstDataRow}:{$nabCol}{$lastRow}";
+                        $sheet->getStyle($nabRange)
+                            ->getNumberFormat()->setFormatCode('0');
+                        $sheet->getStyle($nabRange)
+                            ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                    // NAB: whole number + center
-                    $nabRange = "{$nabCol}2:{$nabCol}{$lastRow}";
-                    $sheet->getStyle($nabRange)
-                        ->getNumberFormat()->setFormatCode('0');
-                    $sheet->getStyle($nabRange)
-                        ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-                    // Keterangan: bold + green/red
-                    for ($row = 2; $row <= $lastRow; $row++) {
-                        $cellVal = $sheet->getCell("{$keteranganCol}{$row}")->getValue();
-                        $color   = $cellVal === 'LULUS' ? '1A6B3C' : 'C0392B';
-                        $sheet->getStyle("{$keteranganCol}{$row}")->applyFromArray([
-                            'font'      => ['bold' => true, 'color' => ['rgb' => $color]],
-                            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                        ]);
+                        // Status Kelulusan: bold + green/red
+                        for ($row = $firstDataRow; $row <= $lastRow; $row++) {
+                            $cellVal = $sheet->getCell("{$statusCol}{$row}")->getValue();
+                            $color   = $cellVal === 'LULUS' ? '1E8449' : 'B03A2E';
+                            $sheet->getStyle("{$statusCol}{$row}")->applyFromArray([
+                                'font'      => ['bold' => true, 'color' => ['rgb' => $color]],
+                                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                            ]);
+                        }
                     }
                 }
             },

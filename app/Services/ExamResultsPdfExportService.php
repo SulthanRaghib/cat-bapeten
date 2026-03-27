@@ -51,7 +51,8 @@ class ExamResultsPdfExportService
                 $unitResults = $this->examSessionService->calculateWeightedResult($session);
                 $allPassing  = !empty($unitResults)
                     && collect($unitResults)->every(fn($u) => $u['is_passing']);
-                $isLulus = $allPassing && ($session->total_score ?? 0) >= $passingGrade;
+                // Pass criteria: score >= NAB only (ignore unit passing requirement per user decision)
+                $isLulus = ($session->total_score ?? 0) >= $passingGrade;
 
                 return [
                     'eval_method'   => 'weighted',
@@ -151,7 +152,7 @@ class ExamResultsPdfExportService
             ->setOption('defaultFont', 'sans-serif')
             ->setOption('dpi', 96);
 
-        $filename = 'Laporan_Hasil_Ujian_BAPETEN' . $this->buildFilenameSlug($filterMeta) . '_' . now()->format('Ymd-His') . '.pdf';
+        $filename = 'Laporan_Hasil_Ujian_BAPETEN' . $this->buildFilenameSlug($filterMeta) . '_' . now()->format('Ymd_His') . '.pdf';
 
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->output();
