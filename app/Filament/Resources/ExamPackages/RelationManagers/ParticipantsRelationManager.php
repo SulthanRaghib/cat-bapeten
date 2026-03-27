@@ -79,15 +79,15 @@ class ParticipantsRelationManager extends RelationManager
                             ? $record->pivot
                             : null;
 
-                        return $participant?->status_label ?? 'Nonaktif';
+                        return $participant?->status_label ?? __('Inactive');
                     })
                     ->color(fn(string $state): string => match ($state) {
-                        'Nonaktif' => 'danger',
-                        'Belum Mengerjakan' => 'gray',
-                        'Sedang Mengerjakan' => 'warning',
-                        'Menunggu Seleksi' => 'info',
-                        'Selesai' => 'success',
-                        'Diberhentikan' => 'danger',
+                        __('Inactive') => 'danger',
+                        __('Not Started') => 'gray',
+                        __('In Progress') => 'warning',
+                        __('Awaiting Selection') => 'info',
+                        __('Completed') => 'success',
+                        __('Terminated') => 'danger',
                         default => 'gray',
                     })
                     ->icon(function ($state, $record) {
@@ -160,7 +160,7 @@ class ParticipantsRelationManager extends RelationManager
                             if ($participant) {
                                 $participant->examSessions()->delete();
                                 $record->pivot->update(['is_active' => true]); // Ensure active after reset
-                
+
                                 \Filament\Notifications\Notification::make()
                                     ->title(__('Exam Reset'))
                                     ->success()

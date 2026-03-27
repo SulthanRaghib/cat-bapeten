@@ -16,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Builder;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use pxlrbt\FilamentExcel\Columns\Column;
 
 /**
@@ -37,9 +38,7 @@ class ExportExamResultsHeaderAction
         $m     = intdiv($total % 3600, 60);
         $s     = $total % 60;
 
-        if ($h > 0) return "{$h} jam {$m} menit {$s} detik";
-        if ($m > 0) return "{$m} menit {$s} detik";
-        return "{$s} detik";
+        return sprintf('%02d:%02d:%02d', $h, $m, $s);
     }
 
     /** Apakah peserta lulus? */
@@ -85,60 +84,60 @@ class ExportExamResultsHeaderAction
     public static function make(): Action
     {
         return Action::make('exportExamResults')
-            ->label('Unduh Laporan')
+            ->label(__('Download Report'))
             ->icon('heroicon-o-arrow-down-tray')
             ->color('success')
-            ->modalHeading('Unduh Laporan Hasil Ujian')
-            ->modalDescription('Atur filter dan format export yang diinginkan.')
-            ->modalSubmitActionLabel('Unduh')
+            ->modalHeading(__('Download Exam Results Report'))
+            ->modalDescription(__('Set filter and export format as desired.'))
+            ->modalSubmitActionLabel(__('Download'))
             ->modalWidth('lg')
             ->schema([
-                Section::make('Filter Data')
-                    ->description('Kosongkan filter untuk mengekspor semua data.')
+                Section::make(__('Filter Data'))
+                    ->description(__('Leave filter empty to export all data.'))
                     ->icon('heroicon-o-funnel')
                     ->collapsible()
                     ->schema([
                         Select::make('filter_exam_package_id')
-                            ->label('Paket Ujian')
+                            ->label(__('Exam Package'))
                             ->options(fn() => ExamPackage::pluck('title', 'id'))
-                            ->placeholder('Semua Paket Ujian')
+                            ->placeholder(__('All Exam Packages'))
                             ->searchable()
                             ->native(false),
 
                         Select::make('filter_status_kelulusan')
-                            ->label('Status Kelulusan')
+                            ->label(__('Pass Status'))
                             ->options([
-                                'lulus'       => 'Lulus',
-                                'tidak_lulus' => 'Tidak Lulus',
+                                'lulus'       => __('Passed'),
+                                'tidak_lulus' => __('Not Passed'),
                             ])
-                            ->placeholder('Semua Status')
+                            ->placeholder(__('All Status'))
                             ->native(false),
 
                         DatePicker::make('filter_dari_tanggal')
-                            ->label('Dari Tanggal'),
+                            ->label(__('From Date')),
 
                         DatePicker::make('filter_sampai_tanggal')
-                            ->label('Sampai Tanggal'),
+                            ->label(__('Until Date')),
                     ])
                     ->columns(2),
 
-                Section::make('Opsi Export')
+                Section::make(__('Export Options'))
                     ->icon('heroicon-o-cog-6-tooth')
                     ->schema([
                         Select::make('export_format')
-                            ->label('Format File')
+                            ->label(__('File Format'))
                             ->options([
-                                'excel' => 'Excel (.xlsx) — Data tabular lengkap',
-                                'pdf'   => 'PDF (.pdf) — Cetak laporan resmi',
+                                'excel' => 'Excel (.xlsx) — ' . __('Complete tabular data'),
+                                'pdf'   => 'PDF (.pdf) — ' . __('Official report for printing'),
                             ])
                             ->default('excel')
                             ->required()
                             ->native(false),
 
                         Toggle::make('include_statistics')
-                            ->label('Sertakan statistik jawaban (Benar, Salah, Tidak Dijawab)')
+                            ->label(__('Include answer statistics (Correct, Wrong, Unanswered)'))
                             ->default(true)
-                            ->helperText('Jika dinonaktifkan, hanya menampilkan nilai akhir dan status kelulusan.'),
+                            ->helperText(__('If disabled, only shows final score and pass status.')),
                     ]),
             ])
             ->action(function (array $data, Action $action) {
@@ -228,6 +227,51 @@ class ExportExamResultsHeaderAction
         $export->setFilterData($data);
         $export->setIncludeStatistics($includeStatistics);
 
+        // Calculate comprehensive summary data (6 metrics like PDF)
+        $query = self::buildFilteredQuery($data);
+        $allSessions = $query->get();
+        $total = $allSessions->count();
+        $passed = $allSessions->filter(fn($session) => self::isLulus($session))->count();
+        $failed = $total - $passed;
+        $avgScore = $total > 0 ? round($allSessions->avg('total_score'), 2) : 0;
+        $maxScore = $allSessions->max('total_score') ?? 0;
+        $minScore = $allSessions->min('total_score') ?? 0;
+        
+        $summaryData = [
+            'total_peserta'   => $total,
+            'jumlah_lulus'    => $passed,
+            'jumlah_gagal'    => $failed,
+            'rata_rata_nilai' => $avgScore,
+            'nilai_tertinggi' => $maxScore,
+            'nilai_terendah'  => $minScore,
+            'export_timestamp' => now()->format('d/m/Y H:i') . ' WIB',
+        ];
+        
+        // Add filter info (like PDF's filter-meta)
+        $filterInfo = [];
+        if ($packageId = $data['filter_exam_package_id'] ?? null) {
+            $pkg = ExamPackage::find($packageId);
+            if ($pkg) {
+                $filterInfo['Paket Ujian'] = $pkg->title;
+            }
+        }
+        if ($status = $data['filter_status_kelulusan'] ?? null) {
+            $filterInfo['Status'] = match($status) {
+                'lulus' => 'Lulus',
+                'tidak_lulus' => 'Tidak Lulus',
+                default => $status,
+            };
+        }
+        if ($date = $data['filter_dari_tanggal'] ?? null) {
+            $filterInfo['Dari Tanggal'] = $date;
+        }
+        if ($date = $data['filter_sampai_tanggal'] ?? null) {
+            $filterInfo['Sampai Tanggal'] = $date;
+        }
+        $summaryData['filter_info'] = $filterInfo;
+        
+        $export->setSummaryData($summaryData);
+
         // Detect exam type for the selected package
         $packageId    = $data['filter_exam_package_id'] ?? null;
         $package      = $packageId ? ExamPackage::with('examType')->find($packageId) : null;
@@ -259,7 +303,7 @@ class ExportExamResultsHeaderAction
                 ->getStateUsing(fn(ExamSession $record): string => (string) ($record->user?->nip ?? '-')),
 
             Column::make('examPackage.title')
-                ->heading('Nama Ujian / Paket'),
+                ->heading('Paket Ujian'),
 
             Column::make('tipe_ujian')
                 ->heading('Tipe Ujian')
@@ -267,22 +311,22 @@ class ExportExamResultsHeaderAction
                 $record->examPackage?->examType?->name ?? '-'),
 
             Column::make('tgl_ujian')
-                ->heading('Tanggal Pelaksanaan')
+                ->heading('Tanggal')
                 ->getStateUsing(fn(ExamSession $record): string =>
                 $record->started_at ? $record->started_at->format('d/m/Y') : '-'),
 
             Column::make('waktu_mulai')
                 ->heading('Waktu Mulai')
                 ->getStateUsing(fn(ExamSession $record): string =>
-                $record->started_at ? $record->started_at->format('H:i') . ' WIB' : '-'),
+                $record->started_at ? $record->started_at->format('H:i') : '-'),
 
             Column::make('waktu_selesai')
                 ->heading('Waktu Selesai')
                 ->getStateUsing(fn(ExamSession $record): string =>
-                $record->finished_at ? $record->finished_at->format('H:i') . ' WIB' : '-'),
+                $record->finished_at ? $record->finished_at->format('H:i') : '-'),
 
             Column::make('durasi_ujian')
-                ->heading('Durasi Ujian')
+                ->heading('Durasi')
                 ->getStateUsing(fn(ExamSession $record): string => self::formatDuration($record)),
         ];
 
@@ -340,7 +384,7 @@ class ExportExamResultsHeaderAction
                 ->getStateUsing(fn(ExamSession $record): int => self::countViolations($record));
 
             $columns[] = Column::make('total_score')
-                ->heading('Nilai Total Tertimbang');
+                ->heading('Nilai Akhir');
 
             $columns[] = Column::make('nab')
                 ->heading('NAB')
@@ -348,7 +392,7 @@ class ExportExamResultsHeaderAction
                 $record->examPackage->passing_grade ?? '-');
 
             $columns[] = Column::make('status_kelulusan')
-                ->heading('Keterangan')
+                ->heading('Status Kelulusan')
                 ->getStateUsing(fn(ExamSession $record): string =>
                 self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS');
         } else {
@@ -401,7 +445,7 @@ class ExportExamResultsHeaderAction
                 }
 
                 $columns[] = Column::make('total_score')
-                    ->heading('Nilai Akhir Terbobot (NAB: ' . ($package->passing_grade ?? '—') . ')');
+                    ->heading('Nilai Akhir');
             } elseif ($package === null) {
                 // ── All packages: add generic CBT & stage summary columns ──
                 $columns[] = Column::make('cbt_score_generic')
@@ -431,7 +475,7 @@ class ExportExamResultsHeaderAction
 
                 // ── Unit indicator summary for Mansoskul rows ──────────────
                 $columns[] = Column::make('rincian_unit_mansoskul')
-                    ->heading('Rincian Unit Penilaian (Mansoskul)')
+                    ->heading('Rincian Unit Penilaian')
                     ->getStateUsing(function (ExamSession $record): string {
                         $evalMethod = $record->examPackage?->examType?->evaluation_method ?? 'correct_wrong';
                         if ($evalMethod !== 'weighted') {
@@ -464,14 +508,60 @@ class ExportExamResultsHeaderAction
                 $record->examPackage->passing_grade ?? '-');
 
             $columns[] = Column::make('status_kelulusan')
-                ->heading('Keterangan')
+                ->heading('Status Kelulusan')
                 ->getStateUsing(fn(ExamSession $record): string =>
                 self::isLulus($record) ? 'LULUS' : 'TIDAK LULUS');
         }
 
         $export->setIsMansoskul($isMansoskul);
         if ($isMansoskul) {
-            $export->setUnitCount(count($unitNames));
+            $export->setUnitCount(count($unitNames ?? []));
+        }
+
+        // ── Build column groups for merged headers ──────────────────────────
+        $columnGroups = [];
+        
+        if ($isMansoskul && !empty($unitNames)) {
+            // Mansoskul: "Rincian Unit Penilaian" group
+            // Column order for Mansoskul:
+            // A: Nama, B: NIP, C: Paket, D: Tipe, E: Tanggal, F: WaktuMulai, G: WaktuSelesai, H: Durasi = 8 base
+            // Then per unit: Skor Unit X, Indikator Unit X = 2 columns per unit
+            // After units: Unit Kompeten, Pelanggaran, Nilai Akhir, NAB, Status = 5 columns
+            
+            $baseColCount = 8;
+            $unitStartColIndex = $baseColCount + 1; // First unit column
+            $unitEndColIndex = $unitStartColIndex + (count($unitNames) * 2) - 1; // 2 cols per unit
+            
+            $columnGroups[] = [
+                'label' => 'Rincian Unit Penilaian',
+                'start_col' => $unitStartColIndex,
+                'end_col' => $unitEndColIndex,
+            ];
+        } elseif (!$isMansoskul && $hasStages && !empty($stagesConf)) {
+            // Teknis with stages: "Rincian Tahap Seleksi" group
+            // Column order:
+            // A-H: Base columns (8)
+            // (if stats) +3: Benar, Salah, Tidak Dijawab
+            // +1: Pelanggaran
+            // Then: Skor CBT, Stage 0, Stage 1, ... (grouped)
+            // After: Nilai Akhir, NAB, Status
+            
+            $baseColCount = 8;
+            $statsColCount = $includeStatistics ? 3 : 0;
+            $violationCol = 1;
+            
+            $stageStartColIndex = $baseColCount + $statsColCount + $violationCol + 1;
+            $stageEndColIndex = $stageStartColIndex + count($stagesConf); // CBT + N stages
+            
+            $columnGroups[] = [
+                'label' => 'Rincian Tahap Seleksi',
+                'start_col' => $stageStartColIndex,
+                'end_col' => $stageEndColIndex,
+            ];
+        }
+        
+        if (!empty($columnGroups)) {
+            $export->setColumnGroups($columnGroups);
         }
 
         $export->withColumns($columns);

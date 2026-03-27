@@ -23,12 +23,12 @@
             text-align: center;
             margin-bottom: 12px;
             padding-bottom: 8px;
-            border-bottom: 3px solid #1E3A5F;
+            border-bottom: 3px solid #2c3e50;
         }
 
         .header h1 {
             font-size: 16px;
-            color: #1E3A5F;
+            color: #2c3e50;
             margin-bottom: 2px;
             letter-spacing: 1px;
         }
@@ -47,8 +47,8 @@
         .filter-meta {
             margin-bottom: 10px;
             padding: 6px 10px;
-            background: #f0f4f8;
-            border-left: 3px solid #1E3A5F;
+            background: #f8f9fa;
+            border-left: 3px solid #2c3e50;
             font-size: 8px;
         }
 
@@ -59,7 +59,7 @@
         }
 
         .filter-meta strong {
-            color: #1E3A5F;
+            color: #2c3e50;
         }
 
         /* Summary cards */
@@ -76,7 +76,7 @@
         .summary-row td {
             text-align: center;
             padding: 6px 4px;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             font-size: 8px;
         }
 
@@ -90,15 +90,15 @@
         .summary-row .value {
             font-size: 14px;
             font-weight: bold;
-            color: #1E3A5F;
+            color: #2c3e50;
         }
 
         .summary-row .value.success {
-            color: #1A6B3C;
+            color: #27ae60;
         }
 
         .summary-row .value.danger {
-            color: #C0392B;
+            color: #c0392b;
         }
 
         /* Section heading */
@@ -112,11 +112,11 @@
         }
 
         .section-heading.teknis {
-            background: #1E3A5F;
+            background: #34495e;
         }
 
         .section-heading.mansoskul {
-            background: #6D28D9;
+            background: #5d6d7e;
         }
 
         /* Main data table */
@@ -127,34 +127,34 @@
         }
 
         table.data-table thead th {
-            background: #1E3A5F;
+            background: #34495e;
             color: #fff;
             font-size: 8px;
             font-weight: bold;
             padding: 5px 4px;
             text-align: center;
-            border: 1px solid #4B8BBE;
+            border: 1px solid #5d6d7e;
             white-space: nowrap;
         }
 
         table.data-table.mansoskul thead th {
-            background: #6D28D9;
-            border-color: #a78bfa;
+            background: #5d6d7e;
+            border-color: #85929e;
         }
 
         table.data-table tbody td {
             padding: 4px 4px;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             font-size: 8px;
             vertical-align: middle;
         }
 
         table.data-table tbody tr:nth-child(even) {
-            background: #f7f9fb;
+            background: #f8f9fa;
         }
 
         table.data-table.mansoskul tbody tr:nth-child(even) {
-            background: #f5f3ff;
+            background: #f4f6f7;
         }
 
         /* Unit sub-table inside mansoskul rows */
@@ -166,26 +166,26 @@
         }
 
         .unit-subtable th {
-            background: #ede9fe;
-            color: #4c1d95;
+            background: #85929e;
+            color: #fff;
             padding: 3px 4px;
-            border: 1px solid #c4b5fd;
+            border: 1px solid #aab7b8;
             font-weight: bold;
             text-align: center;
         }
 
         .unit-subtable td {
             padding: 3px 4px;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             vertical-align: middle;
         }
 
         .unit-subtable tr.passing {
-            background: #f0fdf4;
+            background: #eafaf1;
         }
 
         .unit-subtable tr.failing {
-            background: #fff5f5;
+            background: #fdedec;
         }
 
         /* Stage sub-table inside teknis rows (multi-stage scoring) */
@@ -197,35 +197,35 @@
         }
 
         .stage-subtable th {
-            background: #1E3A5F;
+            background: #5d6d7e;
             color: #fff;
             padding: 3px 4px;
-            border: 1px solid #4B8BBE;
+            border: 1px solid #85929e;
             font-weight: bold;
             text-align: center;
         }
 
         .stage-subtable td {
             padding: 3px 4px;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             vertical-align: middle;
         }
 
         .stage-subtable tr.cbt-row {
-            background: #eff6ff;
+            background: #eaf2f8;
         }
 
         .stage-subtable tr.stage-row {
-            background: #f5f3ff;
+            background: #f4f6f7;
         }
 
         .stage-subtable tr.total-row {
-            background: #f0fdf4;
+            background: #eafaf1;
             font-weight: bold;
         }
 
         .stage-subtable tr.total-row.gagal {
-            background: #fff5f5;
+            background: #fdedec;
         }
 
         .text-center {
@@ -250,32 +250,32 @@
         }
 
         .badge-success {
-            background: #d4edda;
-            color: #1A6B3C;
+            background: #d5f5e3;
+            color: #1e8449;
         }
 
         .badge-danger {
-            background: #f8d7da;
-            color: #C0392B;
+            background: #fadbd8;
+            color: #b03a2e;
         }
 
         .badge-purple {
-            background: #ede9fe;
-            color: #5b21b6;
+            background: #eaecee;
+            color: #5d6d7e;
         }
 
         .stat-correct {
-            color: #1A6B3C;
+            color: #1e8449;
             font-weight: bold;
         }
 
         .stat-wrong {
-            color: #C0392B;
+            color: #b03a2e;
             font-weight: bold;
         }
 
         .stat-unanswered {
-            color: #E67E22;
+            color: #d68910;
             font-weight: bold;
         }
 
@@ -384,12 +384,12 @@
                     @if ($includeStatistics)
                         <th>Benar</th>
                         <th>Salah</th>
-                        <th>Kosong</th>
+                        <th>Tidak Dijawab</th>
                     @endif
                     <th style="width: 1%; white-space: nowrap;">Pelanggaran</th>
-                    <th style="min-width: 60px;">Nilai</th>
+                    <th style="min-width: 60px;">Nilai Akhir</th>
                     <th>NAB</th>
-                    <th style="width: 1%; white-space: nowrap;">Status</th>
+                    <th style="width: 1%; white-space: nowrap;">Status Kelulusan</th>
                     @if ($groupHasStaged)
                         <th style="min-width:200px;">Rincian Tahap Seleksi</th>
                     @endif
@@ -413,7 +413,7 @@
                             <td class="text-center stat-unanswered">{{ $row['tidak_dijawab'] ?? 0 }}</td>
                         @endif
                         <td class="text-center"
-                            style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">
+                            style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #b03a2e; font-weight: bold;' : '' }}">
                             {{ $row['pelanggaran'] ?? 0 }}
                         </td>
                         <td class="text-center" style="font-weight: bold;">{{ $row['nilai'] }}</td>
@@ -522,11 +522,11 @@
                     <th style="width: 52px; white-space: nowrap;">Selesai</th>
                     <th>Durasi</th>
                     <th style="width: 1%; white-space: nowrap;">Pelanggaran</th>
-                    <th style="min-width: 60px;">Nilai Total</th>
+                    <th style="min-width: 60px;">Nilai Akhir</th>
                     <th>NAB</th>
                     <th>Unit Kompeten</th>
-                    <th style="width: 1%; white-space: nowrap;">Status</th>
-                    <th style="min-width:220px;">Rincian Nilai per Unit</th>
+                    <th style="width: 1%; white-space: nowrap;">Status Kelulusan</th>
+                    <th style="min-width:220px;">Rincian Unit Penilaian</th>
                 </tr>
             </thead>
             <tbody>
@@ -542,7 +542,7 @@
                         <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_selesai'] }}</td>
                         <td class="text-center">{{ $row['durasi'] }}</td>
                         <td class="text-center"
-                            style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #C0392B; font-weight: bold;' : '' }}">
+                            style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #b03a2e; font-weight: bold;' : '' }}">
                             {{ $row['pelanggaran'] ?? 0 }}
                         </td>
                         <td class="text-center" style="font-weight: bold;">
@@ -552,7 +552,7 @@
                         {{-- Unit kompeten progress --}}
                         <td class="text-center">
                             <span
-                                style="font-weight:bold; color: {{ ($row['unit_lulus_count'] ?? 0) === ($row['unit_total_count'] ?? 0) ? '#1A6B3C' : '#C0392B' }}">
+                                style="font-weight:bold; color: {{ ($row['unit_lulus_count'] ?? 0) === ($row['unit_total_count'] ?? 0) ? '#1e8449' : '#b03a2e' }}">
                                 {{ $row['unit_lulus_count'] ?? 0 }}/{{ $row['unit_total_count'] ?? 0 }}
                             </span>
                         </td>

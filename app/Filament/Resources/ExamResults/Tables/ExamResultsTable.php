@@ -341,10 +341,10 @@ class ExamResultsTable
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         if ($data['dari_tanggal'] ?? null) {
-                            $indicators[] = 'Dari: ' . $data['dari_tanggal'];
+                            $indicators[] = __('From') . ': ' . $data['dari_tanggal'];
                         }
                         if ($data['sampai_tanggal'] ?? null) {
-                            $indicators[] = 'Sampai: ' . $data['sampai_tanggal'];
+                            $indicators[] = __('Until') . ': ' . $data['sampai_tanggal'];
                         }
                         return $indicators;
                     }),
@@ -373,8 +373,8 @@ class ExamResultsTable
                         });
                     })
                     ->indicateUsing(fn(array $data): ?string => match ($data['status'] ?? null) {
-                        'lulus'       => 'Status: Lulus',
-                        'tidak_lulus' => 'Status: Tidak Lulus',
+                        'lulus'       => __('Status') . ': ' . __('Pass'),
+                        'tidak_lulus' => __('Status') . ': ' . __('Fail'),
                         default       => null,
                     }),
 
