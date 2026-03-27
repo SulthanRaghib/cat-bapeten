@@ -23,15 +23,15 @@ class DownloadBapAction
     public static function make(): Action
     {
         return Action::make('downloadBap')
-            ->label('Unduh BAP')
+            ->label(__('Download BAP'))
             ->icon('heroicon-o-document-arrow-down')
             ->color('primary')
-            ->modalHeading('Buat Berita Acara Pelaksanaan (BAP)')
-            ->modalDescription('Lengkapi data di bawah ini untuk menghasilkan dokumen Berita Acara Pelaksanaan Uji Kompetensi.')
+            ->modalHeading(__('Create Event Report (BAP)'))
+            ->modalDescription(__('Fill in the data below to generate the Competency Test Event Report document.'))
             ->modalIcon('heroicon-o-document-text')
             ->modalWidth('2xl')
-            ->modalSubmitActionLabel('Unduh Dokumen')
-            ->modalCancelActionLabel('Batal')
+            ->modalSubmitActionLabel(__('Download Document'))
+            ->modalCancelActionLabel(__('Cancel'))
             ->fillForm(function (): array {
                 return [
                     'tanggal' => now()->toDateString(),
@@ -43,20 +43,20 @@ class DownloadBapAction
             ->schema([
 
                 // ── Bagian 1: Informasi Kegiatan ──
-                Section::make('Informasi Kegiatan')
+                Section::make(__('Event Information'))
                     ->icon('heroicon-o-calendar')
                     ->columns(2)
                     ->schema([
 
                         DatePicker::make('tanggal')
-                            ->label('Tanggal Pelaksanaan')
+                            ->label(__('Event Date'))
                             ->required()
                             ->displayFormat('d M Y')
                             ->native(false)
                             ->columnSpan(1),
 
                         Select::make('exam_package_id')
-                            ->label('Paket Ujian')
+                            ->label(__('Exam Package'))
                             ->options(fn() => ExamPackage::where('is_active', true)
                                 ->pluck('title', 'id')
                                 ->toArray())
@@ -72,81 +72,81 @@ class DownloadBapAction
                                 }
                                 $pkg = ExamPackage::find($state);
                                 if ($pkg) {
-                                    $set('judul_kegiatan', 'Uji Kompetensi ' . $pkg->title);
+                                    $set('judul_kegiatan', __('Competency Test') . ' ' . $pkg->title);
                                     $set('jumlah_peserta', $pkg->participants()->count());
                                 }
                             })
                             ->columnSpan(1),
 
                         TextInput::make('judul_kegiatan')
-                            ->label('Judul Kegiatan')
-                            ->placeholder('Uji Kompetensi Jabatan Fungsional ...')
+                            ->label(__('Event Title'))
+                            ->placeholder(__('Competency Test for Functional Position ...'))
                             ->required()
-                            ->helperText('Otomatis terisi dari Paket Ujian, dapat diubah manual.')
+                            ->helperText(__('Auto-filled from Exam Package, can be manually edited.'))
                             ->columnSpanFull(),
 
                         TextInput::make('lokasi')
-                            ->label('Lokasi Ujian')
-                            ->placeholder('Ruang Ujian Lt. 3, Kantor Pusat BAPETEN')
+                            ->label(__('Exam Location'))
+                            ->placeholder(__('Exam Room Lt. 3, BAPETEN Head Office'))
                             ->required()
                             ->columnSpan(1),
 
                         TextInput::make('sesi')
-                            ->label('Sesi Ujian')
-                            ->placeholder('Sesi I / Sesi II / Pukul 09.00—11.00 WIB')
+                            ->label(__('Exam Session'))
+                            ->placeholder(__('Session I / Session II / 09.00—11.00 WIB'))
                             ->required()
                             ->columnSpan(1),
 
                         TextInput::make('jumlah_peserta')
-                            ->label('Jumlah Peserta Hadir')
+                            ->label(__('Number of Participants Present'))
                             ->numeric()
                             ->minValue(0)
                             ->required()
-                            ->helperText('Otomatis dari jumlah peserta terdaftar, dapat diubah.')
-                            ->suffix('orang')
+                            ->helperText(__('Auto-filled from registered participants, can be edited.'))
+                            ->suffix(__('person'))
                             ->columnSpan(1),
                     ]),
 
                 // ── Bagian 2: Penandatangan ──
-                Section::make('Data Penandatangan')
+                Section::make(__('Signatory Data'))
                     ->icon('heroicon-o-pencil-square')
                     ->columns(2)
                     ->schema([
 
                         TextInput::make('nama_panitia')
-                            ->label('Nama Panitia Pelaksana')
-                            ->placeholder('Nama lengkap dengan gelar')
+                            ->label(__('Committee Name'))
+                            ->placeholder(__('Full name with title'))
                             ->required()
                             ->columnSpan(1),
 
                         TextInput::make('nip_panitia')
-                            ->label('NIP Panitia')
+                            ->label(__('Committee NIP'))
                             ->placeholder('19XXXXXXXXXXXXXXXXX')
                             ->required()
                             ->columnSpan(1),
 
                         TextInput::make('nama_kepala_bou')
-                            ->label('Nama Kepala BOU')
-                            ->placeholder('Nama lengkap dengan gelar')
+                            ->label(__('BOU Head Name'))
+                            ->placeholder(__('Full name with title'))
                             ->required()
                             ->columnSpan(1),
 
                         TextInput::make('nip_kepala_bou')
-                            ->label('NIP Kepala BOU')
+                            ->label(__('BOU Head NIP'))
                             ->placeholder('19XXXXXXXXXXXXXXXXX')
                             ->required()
                             ->columnSpan(1),
                     ]),
 
                 // ── Bagian 3: Format Unduhan ──
-                Section::make('Format Unduhan')
+                Section::make(__('Download Format'))
                     ->icon('heroicon-o-arrow-down-tray')
                     ->schema([
                         Radio::make('format')
-                            ->label('Pilih Format')
+                            ->label(__('Select Format'))
                             ->options([
-                                'pdf'  => '📄 PDF — siap cetak, layout terkunci',
-                                'word' => '📝 Word (DOCX) — dapat diedit lebih lanjut',
+                                'pdf'  => __('PDF — ready to print, locked layout'),
+                                'word' => __('Word (DOCX) — can be edited further'),
                             ])
                             ->default('pdf')
                             ->required()
@@ -207,7 +207,7 @@ class DownloadBapAction
             'garuda_path'     => public_path('assets/img/garuda.png'),
         ];
 
-        $filename = 'BAP-Uji-Kompetensi-' . $tanggal->format('Ymd');
+        $filename = 'BAP_Uji_Kompetensi_BAPETEN_' . $tanggal->format('Ymd_His');
 
         if (($data['format'] ?? 'pdf') === 'word') {
             return self::generateWord($viewData, $filename);
