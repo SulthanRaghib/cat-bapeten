@@ -6,7 +6,7 @@
     <title>Bank Soal — Export PDF</title>
     <style>
         @page {
-            margin: 16mm 14mm 16mm 14mm;
+            margin: 16mm 18mm 16mm 18mm;
         }
 
         * {
@@ -20,6 +20,10 @@
             font-size: 9.5px;
             line-height: 1.55;
             color: #1f2937;
+        }
+
+        .pdf-content {
+            padding: 0 2mm;
         }
 
         .muted {
@@ -122,6 +126,20 @@
             border-radius: 10px;
             margin-right: 6px;
             font-size: 9px;
+        }
+
+        .cover-total-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1;
+        }
+
+        .cover-total-label {
+            display: inline-block;
+            line-height: 1;
+            color: #334155;
+            font-size: 8.8px;
         }
 
         /* Filter */
@@ -566,6 +584,8 @@
 
 <body>
 
+    <div class="pdf-content">
+
     <div class="cover">
         <div class="cover-top">
             <div class="cover-org">Badan Pengawas Tenaga Nuklir · Sistem CAT BAPETEN</div>
@@ -576,7 +596,10 @@
             <table class="cover-meta-table">
                 <tr>
                     <td class="cover-meta-left">
-                        <span class="cover-total">{{ $questions->count() }}</span> soal
+                        <span class="cover-total-wrap">
+                            <span class="cover-total">{{ $questions->count() }}</span>
+                            <span class="cover-total-label">soal</span>
+                        </span>
                     </td>
                     <td class="cover-meta-mid">
                         Diekspor pada {{ now()->translatedFormat('d F Y, H:i') }} WIB
@@ -826,6 +849,8 @@
 
     <div class="footer">
         Dokumen dibuat otomatis oleh Sistem CAT BAPETEN • {{ now()->translatedFormat('d F Y, H:i') }} WIB
+    </div>
+
     </div>
 
 </body>
