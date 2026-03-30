@@ -422,7 +422,10 @@ class ExamResultsTable
                         ->modalDescription(__('Are you sure you want to delete the selected exam results? This action cannot be undone.'))
                         ->modalSubmitActionLabel(__('Yes, Delete')),
                 ])->label(__('Bulk Actions')),
-            ]);
+            ])
+            ->emptyStateHeading(__('No exam results yet'))
+            ->emptyStateDescription(__('Exam results will appear here after participants complete their exams.'))
+            ->emptyStateIcon('heroicon-o-chart-bar');
     }
 
     // ──────────────────────────────────────────────────────────────────────
