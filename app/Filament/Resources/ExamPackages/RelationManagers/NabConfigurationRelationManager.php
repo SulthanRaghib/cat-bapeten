@@ -92,7 +92,7 @@ class NabConfigurationRelationManager extends RelationManager
                             ->headerActions([
                                 // ── Smart Sync: refresh units from questions ──
                                 Action::make('syncFromQuestions')
-                                    ->label('🔄 ' . __('Synchronize'))
+                                    ->label(__('Synchronize'))
                                     ->icon('heroicon-o-arrow-path')
                                     ->color('warning')
                                     ->action(function (): void {
@@ -141,7 +141,7 @@ class NabConfigurationRelationManager extends RelationManager
 
                                 // ── Save per-package config (JSON only — no master sync) ──
                                 Action::make('saveNabConfig')
-                                    ->label('💾 ' . __('Save'))
+                                    ->label(__('Save'))
                                     ->icon('heroicon-o-check-circle')
                                     ->color('primary')
                                     ->action(function (): void {
