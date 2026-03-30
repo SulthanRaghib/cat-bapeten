@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <title>Laporan Hasil Ujian BAPETEN</title>
     <style>
+        @page {
+            margin: 12mm 12mm 16mm 12mm;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -124,6 +128,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 12px;
+            table-layout: auto;
         }
 
         table.data-table thead th {
@@ -134,7 +139,8 @@
             padding: 5px 4px;
             text-align: center;
             border: 1px solid #5d6d7e;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: break-word;
         }
 
         table.data-table.mansoskul thead th {
@@ -147,6 +153,29 @@
             border: 1px solid #dee2e6;
             font-size: 8px;
             vertical-align: middle;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .col-tight-head {
+            width: 44px;
+            min-width: 44px;
+            max-width: 44px;
+            white-space: normal !important;
+            line-height: 1.15;
+            font-size: 7.2px !important;
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+        }
+
+        .col-tight-cell {
+            width: 44px;
+            min-width: 44px;
+            max-width: 44px;
+            text-align: center;
+            white-space: nowrap;
+            padding-left: 2px !important;
+            padding-right: 2px !important;
         }
 
         table.data-table tbody tr:nth-child(even) {
@@ -303,10 +332,16 @@
         .page-break {
             page-break-after: always;
         }
+
+        .page-content {
+            padding: 0 2mm;
+        }
     </style>
 </head>
 
 <body>
+
+    <div class="page-content">
 
     {{-- ── HEADER ────────────────────────────────────────── --}}
     <div class="header">
@@ -378,20 +413,20 @@
                     <th>Paket Ujian</th>
                     <th>Tipe Ujian</th>
                     <th>Tanggal</th>
-                    <th style="width: 52px; white-space: nowrap;">Mulai</th>
-                    <th style="width: 52px; white-space: nowrap;">Selesai</th>
+                    <th>Mulai</th>
+                    <th>Selesai</th>
                     <th>Durasi</th>
                     @if ($includeStatistics)
                         <th>Benar</th>
                         <th>Salah</th>
-                        <th>Tidak Dijawab</th>
+                        <th class="col-tight-head">Tidak Dijawab</th>
                     @endif
-                    <th style="width: 1%; white-space: nowrap;">Pelanggaran</th>
-                    <th style="min-width: 60px;">Nilai Akhir</th>
+                    <th class="col-tight-head">Pelanggaran</th>
+                    <th>Nilai Akhir</th>
                     <th>NAB</th>
-                    <th style="width: 1%; white-space: nowrap;">Status Kelulusan</th>
+                    <th>Status Kelulusan</th>
                     @if ($groupHasStaged)
-                        <th style="min-width:200px;">Rincian Tahap Seleksi</th>
+                        <th>Rincian Tahap Seleksi</th>
                     @endif
                 </tr>
             </thead>
@@ -410,9 +445,9 @@
                         @if ($includeStatistics)
                             <td class="text-center stat-correct">{{ $row['benar'] ?? 0 }}</td>
                             <td class="text-center stat-wrong">{{ $row['salah'] ?? 0 }}</td>
-                            <td class="text-center stat-unanswered">{{ $row['tidak_dijawab'] ?? 0 }}</td>
+                            <td class="col-tight-cell stat-unanswered">{{ $row['tidak_dijawab'] ?? 0 }}</td>
                         @endif
-                        <td class="text-center"
+                        <td class="col-tight-cell"
                             style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #b03a2e; font-weight: bold;' : '' }}">
                             {{ $row['pelanggaran'] ?? 0 }}
                         </td>
@@ -518,15 +553,15 @@
                     <th>Paket Ujian</th>
                     <th>Tipe Ujian</th>
                     <th>Tanggal</th>
-                    <th style="width: 52px; white-space: nowrap;">Mulai</th>
-                    <th style="width: 52px; white-space: nowrap;">Selesai</th>
+                    <th>Mulai</th>
+                    <th>Selesai</th>
                     <th>Durasi</th>
-                    <th style="width: 1%; white-space: nowrap;">Pelanggaran</th>
-                    <th style="min-width: 60px;">Nilai Akhir</th>
+                    <th class="col-tight-head">Pelanggaran</th>
+                    <th>Nilai Akhir</th>
                     <th>NAB</th>
                     <th>Unit Kompeten</th>
-                    <th style="width: 1%; white-space: nowrap;">Status Kelulusan</th>
-                    <th style="min-width:220px;">Rincian Unit Penilaian</th>
+                    <th>Status Kelulusan</th>
+                    <th>Rincian Unit Penilaian</th>
                 </tr>
             </thead>
             <tbody>
@@ -541,7 +576,7 @@
                         <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_mulai'] }}</td>
                         <td class="text-center" style="white-space: nowrap;">{{ $row['waktu_selesai'] }}</td>
                         <td class="text-center">{{ $row['durasi'] }}</td>
-                        <td class="text-center"
+                        <td class="col-tight-cell"
                             style="{{ ($row['pelanggaran'] ?? 0) > 0 ? 'color: #b03a2e; font-weight: bold;' : '' }}">
                             {{ $row['pelanggaran'] ?? 0 }}
                         </td>
@@ -614,6 +649,8 @@
             Tidak ada data hasil ujian yang ditemukan.
         </p>
     @endif
+
+    </div>
 
     {{-- ── FOOTER ───────────────────────────────────────── --}}
     <div class="footer">
