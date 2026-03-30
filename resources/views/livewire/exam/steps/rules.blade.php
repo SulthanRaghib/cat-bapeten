@@ -136,10 +136,11 @@
 
     {{-- Sistem Pengawas Ujian --}}
     <div
-        style="margin-bottom: 40px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 16px; padding: 24px;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        style="margin-bottom: 40px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #93c5fd; border-radius: 18px; padding: 24px; box-shadow: 0 14px 24px -18px rgba(37, 99, 235, 0.75);">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px;">
             <span
-                style="background: #dbeafe; color: #1d4ed8; padding: 8px; border-radius: 10px; display: flex; align-items: center;">
+                style="background: #bfdbfe; color: #1d4ed8; padding: 8px; border-radius: 10px; display: flex; align-items: center;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                     stroke="currentColor" style="width:20px;height:20px;">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -147,58 +148,42 @@
                 </svg>
             </span>
             <h4 style="margin: 0; font-size: 17px; color: #1e3a8a; font-weight: 800;">Sistem Pengawas Ujian Aktif</h4>
+            </div>
+            <span
+                style="background: #1d4ed8; color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; padding: 5px 9px; border-radius: 999px;">
+                AUTO MONITORING
+            </span>
         </div>
-        <p style="margin: 0 0 16px 0; color: #475569; font-size: 14px; line-height: 1.7;">
-            Setelah Anda menekan <strong style="color: #1e40af;">"Mulai Kerjakan Ujian"</strong>, sistem pencatatan
-            pelanggaran aktif secara otomatis.
-            Aktivitas berikut akan tercatat dan dapat ditinjau oleh pengawas:
+        <p style="margin: 0 0 14px 0; color: #334155; font-size: 14px; line-height: 1.7;">
+            Setelah Anda menekan <span style="color: #1e40af;">"Mulai Kerjakan Ujian"</span>, aktivitas berikut
+            tercatat otomatis:
         </p>
 
-        <div style="display: grid; gap: 8px; font-size: 14px;">
+        <div style="display: grid; gap: 10px; font-size: 14px;">
             <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #dbeafe; border-radius: 10px; padding: 12px 14px; align-items: flex-start;">
-                <span style="color: #2563eb; font-size: 18px; flex-shrink: 0; line-height: 1.4;">›</span>
-                <div style="line-height: 1.6;">
-                    <strong style="color: #1e293b;">Berpindah tab atau meminimalkan browser</strong><br>
-                    <span style="color: #64748b;">Membuka tab lain, aplikasi lain, atau meminimalkan jendela saat ujian
-                        berlangsung.</span>
-                </div>
+                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
+                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
+                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Berpindah tab atau meminimalkan browser</span>
             </div>
             <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #dbeafe; border-radius: 10px; padding: 12px 14px; align-items: flex-start;">
-                <span style="color: #2563eb; font-size: 18px; flex-shrink: 0; line-height: 1.4;">›</span>
-                <div style="line-height: 1.6;">
-                    <strong style="color: #1e293b;">Mengklik di luar halaman ujian</strong><br>
-                    <span style="color: #64748b;">Fokus berpindah dari jendela ujian ke bagian lain di layar
-                        Anda.</span>
-                </div>
+                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
+                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
+                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Mengklik di luar halaman ujian</span>
             </div>
             <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #dbeafe; border-radius: 10px; padding: 12px 14px; align-items: flex-start;">
-                <span style="color: #2563eb; font-size: 18px; flex-shrink: 0; line-height: 1.4;">›</span>
-                <div style="line-height: 1.6;">
-                    <strong style="color: #1e293b;">Menyalin atau menempel teks</strong><br>
-                    <span style="color: #64748b;">Menggunakan tombol keyboard maupun menu untuk menyalin/menempel
-                        konten ujian.</span>
-                </div>
+                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
+                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
+                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Menyalin atau menempel teks</span>
             </div>
             <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #dbeafe; border-radius: 10px; padding: 12px 14px; align-items: flex-start;">
-                <span style="color: #2563eb; font-size: 18px; flex-shrink: 0; line-height: 1.4;">›</span>
-                <div style="line-height: 1.6;">
-                    <strong style="color: #1e293b;">Menggunakan klik kanan atau shortcut developer</strong><br>
-                    <span style="color: #64748b;">Membuka menu klik kanan atau mencoba mengakses alat developer
-                        browser.</span>
-                </div>
+                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
+                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
+                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Menggunakan klik kanan atau shortcut developer</span>
             </div>
             <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #dbeafe; border-radius: 10px; padding: 12px 14px; align-items: flex-start;">
-                <span style="color: #2563eb; font-size: 18px; flex-shrink: 0; line-height: 1.4;">›</span>
-                <div style="line-height: 1.6;">
-                    <strong style="color: #1e293b;">Mengambil tangkapan layar</strong><br>
-                    <span style="color: #64748b;">Menekan tombol Print Screen atau kombinasi screenshot pada
-                        perangkat.</span>
-                </div>
+                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
+                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
+                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Mengambil tangkapan layar</span>
             </div>
         </div>
     </div>
