@@ -48,10 +48,24 @@
                 </svg>
             </div>
             <div>
-                <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">2. Dilarang Membuka
-                    Tab Lain</h4>
-                <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Dilarang keras membuka browser
-                    tab baru, window baru, atau aplikasi lain selain halaman ujian ini.</p>
+                <h4 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: #1e293b;">2. Dilarang Melakukan Aktivitas Lain</h4>
+                <p style="font-size: 15px; margin: 0; color: #64748b; line-height: 1.6;">Dilarang keras membuka tab baru, jendela (window) baru, atau aplikasi lain selain halaman ujian ini, termasuk:</p>
+                <ul style="font-size: 15px; margin: 10px 0 0 20px; color: #64748b; line-height: 1.8; padding: 0; list-style-type: disc;">
+                    <li>Berpindah tab atau meminimalkan browser</li>
+                    <li>Mengklik di luar halaman ujian</li>
+                    <li>Menyalin atau menempelkan teks</li>
+                    <li>Menggunakan klik kanan atau pintasan (shortcut) developer</li>
+                    <li>Mengambil tangkapan layar (screenshot)</li>
+                </ul>
+                <div
+                    style="font-size: 14px; margin: 12px 0 0 0; color: #64748b; line-height: 1.6; font-weight: 400; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #f59e0b; border-radius: 8px; padding: 8px 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="#d97706" style="width: 18px; height: 18px; flex-shrink: 0;">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v3.75m0 3.75h.007v.008H12v-.008zM3.375 18.75h17.25c1.06 0 1.724-1.147 1.196-2.062L13.196 3.563c-.53-.919-1.862-.919-2.392 0L2.179 16.688c-.528.915.136 2.062 1.196 2.062z" />
+                    </svg>
+                    <span>Aktivitas tersebut akan terdeteksi dan tercatat secara otomatis oleh sistem.</span>
+                </div>
             </div>
         </div>
 
@@ -133,61 +147,6 @@
         </div>
 
     </div>
-
-    {{-- Sistem Pengawas Ujian --}}
-    <div
-        style="margin-bottom: 40px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #93c5fd; border-radius: 18px; padding: 24px; box-shadow: 0 14px 24px -18px rgba(37, 99, 235, 0.75);">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-            <span
-                style="background: #bfdbfe; color: #1d4ed8; padding: 8px; border-radius: 10px; display: flex; align-items: center;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                    stroke="currentColor" style="width:20px;height:20px;">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                </svg>
-            </span>
-            <h4 style="margin: 0; font-size: 17px; color: #1e3a8a; font-weight: 800;">Sistem Pengawas Ujian Aktif</h4>
-            </div>
-            <span
-                style="background: #1d4ed8; color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; padding: 5px 9px; border-radius: 999px;">
-                AUTO MONITORING
-            </span>
-        </div>
-        <p style="margin: 0 0 14px 0; color: #334155; font-size: 14px; line-height: 1.7;">
-            Setelah Anda menekan <span style="color: #1e40af;">"Mulai Kerjakan Ujian"</span>, aktivitas berikut
-            tercatat otomatis:
-        </p>
-
-        <div style="display: grid; gap: 10px; font-size: 14px;">
-            <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
-                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
-                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Berpindah tab atau meminimalkan browser</span>
-            </div>
-            <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
-                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
-                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Mengklik di luar halaman ujian</span>
-            </div>
-            <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
-                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
-                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Menyalin atau menempel teks</span>
-            </div>
-            <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
-                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
-                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Menggunakan klik kanan atau shortcut developer</span>
-            </div>
-            <div
-                style="display: flex; gap: 14px; background: white; border: 1px solid #bfdbfe; border-radius: 11px; padding: 11px 14px; align-items: flex-start;">
-                <span style="color: #1d4ed8; font-size: 18px; flex-shrink: 0; line-height: 1.4; font-weight: 700;">›</span>
-                <span style="color: #1e293b; line-height: 1.6; font-weight: 400;">Mengambil tangkapan layar</span>
-            </div>
-        </div>
-    </div>
-
     {{-- Footer Action --}}
     <div style="margin-top: 30px; padding-bottom: 60px; display: flex; flex-direction: column; align-items: center;">
         <div
