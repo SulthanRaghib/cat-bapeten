@@ -341,6 +341,8 @@
             line-height: 1.75;
             color: #1e293b;
             margin-bottom: 1.25rem;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .dark .qp-question-text {
@@ -442,6 +444,36 @@
             font-size: 0.875rem;
             line-height: 1.6;
             color: #334155;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .qp-question-text :where(p, li, span, a, strong, em, small, code),
+        .qp-option-body :where(p, li, span, a, strong, em, small, code) {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .qp-question-text pre,
+        .qp-option-body pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-width: 100%;
+        }
+
+        .qp-question-text table,
+        .qp-option-body table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .qp-question-text table th,
+        .qp-question-text table td,
+        .qp-option-body table th,
+        .qp-option-body table td {
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .dark .qp-option-body {
