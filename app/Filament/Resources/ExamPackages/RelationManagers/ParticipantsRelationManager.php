@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\ExamPackages\RelationManagers;
 
 use App\Models\ExamParticipant;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\AttachAction;
@@ -12,12 +13,16 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
 use Filament\Forms;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Size;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Arr;
 
 class ParticipantsRelationManager extends RelationManager
 {
@@ -105,16 +110,34 @@ class ParticipantsRelationManager extends RelationManager
                     ->icon('heroicon-m-user-plus')
                     ->color('primary')
                     ->modalHeading(__('Select Exam Participant'))
-                    ->modalSubmitActionLabel(__('Add'))
-                    ->preloadRecordSelect()
-                    ->multiple() // Bisa pilih banyak sekaligus
-                    ->recordSelectOptionsQuery(function (\Illuminate\Database\Eloquent\Builder $query) {
-                        $examPackage = $this->getOwnerRecord();
-                        $existingParticipantIds = $examPackage->participants()->pluck('users.id')->toArray();
+                    ->modalSubmitActionLabel(function (array $data): string {
+                        $count = count(array_filter((array) ($data['selectedPeserta'] ?? [])));
 
-                        return $query->whereNotIn('users.id', $existingParticipantIds)
-                            ->where('users.role', 'user'); // Hanya tampilkan user biasa, bukan admin
+                        return "Tambahkan";
                     })
+                    ->closeModalByClickingAway(false)
+                    ->closeModalByEscaping(false)
+                    ->modalAutofocus()
+                    ->fillForm(fn(): array => [
+                        'selectedPeserta' => [],
+                        'recordId' => [],
+                    ])
+                    ->schema([
+                        Select::make('selectedPeserta')
+                            ->label(__('Pilih Peserta Ujian'))
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->searchPrompt(__('Ketik untuk mencari...'))
+                            ->searchDebounce(300)
+                            ->placeholder(__('Pilih salah satu opsi'))
+                            ->live()
+                            ->options(fn(): array => $this->getAvailableParticipantOptions())
+                            ->helperText(__('Pilihan tersimpan sementara sampai tombol Tambahkan diklik.')),
+
+                        Hidden::make('recordId')
+                            ->dehydrateStateUsing(fn(Get $get): array => array_map('intval', Arr::wrap($get('selectedPeserta')))),
+                    ])
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -193,5 +216,19 @@ class ParticipantsRelationManager extends RelationManager
                         ->modalSubmitActionLabel(__('Yes, Remove')),
                 ])->label(__('Bulk Actions')),
             ]);
+    }
+
+    protected function getAvailableParticipantOptions(): array
+    {
+        $examPackage = $this->getOwnerRecord();
+        $existingParticipantIds = $examPackage->participants()->pluck('users.id')->map(fn($id) => (int) $id)->all();
+
+        return User::query()
+            ->where('role', 'user')
+            ->when($existingParticipantIds !== [], fn($query) => $query->whereNotIn('users.id', $existingParticipantIds))
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->mapWithKeys(fn($name, $id) => [(int) $id => $name])
+            ->all();
     }
 }
