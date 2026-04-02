@@ -57,12 +57,30 @@
             <!-- NAVIGASI -->
             <div class="navigation">
                 <button type="button" @click="prev()" :disabled="currentIndex === 0" class="secondary"
-                    :class="currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''">
-                    <span>Sebelumnya</span>
+                    :class="currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''"
+                    style="padding: 10px 16px; font-size: 14px;">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                            style="width: 18px; height: 18px;">
+                            <path fill-rule="evenodd"
+                                d="M11.78 4.22a.75.75 0 010 1.06L7.06 10l4.72 4.72a.75.75 0 11-1.06 1.06l-5.25-5.25a.75.75 0 010-1.06l5.25-5.25a.75.75 0 011.06 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        <span>Sebelumnya</span>
+                    </span>
                 </button>
                 <button type="button" @click="next()" :disabled="currentIndex === totalQuestions - 1" class="primary"
-                    :class="currentIndex === totalQuestions - 1 ? 'opacity-50 cursor-not-allowed' : ''">
-                    <span>Selanjutnya</span>
+                    :class="currentIndex === totalQuestions - 1 ? 'opacity-50 cursor-not-allowed' : ''"
+                    style="padding: 10px 16px; font-size: 14px;">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span>Selanjutnya</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                            style="width: 18px; height: 18px;">
+                            <path fill-rule="evenodd"
+                                d="M8.22 4.22a.75.75 0 011.06 0l5.25 5.25a.75.75 0 010 1.06l-5.25 5.25a.75.75 0 01-1.06-1.06L12.94 10 8.22 5.28a.75.75 0 010-1.06z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </span>
                 </button>
             </div>
         </section>
