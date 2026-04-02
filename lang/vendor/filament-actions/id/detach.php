@@ -23,7 +23,7 @@ return [
         'notifications' => [
 
             'detached' => [
-                'title' => 'Lampiran berhasil dilepaskan',
+                'title' => 'Data peserta berhasil dihapus',
             ],
 
         ],

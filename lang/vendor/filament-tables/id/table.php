@@ -32,7 +32,7 @@ return [
 
             'no_search_results_message' => 'Tidak ada hasil yang sesuai dengan pencarian Anda.',
 
-            'placeholder' => 'Cari & Pilih Peserta',
+            'placeholder' => 'Cari',
 
             'searching_message' => 'Sedang mencari...',
 
